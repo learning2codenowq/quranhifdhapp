@@ -1,10 +1,8 @@
 export class QuranService {
-  // Use your Cloudflare worker API endpoint
   static BASE_URL = 'https://quran.shayanshehzadqureshi.workers.dev/';
 
   static async getSurahWithTranslation(surahId) {
     try {
-      // Use your /api/qf/verses endpoint
       const response = await fetch(`${this.BASE_URL}/api/qf/verses?chapter=${surahId}&perPage=50`);
       
       if (!response.ok) {
@@ -17,13 +15,12 @@ export class QuranService {
         throw new Error('Invalid API response structure');
       }
 
-      // Your API already returns properly structured data
       const combinedAyahs = data.verses.map(verse => ({
         verse_number: verse.number,
-        text: verse.text, // Already cleaned by your worker
+        text: verse.text,
         translation: verse.translationHtml || '',
         translationHtml: verse.translationHtml || '',
-        audioUrl: verse.audioUrl // This comes from your API
+        audioUrl: verse.audioUrl
       }));
 
       return {
@@ -31,11 +28,12 @@ export class QuranService {
           id: data.chapter.id,
           name: data.chapter.name_simple,
           arabic_name: data.chapter.name_arabic,
-          total_ayahs: data.verses.length,
+          // Use verses_count from API, fall back to actual verses length
+          total_ayahs: data.chapter.verses_count || data.chapter.total_ayahs || data.verses.length,
           bismillah_pre: data.chapter.bismillah_pre
         },
         ayahs: combinedAyahs,
-        bismillah: data.bismillah // Your API returns this separately
+        bismillah: data.bismillah
       };
     } catch (error) {
       console.error('Error fetching surah from worker API:', error);
@@ -56,7 +54,8 @@ export class QuranService {
         id: chapter.id,
         name: chapter.name_simple,
         arabic_name: chapter.name_arabic,
-        total_ayahs: chapter.verses_count || 0,
+        // Make sure to use the verses_count from API
+        total_ayahs: chapter.verses_count || chapter.total_ayahs || 0,
         type: chapter.revelation_place || 'Unknown'
       }));
     } catch (error) {

@@ -76,20 +76,20 @@ export default function OnboardingScreen({ navigation }) {
   ];
 
   const handleNext = async () => {
-  if (currentIndex < onboardingData.length - 1) {
-    setCurrentIndex(currentIndex + 1);
-  } else {
-    // Complete onboarding - make sure name is properly saved
-    const finalUserName = userName.trim();
-    console.log('Saving user name:', finalUserName); // Debug log
-    
-    await StorageService.initializeState({
-      dailyGoal: selectedTarget,
-      userName: finalUserName || 'Student'
-    });
-    navigation.replace('Dashboard');
-  }
-};
+    if (currentIndex < onboardingData.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      // Complete onboarding - make sure name is properly saved
+      const finalUserName = userName.trim();
+      console.log('Saving user name:', finalUserName); // Debug log
+      
+      await StorageService.initializeState({
+        dailyGoal: selectedTarget,
+        userName: finalUserName || 'Student'
+      });
+      navigation.replace('Dashboard');
+    }
+  };
 
   const handleBack = () => {
     if (currentIndex > 0) {
@@ -251,7 +251,6 @@ const styles = StyleSheet.create({
     color: '#d4af37',
     textAlign: 'center',
     marginBottom: 20,
-    fontFamily: 'Amiri_400Regular',
   },
   subtitle: {
     fontSize: 24,

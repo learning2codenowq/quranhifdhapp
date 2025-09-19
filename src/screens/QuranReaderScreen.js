@@ -43,6 +43,9 @@ export default function QuranReaderScreen({ route, navigation }) {
     totalAyahs: 0
   });
 
+  // Ref for immediate stop checking
+  const isReplayingRef = React.useRef(false);
+
   useEffect(() => {
     if (surahId) {
       loadSurahData();
@@ -54,6 +57,15 @@ export default function QuranReaderScreen({ route, navigation }) {
       AudioService.stopAudio();
     };
   }, [surahId]);
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      console.log('🧹 Component unmounting - stopping any ongoing replay');
+      isReplayingRef.current = false;
+      AudioService.stopAudio();
+    };
+  }, []);
 
   const loadSurahData = async () => {
     try {
@@ -161,9 +173,10 @@ export default function QuranReaderScreen({ route, navigation }) {
   };
 
   const openReplayModal = () => {
+    const maxAyahs = ayahs.length;
     setReplaySegment({
       startAyah: '1',
-      endAyah: Math.min(5, ayahs.length).toString(),
+      endAyah: Math.min(5, maxAyahs).toString(),
       repetitions: '3'
     });
     setShowReplayModal(true);
@@ -174,76 +187,235 @@ export default function QuranReaderScreen({ route, navigation }) {
     const end = parseInt(replaySegment.endAyah);
     const reps = parseInt(replaySegment.repetitions);
 
-    if (!start || !end || !reps || start > end || start < 1 || end > ayahs.length) {
-      Alert.alert('Invalid Range', 'Please enter a valid ayah range');
+    console.log('🚀 Starting replay:', { start, end, reps, totalAyahs: ayahs.length });
+
+    // Basic validation
+    if (isNaN(start) || isNaN(end) || isNaN(reps) || start < 1 || end < 1 || reps < 1) {
+      Alert.alert('Invalid Input', 'Please enter valid numbers greater than 0');
       return;
     }
 
+    if (start > end) {
+      Alert.alert('Invalid Range', 'Start ayah must be less than or equal to end ayah');
+      return;
+    }
+
+    if (end > ayahs.length) {
+      Alert.alert('Invalid Range', `End ayah cannot be greater than ${ayahs.length}`);
+      return;
+    }
+
+    // Close modal first
     setShowReplayModal(false);
+    
+    // Set both state and ref
     setIsReplaying(true);
+    isReplayingRef.current = true;
+    
     setReplayProgress({
       current: 0,
       total: reps,
       currentAyah: 0,
       totalAyahs: end - start + 1
     });
-
-    await playSegmentSequence(start, end, reps);
+    
+    console.log('📱 State set, calling playSegmentSequence...');
+    
+    // Start the sequence
+    playSegmentSequence(start, end, reps);
   };
 
   const playSegmentSequence = async (startAyah, endAyah, repetitions) => {
+    console.log('🎵 playSegmentSequence called with:', { startAyah, endAyah, repetitions });
+    
     try {
       for (let rep = 1; rep <= repetitions; rep++) {
-        if (!isReplaying) break; // Check if user stopped
-
-        setReplayProgress(prev => ({ ...prev, current: rep }));
+        // Check if stopped
+        if (!isReplayingRef.current) {
+          console.log('🛑 Replay stopped by user - exiting repetition loop');
+          break;
+        }
+        
+        console.log(`🔄 Starting repetition ${rep}/${repetitions}`);
+        
+        setReplayProgress(prev => ({ 
+          ...prev, 
+          current: rep,
+          currentAyah: 0
+        }));
 
         for (let ayahNum = startAyah; ayahNum <= endAyah; ayahNum++) {
-          if (!isReplaying) break; // Check if user stopped
-
-          setReplayProgress(prev => ({ ...prev, currentAyah: ayahNum - startAyah + 1 }));
+          // Check if stopped before each ayah
+          if (!isReplayingRef.current) {
+            console.log('🛑 Replay stopped by user - exiting ayah loop');
+            break;
+          }
+          
+          console.log(`🎯 Processing ayah ${ayahNum}`);
+          
+          setReplayProgress(prev => ({ 
+            ...prev, 
+            currentAyah: ayahNum - startAyah + 1 
+          }));
 
           const audioUrl = ayahAudioUrls[ayahNum];
-          if (audioUrl) {
-            setPlayingAyah({ surahId: surahData?.id || surahId, ayahNumber: ayahNum });
-            
-            await AudioService.stopAudio();
-            const success = await AudioService.playAyahFromUrl(audioUrl);
-            
-            if (success) {
-              // Wait for audio to finish playing
-              await new Promise((resolve) => {
-                const checkStatus = setInterval(() => {
-                  const status = AudioService.getPlaybackStatus();
-                  if (!status.isPlaying && !status.hasSound) {
-                    clearInterval(checkStatus);
-                    resolve();
-                  }
-                }, 100);
-              });
-              
-              // Small pause between ayahs
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
+          console.log(`🔊 Audio URL for ayah ${ayahNum}:`, audioUrl ? 'EXISTS' : 'MISSING');
+          
+          if (!audioUrl) {
+            console.warn(`❌ No audio URL for ayah ${ayahNum} - skipping`);
+            await delayWithStopCheck(2000);
+            continue;
           }
+
+          // Stop any current audio
+          console.log('🛑 Stopping previous audio...');
+          try {
+            await AudioService.stopAudio();
+          } catch (e) {
+            console.warn('⚠️ Error stopping audio:', e);
+          }
+
+          // Small delay with stop check
+          await delayWithStopCheck(300);
+          
+          // Check again before playing
+          if (!isReplayingRef.current) {
+            console.log('🛑 Replay stopped - not starting new audio');
+            break;
+          }
+
+          // Update UI
+          setPlayingAyah({ surahId: surahData?.id || surahId, ayahNumber: ayahNum });
+          
+          // Play the ayah
+          console.log(`▶️ Calling AudioService.playAyahFromUrl for ayah ${ayahNum}...`);
+          const success = await AudioService.playAyahFromUrl(audioUrl);
+          console.log(`🎵 AudioService.playAyahFromUrl returned:`, success);
+          
+          if (success) {
+            console.log(`⏳ Waiting for ayah ${ayahNum} to finish...`);
+            await waitWithStopCheck(5000);
+            console.log(`✅ Done waiting for ayah ${ayahNum}`);
+          } else {
+            console.error(`❌ AudioService failed for ayah ${ayahNum}`);
+            await delayWithStopCheck(3000);
+          }
+          
+          // Pause between ayahs (with stop check)
+          if (ayahNum < endAyah && isReplayingRef.current) {
+            console.log(`💤 Pausing between ayahs...`);
+            await delayWithStopCheck(1000);
+          }
+        }
+        
+        // Pause between repetitions (with stop check)
+        if (rep < repetitions && isReplayingRef.current) {
+          console.log(`🔄 Pausing between repetitions...`);
+          await delayWithStopCheck(2000);
         }
       }
 
-      // Replay completed
+      console.log('🎉 All repetitions completed');
+      
+    } catch (error) {
+      console.error('💥 Error in playSegmentSequence:', error);
+    } finally {
+      // Always cleanup
+      console.log('🧹 Cleaning up...');
+      const wasStoppedByUser = !isReplayingRef.current;
+      
+      isReplayingRef.current = false;
       setIsReplaying(false);
       setPlayingAyah(null);
       setReplayProgress({ current: 0, total: 0, currentAyah: 0, totalAyahs: 0 });
-    } catch (error) {
-      console.error('Replay error:', error);
-      stopReplaySegment();
+      
+      // Stop audio
+      try {
+        await AudioService.stopAudio();
+      } catch (e) {
+        console.warn('⚠️ Error stopping audio in cleanup:', e);
+      }
+      
+      if (!wasStoppedByUser) {
+        Alert.alert('✅ Replay Complete', 'Segment replay finished!');
+      } else {
+        console.log('🛑 Replay was stopped by user');
+      }
     }
   };
 
   const stopReplaySegment = async () => {
+    console.log('🛑 STOP BUTTON CLICKED');
+    
+    // Immediately set ref to false to stop all loops
+    isReplayingRef.current = false;
+    
+    // Update state
     setIsReplaying(false);
     setPlayingAyah(null);
     setReplayProgress({ current: 0, total: 0, currentAyah: 0, totalAyahs: 0 });
-    await AudioService.stopAudio();
+    
+    // Force stop audio
+    try {
+      await AudioService.stopAudio();
+      console.log('🛑 Audio force stopped');
+    } catch (error) {
+      console.warn('⚠️ Error force stopping audio:', error);
+    }
+    
+    Alert.alert('🛑 Stopped', 'Replay has been stopped');
+  };
+
+  // Helper function to wait with stop checking
+  const delayWithStopCheck = (ms) => {
+    return new Promise((resolve) => {
+      const checkInterval = 100;
+      let elapsed = 0;
+      
+      const intervalId = setInterval(() => {
+        elapsed += checkInterval;
+        
+        if (!isReplayingRef.current || elapsed >= ms) {
+          clearInterval(intervalId);
+          resolve();
+        }
+      }, checkInterval);
+    });
+  };
+
+  // Helper function to wait for audio with stop checking
+  const waitWithStopCheck = (ms) => {
+    return new Promise((resolve) => {
+      const checkInterval = 200;
+      let elapsed = 0;
+      
+      const intervalId = setInterval(() => {
+        elapsed += checkInterval;
+        
+        // Check if stopped
+        if (!isReplayingRef.current) {
+          console.log('🛑 Wait interrupted by stop');
+          clearInterval(intervalId);
+          resolve();
+          return;
+        }
+        
+        // Check if time elapsed
+        if (elapsed >= ms) {
+          clearInterval(intervalId);
+          resolve();
+          return;
+        }
+        
+        // Could also check audio status here if needed
+        const status = AudioService.getPlaybackStatus();
+        if (!status.isPlaying && elapsed > 2000) {
+          console.log('🎵 Audio finished early');
+          clearInterval(intervalId);
+          resolve();
+        }
+      }, checkInterval);
+    });
   };
 
   const cleanTranslation = (text) => {
@@ -385,7 +557,7 @@ export default function QuranReaderScreen({ route, navigation }) {
             ListHeaderComponent={BasmalaComponent}
             contentContainerStyle={[
               styles.listContent,
-              { paddingBottom: isReplaying ? 100 : 30 } // Extra padding when replay is active
+              { paddingBottom: isReplaying ? 100 : 30 }
             ]}
             showsVerticalScrollIndicator={false}
           />
@@ -531,7 +703,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    fontFamily: 'Amiri_400Regular',
     marginBottom: 15,
   },
   headerControls: {
@@ -580,11 +751,12 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
   },
   basmalaText: {
-    fontSize: 30,
+    fontSize: 26,
     color: '#004d24',
-    fontFamily: 'Amiri_400Regular',
     textAlign: 'center',
-    lineHeight: 50,
+    lineHeight: 45,
+    letterSpacing: 1,
+    paddingVertical: 10,
   },
   ayahContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -629,16 +801,17 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   arabicText: {
-    fontSize: 32,
-    lineHeight: 60,
+    fontSize: 28,
+    lineHeight: 50,
     textAlign: 'right',
     color: '#2c3e50',
-    fontFamily: 'Amiri_400Regular',
     marginBottom: 25,
     marginTop: 15,
-    paddingTop: 10,
-    paddingBottom: 10,
-    paddingHorizontal: 5,
+    paddingTop: 15,
+    paddingBottom: 15,
+    paddingHorizontal: 10,
+    letterSpacing: 1,
+    textAlignVertical: 'center',
   },
   translationText: {
     fontSize: 16,

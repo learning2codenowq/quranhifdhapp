@@ -237,7 +237,6 @@ const styles = StyleSheet.create({
   surahHeader: {
     fontSize: 22,
     color: '#004d24',
-    fontFamily: 'Amiri_400Regular',
     textAlign: 'center',
     marginBottom: 30,
     paddingHorizontal: 20,
@@ -251,7 +250,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 55,
     color: '#2c3e50',
-    fontFamily: 'Amiri_400Regular',
     textAlign: 'center',
     marginBottom: 15,
     paddingHorizontal: 10,

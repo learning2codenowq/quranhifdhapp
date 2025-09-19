@@ -25,6 +25,16 @@ export default function SurahListScreen({ navigation }) {
     loadMemorizedStats();
   }, []);
 
+  // Add focus listener to reload progress when returning from QuranReader
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      console.log('SurahList focused - reloading progress');
+      loadMemorizedStats(); // Reload only the progress stats, not the full surah list
+    });
+    
+    return unsubscribe;
+  }, [navigation]);
+
   const loadSurahs = async () => {
     try {
       setLoading(true);
@@ -52,6 +62,7 @@ export default function SurahListScreen({ navigation }) {
         });
       }
       
+      console.log('Updated memorized stats:', stats);
       setMemorizedStats(stats);
     } catch (error) {
       console.error('Error loading memorized stats:', error);
@@ -283,7 +294,6 @@ const styles = StyleSheet.create({
   surahArabicName: {
     fontSize: 16,
     color: '#7f8c8d',
-    fontFamily: 'Amiri_400Regular',
   },
   surahMeta: {
     alignItems: 'flex-end',

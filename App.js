@@ -13,49 +13,33 @@ import ErrorBoundary from './src/components/ErrorBoundary';
 import SurahListScreen from './src/screens/SurahListScreen';
 import ReadingScreen from './src/screens/ReadingScreen';
 import BottomNavigation from './src/components/BottomNavigation';
-import { useFonts, Amiri_400Regular, Amiri_700Bold } from '@expo-google-fonts/amiri';
-import * as SplashScreen from 'expo-splash-screen';
 
 const Stack = createStackNavigator();
 
 export default function App() {
-  const [fontsLoaded] = useFonts({
-    Amiri_400Regular,
-    Amiri_700Bold,
-  });
-  
-  const [currentRoute, setCurrentRoute] = React.useState('Dashboard');
-  const [showBottomNav, setShowBottomNav] = React.useState(true);
+  const [currentRoute, setCurrentRoute] = React.useState('Onboarding');
+  const [showBottomNav, setShowBottomNav] = React.useState(false);
   const navigationRef = React.useRef();
-
-  useEffect(() => {
-    async function prepare() {
-      await SplashScreen.preventAutoHideAsync();
-    }
-    prepare();
-  }, []);
-
-  useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded]);
 
   const onStateChange = (state) => {
     if (state) {
       const routeName = state.routes[state.index].name;
+      console.log('Navigation changed to:', routeName);
       setCurrentRoute(routeName);
       
       // Hide bottom nav on certain screens
       const hideNavScreens = [
-        'Onboarding', 
+        'Onboarding',
         'SurahList', 
         'QuranReader', 
         'Analytics', 
         'Achievements',
         'TikrarActivity'
       ];
-      setShowBottomNav(!hideNavScreens.includes(routeName));
+      
+      const shouldHideNav = hideNavScreens.includes(routeName);
+      console.log('Should hide nav:', shouldHideNav, 'for route:', routeName);
+      setShowBottomNav(!shouldHideNav);
     }
   };
 
@@ -65,15 +49,14 @@ export default function App() {
     }
   };
 
-  if (!fontsLoaded) {
-    return null;
-  }
-
   return (
     <ErrorBoundary>
       <View style={styles.container}>
         <NavigationContainer ref={navigationRef} onStateChange={onStateChange}>
-          <Stack.Navigator initialRouteName="Onboarding" screenOptions={{ headerShown: false }}>
+          <Stack.Navigator 
+            initialRouteName="Onboarding" 
+            screenOptions={{ headerShown: false }}
+          >
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
             <Stack.Screen name="Reading" component={ReadingScreen} />
