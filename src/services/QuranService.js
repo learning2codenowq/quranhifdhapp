@@ -1,0 +1,67 @@
+export class QuranService {
+  // Use your Cloudflare worker API endpoint
+  static BASE_URL = 'https://quran.shayanshehzadqureshi.workers.dev/';
+
+  static async getSurahWithTranslation(surahId) {
+    try {
+      // Use your /api/qf/verses endpoint
+      const response = await fetch(`${this.BASE_URL}/api/qf/verses?chapter=${surahId}&perPage=50`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.verses || !data.chapter) {
+        throw new Error('Invalid API response structure');
+      }
+
+      // Your API already returns properly structured data
+      const combinedAyahs = data.verses.map(verse => ({
+        verse_number: verse.number,
+        text: verse.text, // Already cleaned by your worker
+        translation: verse.translationHtml || '',
+        translationHtml: verse.translationHtml || '',
+        audioUrl: verse.audioUrl // This comes from your API
+      }));
+
+      return {
+        surah: {
+          id: data.chapter.id,
+          name: data.chapter.name_simple,
+          arabic_name: data.chapter.name_arabic,
+          total_ayahs: data.verses.length,
+          bismillah_pre: data.chapter.bismillah_pre
+        },
+        ayahs: combinedAyahs,
+        bismillah: data.bismillah // Your API returns this separately
+      };
+    } catch (error) {
+      console.error('Error fetching surah from worker API:', error);
+      throw error;
+    }
+  }
+
+  static async getAllSurahs() {
+    try {
+      const response = await fetch(`${this.BASE_URL}/api/qf/chapters`);
+      const data = await response.json();
+      
+      if (!data.chapters) {
+        throw new Error('Failed to fetch chapters list');
+      }
+
+      return data.chapters.map(chapter => ({
+        id: chapter.id,
+        name: chapter.name_simple,
+        arabic_name: chapter.name_arabic,
+        total_ayahs: chapter.verses_count || 0,
+        type: chapter.revelation_place || 'Unknown'
+      }));
+    } catch (error) {
+      console.error('Error fetching chapters:', error);
+      throw error;
+    }
+  }
+}

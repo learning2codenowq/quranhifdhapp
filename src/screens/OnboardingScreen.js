@@ -1,0 +1,429 @@
+import React, { useState } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Dimensions,
+  TextInput
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { StorageService } from '../services/StorageService';
+
+const { width, height } = Dimensions.get('window');
+
+const onboardingData = [
+  {
+    id: 1,
+    title: 'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
+    subtitle: 'You are not just opening an app',
+    description: 'You are stepping into the protection of Allah to carry His words in your heart',
+    showTargetSelection: false
+  },
+  {
+    id: 2,
+    title: 'Daily Target',
+    subtitle: 'How many ayahs per day?',
+    description: '',
+    showTargetSelection: true
+  },
+  {
+    id: 3,
+    title: 'Your Name',
+    subtitle: 'What should we call you?',
+    description: '',
+    showNameInput: true
+  }
+];
+
+export default function OnboardingScreen({ navigation }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedTarget, setSelectedTarget] = useState(10);
+  const [userName, setUserName] = useState('');
+  const [hoveredTarget, setHoveredTarget] = useState(null);
+
+  const targetOptions = [
+    { 
+      value: 5, 
+      label: '5', 
+      subtitle: 'ayahs/day',
+      completionDays: Math.ceil(6236 / 5),
+      completionDate: new Date(Date.now() + Math.ceil(6236 / 5) * 24 * 60 * 60 * 1000)
+    },
+    { 
+      value: 10, 
+      label: '10', 
+      subtitle: 'ayahs/day', 
+      recommended: true,
+      completionDays: Math.ceil(6236 / 10),
+      completionDate: new Date(Date.now() + Math.ceil(6236 / 10) * 24 * 60 * 60 * 1000)
+    },
+    { 
+      value: 15, 
+      label: '15', 
+      subtitle: 'ayahs/day',
+      completionDays: Math.ceil(6236 / 15),
+      completionDate: new Date(Date.now() + Math.ceil(6236 / 15) * 24 * 60 * 60 * 1000)
+    },
+    { 
+      value: 20, 
+      label: '20', 
+      subtitle: 'ayahs/day',
+      completionDays: Math.ceil(6236 / 20),
+      completionDate: new Date(Date.now() + Math.ceil(6236 / 20) * 24 * 60 * 60 * 1000)
+    }
+  ];
+
+  const handleNext = async () => {
+  if (currentIndex < onboardingData.length - 1) {
+    setCurrentIndex(currentIndex + 1);
+  } else {
+    // Complete onboarding - make sure name is properly saved
+    const finalUserName = userName.trim();
+    console.log('Saving user name:', finalUserName); // Debug log
+    
+    await StorageService.initializeState({
+      dailyGoal: selectedTarget,
+      userName: finalUserName || 'Student'
+    });
+    navigation.replace('Dashboard');
+  }
+};
+
+  const handleBack = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  const currentScreen = onboardingData[currentIndex];
+
+  const getWarningMessage = (target) => {
+    if (target >= 20) return "Most people quit high targets.";
+    return "";
+  };
+
+  return (
+    <SafeAreaProvider>
+      <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+          
+          <View style={styles.content}>
+            
+            <View style={styles.titleSection}>
+              <Text style={styles.title}>{currentScreen.title}</Text>
+              <Text style={styles.subtitle}>{currentScreen.subtitle}</Text>
+              {currentScreen.description && (
+                <Text style={styles.description}>{currentScreen.description}</Text>
+              )}
+            </View>
+
+            {currentScreen.showTargetSelection && (
+              <View style={styles.targetSection}>
+                <View style={styles.targetGrid}>
+                  {targetOptions.map((option) => (
+                    <View key={option.value} style={styles.targetItemContainer}>
+                      <TouchableOpacity
+                        style={[
+                          styles.targetButton,
+                          selectedTarget === option.value && styles.selectedTarget,
+                          option.recommended && styles.recommendedBorder
+                        ]}
+                        onPress={() => setSelectedTarget(option.value)}
+                        onPressIn={() => setHoveredTarget(option.value)}
+                        onPressOut={() => setHoveredTarget(null)}
+                      >
+                        <Text style={[
+                          styles.targetNumber,
+                          selectedTarget === option.value && styles.selectedTargetText
+                        ]}>
+                          {option.label}
+                        </Text>
+                        <Text style={[
+                          styles.targetLabel,
+                          selectedTarget === option.value && styles.selectedTargetText
+                        ]}>
+                          {option.subtitle}
+                        </Text>
+                        {option.recommended && (
+                          <Text style={styles.recommendedText}>Recommended</Text>
+                        )}
+                      </TouchableOpacity>
+                      
+                      {(hoveredTarget === option.value || selectedTarget === option.value) && 
+                       getWarningMessage(option.value) && (
+                        <View style={styles.warningContainer}>
+                          <Text style={styles.warningText}>
+                            ⚠️ {getWarningMessage(option.value)}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </View>
+
+                <View style={styles.estimateContainer}>
+                  <Text style={styles.estimateTitle}>Completion Estimate</Text>
+                  {selectedTarget && (
+                    <View style={styles.estimateDetails}>
+                      <Text style={styles.estimateText}>
+                        📅 {targetOptions.find(t => t.value === selectedTarget)?.completionDays} days
+                      </Text>
+                      <Text style={styles.estimateDate}>
+                        Expected completion: {targetOptions.find(t => t.value === selectedTarget)?.completionDate.toLocaleDateString()}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+
+            {currentScreen.showNameInput && (
+              <View style={styles.nameSection}>
+                <TextInput
+                  style={styles.nameInput}
+                  placeholder="Enter your name"
+                  placeholderTextColor="rgba(255, 255, 255, 0.6)"
+                  value={userName}
+                  onChangeText={setUserName}
+                />
+              </View>
+            )}
+
+          </View>
+
+          <View style={styles.bottomSection}>
+            
+            <View style={styles.indicatorContainer}>
+              {onboardingData.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.indicator,
+                    index === currentIndex && styles.activeIndicator
+                  ]}
+                />
+              ))}
+            </View>
+
+            <View style={styles.buttonContainer}>
+              {currentIndex > 0 && (
+                <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+                  <Text style={styles.backButtonText}>Back</Text>
+                </TouchableOpacity>
+              )}
+              
+              <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+                <Text style={styles.nextButtonText}>
+                  {currentIndex === onboardingData.length - 1 ? 'Start Journey' : 'Next'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+
+        </SafeAreaView>
+      </LinearGradient>
+    </SafeAreaProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 30,
+    justifyContent: 'center',
+  },
+  titleSection: {
+    alignItems: 'center',
+    marginBottom: 50,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#d4af37',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontFamily: 'Amiri_400Regular',
+  },
+  subtitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  description: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: 20,
+  },
+  targetSection: {
+    alignItems: 'center',
+  },
+  targetGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 15,
+    marginBottom: 30,
+  },
+  targetItemContainer: {
+    alignItems: 'center',
+    width: (width - 90) / 2,
+  },
+  targetButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    padding: 20,
+    width: '100%',
+    alignItems: 'center',
+    minHeight: 100,
+    justifyContent: 'center',
+  },
+  recommendedBorder: {
+    borderColor: '#d4af37',
+  },
+  selectedTarget: {
+    backgroundColor: '#d4af37',
+    borderColor: '#d4af37',
+  },
+  targetNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 5,
+  },
+  targetLabel: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  selectedTargetText: {
+    color: 'white',
+  },
+  recommendedText: {
+    fontSize: 12,
+    color: '#d4af37',
+    fontWeight: '600',
+    marginTop: 5,
+  },
+  warningContainer: {
+    marginTop: 10,
+    backgroundColor: 'rgba(255, 193, 7, 0.2)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  warningText: {
+    fontSize: 12,
+    color: '#ffc107',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  estimateContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 15,
+    padding: 15,
+    marginTop: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#d4af37',
+  },
+  estimateTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#d4af37',
+    marginBottom: 8,
+  },
+  estimateDetails: {
+    alignItems: 'center',
+  },
+  estimateText: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  estimateDate: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  nameSection: {
+    alignItems: 'center',
+  },
+  nameInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    width: '80%',
+    fontSize: 16,
+    color: 'white',
+    textAlign: 'center',
+  },
+  bottomSection: {
+    paddingHorizontal: 30,
+    paddingBottom: 30,
+    alignItems: 'center',
+  },
+  indicatorContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 30,
+    gap: 8,
+  },
+  indicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  activeIndicator: {
+    backgroundColor: '#d4af37',
+    width: 30,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    gap: 20,
+  },
+  backButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '500',
+  },
+  nextButton: {
+    backgroundColor: '#d4af37',
+    borderRadius: 25,
+    paddingVertical: 15,
+    paddingHorizontal: 40,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  nextButtonText: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '600',
+  },
+});
