@@ -28,7 +28,6 @@ export class QuranService {
           id: data.chapter.id,
           name: data.chapter.name_simple,
           arabic_name: data.chapter.name_arabic,
-          // Use verses_count from API, fall back to actual verses length
           total_ayahs: data.chapter.verses_count || data.chapter.total_ayahs || data.verses.length,
           bismillah_pre: data.chapter.bismillah_pre
         },
@@ -54,12 +53,49 @@ export class QuranService {
         id: chapter.id,
         name: chapter.name_simple,
         arabic_name: chapter.name_arabic,
-        // Make sure to use the verses_count from API
         total_ayahs: chapter.verses_count || chapter.total_ayahs || 0,
         type: chapter.revelation_place || 'Unknown'
       }));
     } catch (error) {
       console.error('Error fetching chapters:', error);
+      throw error;
+    }
+  }
+
+  // NEW: Get page for reading
+  static async getPageData(pageNumber) {
+    try {
+      const response = await fetch(`${this.BASE_URL}/api/qf/page?pageNumber=${pageNumber}&textFormat=uthmani`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.verses || !data.page) {
+        throw new Error('Invalid API response structure');
+      }
+
+      return {
+        page: {
+          number: data.page.number,
+          total_pages: data.page.total_pages,
+          juz_number: data.page.juz_number,
+          hizb_number: data.page.hizb_number
+        },
+        verses: data.verses.map(verse => ({
+          key: verse.key,
+          number: verse.number,
+          text: verse.text,
+          translation: verse.translationHtml || '',
+          juz_number: verse.juz_number,
+          page_number: verse.page_number,
+          hizb_number: verse.hizb_number
+        }))
+      };
+    } catch (error) {
+      console.error('Error fetching page from worker API:', error);
       throw error;
     }
   }

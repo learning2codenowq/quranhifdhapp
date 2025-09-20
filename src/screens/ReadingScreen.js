@@ -1,72 +1,121 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
-  ScrollView, 
   TouchableOpacity, 
   ActivityIndicator,
-  Dimensions,
-  Alert
+  Alert,
+  FlatList,
+  Dimensions
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { QuranService } from '../services/QuranService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
 export default function ReadingScreen() {
+  const [isReading, setIsReading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageData, setPageData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [pages, setPages] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [lastReadPage, setLastReadPage] = useState(1);
+  const flatListRef = useRef(null);
 
   useEffect(() => {
-    loadPage(currentPage);
-  }, [currentPage]);
+    loadLastReadPage();
+  }, []);
 
-  const loadPage = async (pageNumber) => {
+  const loadLastReadPage = async () => {
     try {
-      setLoading(true);
-      
-      // TODO: Replace with your actual API endpoint for page data
-      // const response = await fetch(`YOUR_API_ENDPOINT/page/${pageNumber}`);
-      // const data = await response.json();
-      
-      // Mock data for now - replace with actual API call
-      const mockPageData = {
-        pageNumber: pageNumber,
-        lines: [
-          'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
-          'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ',
-          'الرَّحْمَنِ الرَّحِيمِ',
-          'مَالِكِ يَوْمِ الدِّينِ',
-          'إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ',
-          'اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ',
-          'صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ'
-        ].concat(Array(8).fill('Mock Arabic text for page content...')),
-        surahInfo: pageNumber === 1 ? 'سُورَةُ الْفَاتِحَةِ' : null
-      };
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setPageData(mockPageData);
+      const savedPage = await AsyncStorage.getItem('lastReadPage');
+      if (savedPage) {
+        setLastReadPage(parseInt(savedPage));
+        setCurrentPage(parseInt(savedPage));
+      }
     } catch (error) {
-      console.error('Error loading page:', error);
-      Alert.alert('Error', 'Failed to load page. Please try again.');
+      console.error('Error loading last read page:', error);
+    }
+  };
+
+  const saveLastReadPage = async (pageNumber) => {
+    try {
+      await AsyncStorage.setItem('lastReadPage', pageNumber.toString());
+    } catch (error) {
+      console.error('Error saving last read page:', error);
+    }
+  };
+
+  const startReading = async () => {
+    setIsReading(true);
+    await loadPagesAround(lastReadPage);
+    
+    // Scroll to the last read page after a short delay
+    setTimeout(() => {
+      if (flatListRef.current) {
+        flatListRef.current.scrollToIndex({
+          index: lastReadPage - 1,
+          animated: false
+        });
+      }
+    }, 100);
+  };
+
+  const loadPagesAround = async (centerPage) => {
+    const pagesToLoad = [];
+    const range = 5; // Load 5 pages before and after
+    
+    for (let i = Math.max(1, centerPage - range); i <= Math.min(604, centerPage + range); i++) {
+      if (!pages[i]) {
+        pagesToLoad.push(i);
+      }
+    }
+
+    if (pagesToLoad.length === 0) return;
+
+    setLoading(true);
+    
+    try {
+      const loadPromises = pagesToLoad.map(async (pageNum) => {
+        try {
+          const data = await QuranService.getPageData(pageNum);
+          return { pageNum, data };
+        } catch (error) {
+          console.error(`Error loading page ${pageNum}:`, error);
+          return { pageNum, data: null };
+        }
+      });
+
+      const results = await Promise.all(loadPromises);
+      
+      const newPages = { ...pages };
+      results.forEach(({ pageNum, data }) => {
+        if (data) {
+          newPages[pageNum] = data;
+        }
+      });
+      
+      setPages(newPages);
+    } catch (error) {
+      console.error('Error loading pages:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(prev => prev - 1);
-    }
-  };
-
-  const goToNextPage = () => {
-    if (currentPage < 604) {
-      setCurrentPage(prev => prev + 1);
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    saveLastReadPage(pageNumber);
+    
+    // Load more pages if we're getting close to the edge
+    const loadedPages = Object.keys(pages).map(Number);
+    const minLoaded = Math.min(...loadedPages);
+    const maxLoaded = Math.max(...loadedPages);
+    
+    if (pageNumber <= minLoaded + 2 || pageNumber >= maxLoaded - 2) {
+      loadPagesAround(pageNumber);
     }
   };
 
@@ -78,10 +127,18 @@ export default function ReadingScreen() {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Go',
-          onPress: (pageNum) => {
+          onPress: async (pageNum) => {
             const num = parseInt(pageNum);
             if (num >= 1 && num <= 604) {
               setCurrentPage(num);
+              await loadPagesAround(num);
+              
+              if (flatListRef.current) {
+                flatListRef.current.scrollToIndex({
+                  index: num - 1,
+                  animated: true
+                });
+              }
             } else {
               Alert.alert('Invalid Page', 'Please enter a page number between 1 and 604');
             }
@@ -93,20 +150,108 @@ export default function ReadingScreen() {
     );
   };
 
-  if (loading) {
+  const stopReading = () => {
+    setIsReading(false);
+    setPages({});
+    setCurrentPage(lastReadPage);
+  };
+
+  const navigateToPage = (direction) => {
+    const newPage = direction === 'next' ? 
+      Math.min(604, currentPage + 1) : 
+      Math.max(1, currentPage - 1);
+    
+    if (newPage !== currentPage && flatListRef.current) {
+      flatListRef.current.scrollToIndex({
+        index: newPage - 1,
+        animated: true
+      });
+    }
+  };
+
+  const renderPage = ({ item: pageNumber }) => {
+    const pageData = pages[pageNumber];
+    
+    if (!pageData) {
+      return (
+        <View style={[styles.pageContainer, { width }]}>
+          <View style={styles.loadingPageContainer}>
+            <ActivityIndicator size="large" color="#d4af37" />
+            <Text style={styles.loadingPageText}>Loading Page {pageNumber}...</Text>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={[styles.pageContainer, { width }]}>
+        <View style={styles.pageContent}>
+          {pageData.page && (
+            <View style={styles.pageHeader}>
+              <Text style={styles.pageInfo}>
+                Page {pageData.page.number} • Juz {pageData.page.juz_number}
+              </Text>
+            </View>
+          )}
+          
+          <View style={styles.versesContainer}>
+            {pageData.verses?.map((verse, index) => (
+              <Text key={verse.key || index} style={styles.arabicText}>
+                {verse.text}
+                {verse.number && (
+                  <Text style={styles.verseNumber}> ﴿{verse.number}﴾ </Text>
+                )}
+              </Text>
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const onViewableItemsChanged = useRef(({ viewableItems }) => {
+    if (viewableItems.length > 0) {
+      const visiblePage = viewableItems[0].item;
+      handlePageChange(visiblePage);
+    }
+  }).current;
+
+  if (!isReading) {
     return (
       <SafeAreaProvider>
         <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
           <SafeAreaView style={styles.safeArea}>
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#d4af37" />
-              <Text style={styles.loadingText}>Loading Page {currentPage}...</Text>
+            <View style={styles.welcomeContainer}>
+              <Text style={styles.welcomeTitle}>Quran Reading</Text>
+              <Text style={styles.welcomeSubtitle}>Read the complete Quran page by page</Text>
+              
+              <View style={styles.disclaimerCard}>
+                <Text style={styles.disclaimerText}>
+                  📖 This is for casual reading only. Your memorization progress and statistics will not be affected.
+                </Text>
+              </View>
+
+              {lastReadPage > 1 && (
+                <View style={styles.continueCard}>
+                  <Text style={styles.continueText}>
+                    Continue from page {lastReadPage}
+                  </Text>
+                </View>
+              )}
+
+              <TouchableOpacity style={styles.startButton} onPress={startReading}>
+                <Text style={styles.startButtonText}>
+                  {lastReadPage > 1 ? 'Continue Reading' : 'Start Reading'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </SafeAreaView>
         </LinearGradient>
       </SafeAreaProvider>
     );
   }
+
+  const pageNumbers = Array.from({ length: 604 }, (_, i) => i + 1);
 
   return (
     <SafeAreaProvider>
@@ -115,40 +260,50 @@ export default function ReadingScreen() {
           
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Quran Reading</Text>
+            <TouchableOpacity onPress={stopReading}>
+              <Text style={styles.backText}>← Stop Reading</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.pageButton} onPress={goToPage}>
               <Text style={styles.pageButtonText}>Page {currentPage} of 604</Text>
             </TouchableOpacity>
           </View>
 
           {/* Page Content */}
-          <View style={styles.pageContainer}>
-            <ScrollView 
-              style={styles.pageScroll}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.pageContent}
-            >
-              {pageData?.surahInfo && (
-                <Text style={styles.surahHeader}>{pageData.surahInfo}</Text>
-              )}
-              
-              {pageData?.lines.map((line, index) => (
-                <Text key={index} style={styles.arabicLine}>
-                  {line}
-                </Text>
-              ))}
-            </ScrollView>
-          </View>
+          <FlatList
+            ref={flatListRef}
+            data={pageNumbers}
+            renderItem={renderPage}
+            keyExtractor={(item) => item.toString()}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={{
+              itemVisiblePercentThreshold: 50
+            }}
+            getItemLayout={(data, index) => ({
+              length: width,
+              offset: width * index,
+              index,
+            })}
+            initialScrollIndex={currentPage - 1}
+            onScrollToIndexFailed={(info) => {
+              const wait = new Promise(resolve => setTimeout(resolve, 500));
+              wait.then(() => {
+                flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+              });
+            }}
+          />
 
           {/* Navigation Controls */}
           <View style={styles.navigationContainer}>
             <TouchableOpacity 
-              style={[styles.navButton, currentPage <= 1 && styles.navButtonDisabled]}
-              onPress={goToPreviousPage}
-              disabled={currentPage <= 1}
+              style={[styles.navButton, currentPage >= 604 && styles.navButtonDisabled]}
+              onPress={() => navigateToPage('next')}
+              disabled={currentPage >= 604}
             >
-              <Text style={[styles.navButtonText, currentPage <= 1 && styles.navButtonTextDisabled]}>
-                ← Previous
+              <Text style={[styles.navButtonText, currentPage >= 604 && styles.navButtonTextDisabled]}>
+                Next →
               </Text>
             </TouchableOpacity>
 
@@ -157,12 +312,12 @@ export default function ReadingScreen() {
             </View>
 
             <TouchableOpacity 
-              style={[styles.navButton, currentPage >= 604 && styles.navButtonDisabled]}
-              onPress={goToNextPage}
-              disabled={currentPage >= 604}
+              style={[styles.navButton, currentPage <= 1 && styles.navButtonDisabled]}
+              onPress={() => navigateToPage('previous')}
+              disabled={currentPage <= 1}
             >
-              <Text style={[styles.navButtonText, currentPage >= 604 && styles.navButtonTextDisabled]}>
-                Next →
+              <Text style={[styles.navButtonText, currentPage <= 1 && styles.navButtonTextDisabled]}>
+                ← Previous
               </Text>
             </TouchableOpacity>
           </View>
@@ -180,15 +335,69 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  loadingContainer: {
+  welcomeContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 30,
   },
-  loadingText: {
+  welcomeTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
     color: 'white',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  welcomeSubtitle: {
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 40,
+    textAlign: 'center',
+  },
+  disclaimerCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.5)',
+  },
+  disclaimerText: {
     fontSize: 16,
-    marginTop: 10,
+    color: 'white',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  continueCard: {
+    backgroundColor: 'rgba(212, 175, 55, 0.2)',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#d4af37',
+  },
+  continueText: {
+    fontSize: 16,
+    color: '#d4af37',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  startButton: {
+    backgroundColor: '#d4af37',
+    borderRadius: 25,
+    paddingVertical: 18,
+    paddingHorizontal: 50,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
+  startButtonText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -199,10 +408,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  backText: {
     color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
   },
   pageButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -218,7 +427,7 @@ const styles = StyleSheet.create({
   pageContainer: {
     flex: 1,
     backgroundColor: '#f8f9fa',
-    marginHorizontal: 10,
+    marginHorizontal: 5,
     marginVertical: 10,
     borderRadius: 15,
     elevation: 3,
@@ -227,33 +436,49 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  pageScroll: {
+  loadingPageContainer: {
     flex: 1,
-  },
-  pageContent: {
-    padding: 25,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  surahHeader: {
-    fontSize: 22,
-    color: '#004d24',
-    textAlign: 'center',
-    marginBottom: 30,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(212, 175, 55, 0.1)',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#d4af37',
+  loadingPageText: {
+    color: '#666',
+    fontSize: 16,
+    marginTop: 10,
   },
-  arabicLine: {
-    fontSize: 28,
-    lineHeight: 55,
-    color: '#2c3e50',
-    textAlign: 'center',
+  pageContent: {
+    flex: 1,
+    padding: 15,
+  },
+  pageHeader: {
+    alignItems: 'center',
     marginBottom: 15,
-    paddingHorizontal: 10,
-    width: '100%',
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  pageInfo: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '600',
+  },
+  versesContainer: {
+    flex: 1,
+    paddingHorizontal: 5,
+  },
+  arabicText: {
+  fontFamily: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
+  fontSize: 18,
+  lineHeight: 30,
+  color: '#2c3e50',
+  textAlign: 'right',
+  marginBottom: 6,
+  paddingHorizontal: 5,
+},
+  verseNumber: {
+    fontSize: 16,
+    color: '#d4af37',
+    fontWeight: 'bold',
   },
   navigationContainer: {
     flexDirection: 'row',

@@ -30,8 +30,8 @@ const onboardingData = [
   },
   {
     id: 3,
-    title: 'Your Name',
-    subtitle: 'What should we call you?',
+    title: 'As-salaamu alaykum, welcome!',
+    subtitle: 'السلام عليكم، مَرْحَبًا!',
     description: '',
     showNameInput: true
   }

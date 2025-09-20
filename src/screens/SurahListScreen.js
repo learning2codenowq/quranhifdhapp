@@ -292,8 +292,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   surahArabicName: {
-    fontSize: 16,
-    color: '#7f8c8d',
+  fontFamily: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
+  fontSize: 16,
+  color: '#7f8c8d',
   },
   surahMeta: {
     alignItems: 'flex-end',

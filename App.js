@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { View, StyleSheet } from 'react-native';
+import SplashScreen from './src/screens/SplashScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import QuranReaderScreen from './src/screens/QuranReaderScreen';
@@ -19,6 +20,7 @@ const Stack = createStackNavigator();
 export default function App() {
   const [currentRoute, setCurrentRoute] = React.useState('Onboarding');
   const [showBottomNav, setShowBottomNav] = React.useState(false);
+  const [showSplash, setShowSplash] = React.useState(true);
   const navigationRef = React.useRef();
 
   const onStateChange = (state) => {
@@ -48,6 +50,15 @@ export default function App() {
       navigationRef.current.navigate(routeName);
     }
   };
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
+
+  // Show splash screen first
+  if (showSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} />;
+  }
 
   return (
     <ErrorBoundary>

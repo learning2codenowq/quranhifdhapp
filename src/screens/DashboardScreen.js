@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StorageService } from '../services/StorageService';
 import { QuranUtils } from '../utils/QuranUtils';
 import TikrarPlan from '../components/TikrarPlan';
 import AchievementModal from '../components/AchievementModal';
+import AnimatedProgressRing from '../components/AnimatedProgressRing';
+import AnimatedCard from '../components/AnimatedCard';
+import AnimatedButton from '../components/AnimatedButton';
+import { DashboardSkeleton } from '../components/SkeletonLoader';
 
 const { width } = Dimensions.get('window');
 
 export default function DashboardScreen({ navigation }) {
   const [stats, setStats] = useState(null);
   const [state, setState] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [revisionPlan, setRevisionPlan] = useState(null);
   const [achievementModal, setAchievementModal] = useState({
     visible: false,
@@ -78,7 +83,18 @@ export default function DashboardScreen({ navigation }) {
       console.error('Error loading dashboard data:', error);
     }
   };
-
+  if (!stats) {
+  return (
+    <LinearGradient colors={['#2b9153', '#009c4a']} style={styles.container}>
+      <DashboardSkeleton />
+    </LinearGradient>
+  );
+}
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
   const handleCategoryPress = (categoryType) => {
     if (!revisionPlan) return;
     
@@ -117,39 +133,61 @@ export default function DashboardScreen({ navigation }) {
 
   return (
     <LinearGradient colors={['#2b9153', '#009c4a']} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+  contentContainerStyle={styles.scrollContent} 
+  showsVerticalScrollIndicator={false}
+  refreshControl={
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      colors={['#d4af37']}
+      tintColor="#d4af37"
+    />
+  }
+>
         
         <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <Text style={styles.greeting}>As-salamu alaykum {userName}</Text>
-          </View>
-          <Text style={styles.title}>Your Hifdh Journey</Text>
+  <View style={styles.headerContent}>
+  <View style={styles.greetingRow}>
+    <Text style={styles.greeting}>As-salamu alaykum,</Text>
+    <Text style={styles.userName}>{userName}</Text>
+  </View>
+  <Text style={styles.currentDate}>
+    {new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    })}
+  </Text>
+</View>
+  <Text style={styles.title}>Hifdh Journey</Text>
+</View>
+      {/* Current Streak */}
+      <View style={styles.streakSection}>
+        <View style={styles.streakCard}>
+          <Text style={styles.streakNumber}>{QuranUtils.computeStreak(state?.progress || {})}</Text>
+          <Text style={styles.streakLabel}>Day Streak</Text>
         </View>
+      </View>
 
-        {/* Progress Ring */}
-        <View style={styles.progressSection}>
-          <View style={styles.progressRingContainer}>
-            <View style={styles.progressRing}>
-              <View style={[
-                styles.progressFill,
-                { 
-                  width: `${Math.min(100, displayStats.percentComplete)}%`,
-                  backgroundColor: displayStats.percentComplete > 0 ? '#d4af37' : 'transparent'
-                }
-              ]} />
-              <View style={styles.progressContent}>
-                <Text style={styles.progressPercent}>
-                  {displayStats.percentComplete.toFixed(1)}%
-                </Text>
-                <Text style={styles.progressLabel}>Complete</Text>
-              </View>
-            </View>
-          </View>
-          <Text style={styles.progressStats}>
-            {displayStats.memorized} / {displayStats.total} ayahs
-          </Text>
-        </View>
-        
+        {/* Animated Progress Ring */}
+<View style={styles.progressSection}>
+  <AnimatedProgressRing 
+    percentage={displayStats.percentComplete} 
+    size={200} 
+    strokeWidth={8} 
+  />
+  <Text style={styles.progressStats}>
+    {displayStats.memorized} / {displayStats.total} ayahs
+  </Text>
+  </View>
+        <TouchableOpacity 
+          style={styles.memorizeButton}
+          onPress={() => navigation.navigate('SurahList')}
+        >
+          <Text style={styles.memorizeButtonText}>📖 Memorize the Quran</Text>
+        </TouchableOpacity>
         {/* Revision Plan */}
         {revisionPlan && (
           <TikrarPlan 
@@ -160,34 +198,26 @@ export default function DashboardScreen({ navigation }) {
         )}
 
         {/* Today's Progress */}
-        <View style={styles.todaySection}>
-          <Text style={styles.sectionTitle}>Today's Progress</Text>
-          <View style={styles.todayCard}>
-            <View style={styles.todayStats}>
-              <Text style={styles.todayNumber}>{todayProgress}</Text>
-              <Text style={styles.todayLabel}>ayahs memorized</Text>
-            </View>
-            <View style={styles.todayProgressWrapper}>
-              <View style={styles.todayProgressBarContainer}>
-                <View 
-                  style={[
-                    styles.todayProgressBarFill, 
-                    { width: `${Math.min(100, (todayProgress / displayStats.daily) * 100)}%` }
-                  ]} 
-                />
-              </View>
-              <Text style={styles.todayGoal}>Goal: {displayStats.daily}</Text>
-            </View>
-          </View>
-          
-          {/* Continue Reading Button */}
-          <TouchableOpacity 
-            style={styles.continueReadingButton}
-            onPress={() => navigation.navigate('SurahList')}
-          >
-            <Text style={styles.continueReadingButtonText}>Memorize the Quran</Text>
-          </TouchableOpacity>
-        </View>
+<View style={styles.todaySection}>
+  <Text style={styles.sectionTitle}>Today's Progress</Text>
+  <AnimatedCard style={styles.todayCard}>
+    <View style={styles.todayStats}>
+      <Text style={styles.todayNumber}>{todayProgress}</Text>
+      <Text style={styles.todayLabel}>ayahs memorized</Text>
+    </View>
+    <View style={styles.todayProgressWrapper}>
+      <View style={styles.todayProgressBarContainer}>
+        <View 
+          style={[
+            styles.todayProgressBarFill, 
+            { width: `${Math.min(100, (todayProgress / displayStats.daily) * 100)}%` }
+          ]} 
+        />
+      </View>
+      <Text style={styles.todayGoal}>Goal: {displayStats.daily}</Text>
+    </View>
+  </AnimatedCard>
+</View>
 
         {/* Enhanced Stats Grid */}
         <View style={styles.statsGrid}>
@@ -270,18 +300,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 30,
   },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 5,
-  },
-  greeting: {
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 5,
-  },
+headerContent: {
+  alignItems: 'center',
+  marginBottom: 10,
+},
+greetingRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 8,
+},
+greeting: {
+  fontSize: 18,
+  color: 'rgba(255, 255, 255, 0.8)',
+  marginRight: 8,
+},
+userName: {
+  fontSize: 18,
+  color: 'white',
+  fontWeight: '600',
+},
+currentDate: {
+  fontSize: 14,
+  color: 'rgba(255, 255, 255, 0.7)',
+  textAlign: 'center',
+  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+  borderRadius: 12,
+  overflow: 'hidden',
+},
   title: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -513,4 +560,55 @@ const styles = StyleSheet.create({
     color: '#d4af37',
     fontWeight: 'bold',
   },
+  currentDate: {
+  fontSize: 14,
+  color: 'rgba(255, 255, 255, 0.7)',
+  textAlign: 'center',
+  marginTop: 5,
+},
+streakValue: {
+  color: '#009c4a',
+},
+memorizeButton: {
+    backgroundColor: '#d4af37',
+    borderRadius: 25,
+    paddingVertical: 15,
+    marginBottom: 25,
+    marginHorizontal: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  memorizeButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  streakSection: {
+  alignItems: 'center',
+  marginBottom: 20,
+},
+streakCard: {
+  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  borderRadius: 20,
+  paddingHorizontal: 20,
+  paddingVertical: 12,
+  borderWidth: 1,
+  borderColor: 'rgba(255, 255, 255, 0.3)',
+},
+streakNumber: {
+  fontSize: 24,
+  fontWeight: 'bold',
+  color: '#d4af37',
+  textAlign: 'center',
+},
+streakLabel: {
+  fontSize: 14,
+  color: 'white',
+  textAlign: 'center',
+  marginTop: 2,
+},
 });
