@@ -17,22 +17,31 @@ export class StorageService {
     }
   }
   
-  static async updateTikrarProgress(categoryType, progress) {
+  static async updateRevisionProgress(categoryType, progress) {
     try {
       const state = await this.getState();
       if (!state) return false;
 
       const today = new Date().toISOString().split('T')[0];
       
-      if (!state.tikrarProgress) state.tikrarProgress = {};
-      if (!state.tikrarProgress[today]) state.tikrarProgress[today] = {};
+      if (!state.revisionProgress) state.revisionProgress = {};
+      if (!state.revisionProgress[today]) state.revisionProgress[today] = {};
       
-      state.tikrarProgress[today][categoryType] = progress;
+      // Map old category names to new ones
+      const categoryMap = {
+        'repetitionOfYesterday': 'revision',
+        'connection': 'revision', 
+        'revision': 'revision',
+        'newMemorization': 'newMemorization'
+      };
+      
+      const mappedCategory = categoryMap[categoryType] || categoryType;
+      state.revisionProgress[today][mappedCategory] = progress;
       
       const success = await this.saveState(state);
       return success ? state : false;
     } catch (error) {
-      ErrorHandler.handleStorageError(error, 'updating Tikrar progress');
+      ErrorHandler.handleStorageError(error, 'updating revision progress');
       return false;
     }
   }
@@ -53,7 +62,7 @@ export class StorageService {
       const initialState = {
         ayahProgress: {},
         progress: {},
-        tikrarProgress: {},
+        revisionProgress: {},
         earnedAchievements: [],
         settings: {
           dailyGoal: userSettings.dailyGoal || 10,

@@ -145,70 +145,9 @@ export class QuranUtils {
     return ayahs.sort((a, b) => a.surahId - b.surahId || a.ayahNumber - b.ayahNumber);
   }
 
-  static getConnectionAyahs(state, days = 30) {
-    const ayahs = [];
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    // Get ayahs from 2 days ago to 30 days ago (excluding today and yesterday)
-    for (let i = 2; i <= days; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateString = this.localISO(date);
-      const dayAyahs = this.getAyahsMemorizedOnDate(state, dateString);
-      ayahs.push(...dayAyahs);
-    }
-    
-    return ayahs;
-  }
-
-  static getRevisionForToday(state) {
-    if (!state?.ayahProgress) return [];
-    
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    // Get all ayahs older than 30 days
-    const oldAyahs = [];
-    Object.keys(state.ayahProgress).forEach(surahId => {
-      Object.keys(state.ayahProgress[surahId]).forEach(ayahNumber => {
-        const ayahData = state.ayahProgress[surahId][ayahNumber];
-        if (ayahData.memorized && ayahData.dateMemorized) {
-          const memDate = new Date(ayahData.dateMemorized + 'T00:00:00');
-          if (memDate < thirtyDaysAgo) {
-            oldAyahs.push({
-              surahId: parseInt(surahId),
-              ayahNumber: parseInt(ayahNumber),
-              dateMemorized: ayahData.dateMemorized
-            });
-          }
-        }
-      });
-    });
-    
-    // Sort by date memorized for consistent grouping
-    oldAyahs.sort((a, b) => a.dateMemorized.localeCompare(b.dateMemorized));
-    
-    if (oldAyahs.length === 0) return [];
-    
-    // 6-day rotation: Monday=0, Tuesday=1, ..., Saturday=5, Sunday=0
-    const dayOfWeek = today.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
-    const revisionDay = dayOfWeek === 0 ? 0 : dayOfWeek - 1; // Convert to 0=Monday, 5=Saturday
-    
-    // Divide ayahs into 6 groups
-    const groupSize = Math.ceil(oldAyahs.length / 6);
-    const startIndex = revisionDay * groupSize;
-    const endIndex = Math.min(startIndex + groupSize, oldAyahs.length);
-    
-    return oldAyahs.slice(startIndex, endIndex);
-  }
-
-  static getTikrarPlan(state) {
+  // NEW SIMPLE 7-DAY ROLLING REVISION SYSTEM
+  static getRevisionPlan(state) {
     const today = this.localISO();
-    const yesterday = this.localISO(new Date(Date.now() - 24 * 60 * 60 * 1000));
-    
     const dailyGoal = state.settings?.dailyGoal || 10;
     const todayProgress = state?.progress?.[today] || 0;
     
@@ -219,59 +158,278 @@ export class QuranUtils {
       description: `Memorize ${dailyGoal} new ayahs today`
     };
     
-    // 2. REPETITION OF YESTERDAY - yesterday's ayahs × 5
-    const yesterdayAyahs = this.getAyahsMemorizedOnDate(state, yesterday);
-    const shouldShowYesterday = yesterdayAyahs.length > 0;
+    // 2. SIMPLE REVISION - 7-day rolling window
+    const revisionData = this.getSimpleRevisionData(state);
     
-    const repetitionOfYesterday = {
-      ayahs: yesterdayAyahs,
-      repetitionsRequired: 5,
-      completed: shouldShowYesterday ? 0 : 1, // Auto-complete if no yesterday ayahs
-      totalRecitations: shouldShowYesterday ? yesterdayAyahs.length * 5 : 1,
-      description: shouldShowYesterday 
-        ? `Repeat yesterday's ${yesterdayAyahs.length} ayahs 5 times each (${yesterdayAyahs.length * 5} total recitations)`
-        : 'No ayahs memorized yesterday - Completed!',
-      active: shouldShowYesterday
-    };
-    
-    // 3. CONNECTION - last 30 days (excluding today and yesterday)
-    const connectionAyahs = this.getConnectionAyahs(state, 30);
-    const connection = {
-      ayahs: connectionAyahs,
-      completed: 0,
-      description: `Recite ${connectionAyahs.length} ayahs from last 30 days once each`
-    };
-    
-    // 4. REVISION - 6-day rotation of older ayahs (30+ days old)
-    const revisionAyahs = this.getRevisionForToday(state);
     const revision = {
-      ayahs: revisionAyahs,
+      target: revisionData.totalRecitations,
       completed: 0,
-      description: revisionAyahs.length > 0 
-        ? `Review ${revisionAyahs.length} older ayahs (6-day rotation)`
-        : 'No older ayahs for revision yet'
+      description: revisionData.description,
+      displayText: revisionData.displayText,
+      ayahRanges: revisionData.ayahRanges
     };
-    
-    const totalDailyLoad = dailyGoal + 
-      (shouldShowYesterday ? yesterdayAyahs.length * 5 : 0) + 
-      connectionAyahs.length + 
-      revisionAyahs.length;
     
     return {
       newMemorization,
-      repetitionOfYesterday,
-      connection,
       revision,
-      totalDailyLoad
+      totalDailyLoad: dailyGoal + revisionData.totalRecitations
     };
+  }
+
+  static getMemorizationHistory(state) {
+    const history = [];
+    
+    if (!state?.progress) return history;
+    
+    // Get all dates with progress, sorted chronologically
+    const dates = Object.keys(state.progress)
+      .filter(date => state.progress[date] > 0)
+      .sort();
+    
+    dates.forEach(date => {
+      const ayahsOnDate = this.getAyahsMemorizedOnDate(state, date);
+      if (ayahsOnDate.length > 0) {
+        history.push({
+          date,
+          ayahs: ayahsOnDate,
+          count: ayahsOnDate.length
+        });
+      }
+    });
+    
+    return history;
+  }
+
+  static getSimpleRevisionData(state) {
+    // Get memorization history by day
+    const memorizationHistory = this.getMemorizationHistory(state);
+    
+    if (memorizationHistory.length === 0) {
+      return {
+        totalRecitations: 0,
+        description: "No ayahs to revise yet",
+        displayText: "Start memorizing to begin revision tomorrow",
+        ayahRanges: []
+      };
+    }
+    
+    if (memorizationHistory.length === 1) {
+      return {
+        totalRecitations: 0,
+        description: "Come back tomorrow to start revision",
+        displayText: "You'll revise today's memorized ayahs tomorrow",
+        ayahRanges: []
+      };
+    }
+    
+    // From day 2 onwards: revise previous days (rolling 6-day window)
+    const dayNumber = memorizationHistory.length;
+    
+    // Determine which days to revise (previous 6 days max, excluding today)
+    let daysToRevise;
+    if (dayNumber <= 7) {
+      // Days 2-7: revise all previous days
+      daysToRevise = memorizationHistory.slice(0, -1); // All except today
+    } else {
+      // Day 8+: revise last 6 days (rolling window)
+      daysToRevise = memorizationHistory.slice(-7, -1); // Last 6 days (excluding today)
+    }
+    
+    return {
+      totalRecitations: 3, // Always 3 times total
+      description: `Revise previous ${daysToRevise.length} days (3 times total)`,
+      displayText: this.formatSimpleRevisionText(daysToRevise),
+      ayahRanges: daysToRevise
+    };
+  }
+
+  static groupConsecutiveAyahs(ayahs) {
+    if (ayahs.length === 0) return [];
+    
+    const grouped = [];
+    let currentGroup = null;
+    
+    ayahs.forEach(ayah => {
+      if (!currentGroup || 
+          currentGroup.surahId !== ayah.surahId || 
+          currentGroup.endAyah + 1 !== ayah.ayahNumber) {
+        // Start new group
+        currentGroup = {
+          surahId: ayah.surahId,
+          startAyah: ayah.ayahNumber,
+          endAyah: ayah.ayahNumber,
+          surahName: this.getSurahName(ayah.surahId)
+        };
+        grouped.push(currentGroup);
+      } else {
+        // Extend current group
+        currentGroup.endAyah = ayah.ayahNumber;
+      }
+    });
+    
+    return grouped;
+  }
+
+  static formatSimpleRevisionText(daysToRevise) {
+    if (daysToRevise.length === 0) return "";
+    
+    // Get all ayahs from the days to revise
+    const allAyahs = [];
+    daysToRevise.forEach(day => {
+      allAyahs.push(...day.ayahs);
+    });
+    
+    if (allAyahs.length === 0) return "";
+    
+    // Sort all ayahs by surah and ayah number
+    allAyahs.sort((a, b) => a.surahId - b.surahId || a.ayahNumber - b.ayahNumber);
+    
+    // Group consecutive ayahs by surah
+    const grouped = this.groupConsecutiveAyahs(allAyahs);
+    
+    // Format display text
+    const parts = grouped.map(group => {
+      if (group.startAyah === group.endAyah) {
+        return `${group.surahName} ${group.startAyah}`;
+      } else {
+        return `${group.surahName} ${group.startAyah}-${group.endAyah}`;
+      }
+    });
+    
+    return `${parts.join(' + ')} (3 times total)`;
+  }
+
+  static getSurahName(surahId) {
+    const surahNames = {
+      1: 'Al-Fatihah',
+      2: 'Al-Baqarah', 
+      3: 'Ali-Imran',
+      4: 'An-Nisa',
+      5: 'Al-Maidah',
+      6: 'Al-Anam',
+      7: 'Al-Araf',
+      8: 'Al-Anfal',
+      9: 'At-Tawbah',
+      10: 'Yunus',
+      11: 'Hud',
+      12: 'Yusuf',
+      13: 'Ar-Rad',
+      14: 'Ibrahim',
+      15: 'Al-Hijr',
+      16: 'An-Nahl',
+      17: 'Al-Isra',
+      18: 'Al-Kahf',
+      19: 'Maryam',
+      20: 'Ta-Ha',
+      21: 'Al-Anbiya',
+      22: 'Al-Hajj',
+      23: 'Al-Muminun',
+      24: 'An-Nur',
+      25: 'Al-Furqan',
+      26: 'Ash-Shuara',
+      27: 'An-Naml',
+      28: 'Al-Qasas',
+      29: 'Al-Ankabut',
+      30: 'Ar-Rum',
+      31: 'Luqman',
+      32: 'As-Sajdah',
+      33: 'Al-Ahzab',
+      34: 'Saba',
+      35: 'Fatir',
+      36: 'Ya-Sin',
+      37: 'As-Saffat',
+      38: 'Sad',
+      39: 'Az-Zumar',
+      40: 'Ghafir',
+      41: 'Fussilat',
+      42: 'Ash-Shura',
+      43: 'Az-Zukhruf',
+      44: 'Ad-Dukhan',
+      45: 'Al-Jathiyah',
+      46: 'Al-Ahqaf',
+      47: 'Muhammad',
+      48: 'Al-Fath',
+      49: 'Al-Hujurat',
+      50: 'Qaf',
+      51: 'Adh-Dhariyat',
+      52: 'At-Tur',
+      53: 'An-Najm',
+      54: 'Al-Qamar',
+      55: 'Ar-Rahman',
+      56: 'Al-Waqiah',
+      57: 'Al-Hadid',
+      58: 'Al-Mujadilah',
+      59: 'Al-Hashr',
+      60: 'Al-Mumtahanah',
+      61: 'As-Saff',
+      62: 'Al-Jumuah',
+      63: 'Al-Munafiqun',
+      64: 'At-Taghabun',
+      65: 'At-Talaq',
+      66: 'At-Tahrim',
+      67: 'Al-Mulk',
+      68: 'Al-Qalam',
+      69: 'Al-Haqqah',
+      70: 'Al-Maarij',
+      71: 'Nuh',
+      72: 'Al-Jinn',
+      73: 'Al-Muzzammil',
+      74: 'Al-Muddaththir',
+      75: 'Al-Qiyamah',
+      76: 'Al-Insan',
+      77: 'Al-Mursalat',
+      78: 'An-Naba',
+      79: 'An-Naziat',
+      80: 'Abasa',
+      81: 'At-Takwir',
+      82: 'Al-Infitar',
+      83: 'Al-Mutaffifin',
+      84: 'Al-Inshiqaq',
+      85: 'Al-Buruj',
+      86: 'At-Tariq',
+      87: 'Al-Ala',
+      88: 'Al-Ghashiyah',
+      89: 'Al-Fajr',
+      90: 'Al-Balad',
+      91: 'Ash-Shams',
+      92: 'Al-Layl',
+      93: 'Ad-Duha',
+      94: 'Ash-Sharh',
+      95: 'At-Tin',
+      96: 'Al-Alaq',
+      97: 'Al-Qadr',
+      98: 'Al-Bayyinah',
+      99: 'Az-Zalzalah',
+      100: 'Al-Adiyat',
+      101: 'Al-Qariah',
+      102: 'At-Takathur',
+      103: 'Al-Asr',
+      104: 'Al-Humazah',
+      105: 'Al-Fil',
+      106: 'Quraish',
+      107: 'Al-Maun',
+      108: 'Al-Kawthar',
+      109: 'Al-Kafirun',
+      110: 'An-Nasr',
+      111: 'Al-Masad',
+      112: 'Al-Ikhlas',
+      113: 'Al-Falaq',
+      114: 'An-Nas'
+    };
+    
+    return surahNames[surahId] || `Surah ${surahId}`;
   }
 
   static getTikrarProgress(state, date = null) {
     if (!date) date = this.localISO();
-    return state?.tikrarProgress?.[date] || {
-      repetitionOfYesterday: 0,
-      connection: 0,
-      revision: 0
+    
+    // Check both old and new progress formats for compatibility
+    const oldProgress = state?.tikrarProgress?.[date] || {};
+    const newProgress = state?.revisionProgress?.[date] || {};
+    
+    return {
+      newMemorization: newProgress.newMemorization || state?.progress?.[date] || 0,
+      revision: newProgress.revision || 0
     };
   }
 

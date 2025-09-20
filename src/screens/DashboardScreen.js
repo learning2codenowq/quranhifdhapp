@@ -11,7 +11,7 @@ const { width } = Dimensions.get('window');
 export default function DashboardScreen({ navigation }) {
   const [stats, setStats] = useState(null);
   const [state, setState] = useState(null);
-  const [tikrarPlan, setTikrarPlan] = useState(null);
+  const [revisionPlan, setRevisionPlan] = useState(null);
   const [achievementModal, setAchievementModal] = useState({
     visible: false,
     achievements: []
@@ -53,15 +53,15 @@ export default function DashboardScreen({ navigation }) {
       
       setState(updatedState);
       
-      // Compute stats and tikrar plan
+      // Compute stats and revision plan
       const computedStats = QuranUtils.computeStats(updatedState);
-      const todaysTikrar = QuranUtils.getTikrarPlan(updatedState);
+      const todaysRevision = QuranUtils.getRevisionPlan(updatedState);
       
       console.log('Computed stats:', computedStats);
-      console.log('Tikrar plan exists:', !!todaysTikrar);
+      console.log('Revision plan exists:', !!todaysRevision);
       
       setStats(computedStats);
-      setTikrarPlan(todaysTikrar);
+      setRevisionPlan(todaysRevision);
       
       // Count achievements
       const earnedCount = updatedState.earnedAchievements?.length || 0;
@@ -80,9 +80,9 @@ export default function DashboardScreen({ navigation }) {
   };
 
   const handleCategoryPress = (categoryType) => {
-    if (!tikrarPlan) return;
+    if (!revisionPlan) return;
     
-    const categoryData = tikrarPlan[categoryType];
+    const categoryData = revisionPlan[categoryType];
     navigation.navigate('TikrarActivity', {
       categoryType,
       categoryData
@@ -149,6 +149,15 @@ export default function DashboardScreen({ navigation }) {
             {displayStats.memorized} / {displayStats.total} ayahs
           </Text>
         </View>
+        
+        {/* Revision Plan */}
+        {revisionPlan && (
+          <TikrarPlan 
+            revisionPlan={revisionPlan}
+            state={state}
+            onCategoryPress={handleCategoryPress}
+          />
+        )}
 
         {/* Today's Progress */}
         <View style={styles.todaySection}>
@@ -203,15 +212,6 @@ export default function DashboardScreen({ navigation }) {
             <Text style={styles.statSubtitle}>{hafidhhETA.getFullYear()}</Text>
           </View>
         </View>
-
-        {/* Tikrar Plan */}
-        {tikrarPlan && (
-          <TikrarPlan 
-            tikrarPlan={tikrarPlan}
-            state={state}
-            onCategoryPress={handleCategoryPress}
-          />
-        )}
 
         {/* Analytics Button */}
         <TouchableOpacity 

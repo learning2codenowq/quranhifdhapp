@@ -2,8 +2,10 @@ import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { QuranUtils } from '../utils/QuranUtils';
 
-const CategoryCard = memo(({ title, data, type, color = '#004d24', currentProgress, target, isCompleted, onPress, isActive = true }) => {
+const CategoryCard = memo(({ title, data, type, color = '#004d24', currentProgress, target, isCompleted, onPress, isActive = true, displayText }) => {
   const progressPercent = target > 0 ? (currentProgress / target) * 100 : 0;
+  const hasRevision = type === 'revision' && target > 0;
+  const noRevisionYet = type === 'revision' && target === 0;
 
   return (
     <TouchableOpacity 
@@ -11,18 +13,18 @@ const CategoryCard = memo(({ title, data, type, color = '#004d24', currentProgre
         styles.categoryCard, 
         { borderLeftColor: color },
         isCompleted && styles.completedCard,
-        !isActive && styles.inactiveCard
+        noRevisionYet && styles.inactiveCard
       ]}
-      onPress={() => isActive && onPress(type)}
-      disabled={!isActive}
+      onPress={() => onPress(type)}
+      disabled={false} // Always allow clicking to show details
     >
       <View style={styles.categoryHeader}>
-        <Text style={[styles.categoryTitle, { color: isActive ? color : '#999' }]}>
+        <Text style={[styles.categoryTitle, { color: noRevisionYet ? '#999' : color }]}>
           {title}
         </Text>
         <View style={styles.progressBadge}>
-          {!isActive ? (
-            <Text style={styles.inactiveBadge}>Inactive</Text>
+          {noRevisionYet ? (
+            <Text style={styles.inactiveBadge}>Tomorrow</Text>
           ) : isCompleted ? (
             <Text style={styles.completedBadge}>✓ Done</Text>
           ) : (
@@ -33,11 +35,25 @@ const CategoryCard = memo(({ title, data, type, color = '#004d24', currentProgre
         </View>
       </View>
       
-      <Text style={[styles.categoryDescription, !isActive && styles.inactiveText]}>
+      <Text style={[styles.categoryDescription, noRevisionYet && styles.inactiveText]}>
         {data.description}
       </Text>
       
-      {isActive && (
+      {/* Show specific ayahs for revision */}
+      {type === 'revision' && displayText && hasRevision && (
+        <Text style={styles.revisionDetails}>
+          📖 Today: {displayText}
+        </Text>
+      )}
+      
+      {/* Show encouragement for no revision */}
+      {type === 'revision' && noRevisionYet && (
+        <Text style={styles.encouragementText}>
+          🌟 {displayText}
+        </Text>
+      )}
+      
+      {hasRevision && (
         <View style={styles.progressSection}>
           <View style={styles.progressBar}>
             <View 
@@ -59,42 +75,33 @@ const CategoryCard = memo(({ title, data, type, color = '#004d24', currentProgre
   );
 });
 
-const TikrarPlan = memo(({ tikrarPlan, state, onCategoryPress }) => {
-  if (!tikrarPlan || !state) {
-    console.log('TikrarPlan: Missing data', { tikrarPlan: !!tikrarPlan, state: !!state });
+const TikrarPlan = memo(({ revisionPlan, state, onCategoryPress }) => {
+  if (!revisionPlan || !state) {
+    console.log('RevisionPlan: Missing data', { revisionPlan: !!revisionPlan, state: !!state });
     return null;
   }
 
-  // Get today's tikrar progress
+  // Get today's progress
   const todayProgress = QuranUtils.getTikrarProgress(state);
 
   const showHelp = () => {
     Alert.alert(
-      'Tikrar Method',
-      'Repetition of Yesterday: Repeat each ayah you memorized yesterday 5 times to strengthen retention.\n\nConnection: Recite all ayahs memorized in the last 30 days once to maintain connection.\n\nRevision: Review older memorized ayahs in a 6-day rotation cycle for long-term retention.',
+      'Revision Method',
+      'New Memorization: Memorize your daily target of new ayahs.\n\nRevision: Review your memorized ayahs in a 6-day cycle. You will complete all memorized ayahs every week.',
       [{ text: 'Got it!' }]
     );
   };
 
-  // Calculate overall daily completion
-  const categories = ['repetitionOfYesterday', 'connection', 'revision'];
-  const completedCategories = categories.filter(cat => {
-    if (cat === 'repetitionOfYesterday') {
-      return tikrarPlan[cat].active 
-        ? (todayProgress[cat] || 0) >= tikrarPlan[cat].totalRecitations
-        : true;
-    }
-    
-    const progress = todayProgress[cat] || 0;
-    const target = tikrarPlan[cat].ayahs?.length || 0;
-    return target === 0 ? true : progress >= target;
-  }).length;
+  // Calculate completion status
+  const newMemCompleted = (todayProgress.newMemorization || 0) >= revisionPlan.newMemorization.target;
+  const revisionCompleted = (todayProgress.revision || 0) >= revisionPlan.revision.target;
+  const totalCompleted = (newMemCompleted ? 1 : 0) + (revisionCompleted ? 1 : 0);
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>Today's Tikrar Plan</Text>
+          <Text style={styles.title}>Today's Plan</Text>
           <TouchableOpacity 
             style={styles.helpButton}
             onPress={showHelp}
@@ -104,13 +111,13 @@ const TikrarPlan = memo(({ tikrarPlan, state, onCategoryPress }) => {
         </View>
         <View style={styles.overallProgress}>
           <Text style={styles.overallProgressText}>
-            {completedCategories}/3 Categories Complete
+            {totalCompleted}/2 Tasks Complete
           </Text>
           <View style={styles.overallProgressBar}>
             <View 
               style={[
                 styles.overallProgressFill, 
-                { width: `${(completedCategories / 3) * 100}%` }
+                { width: `${(totalCompleted / 2) * 100}%` }
               ]} 
             />
           </View>
@@ -118,60 +125,35 @@ const TikrarPlan = memo(({ tikrarPlan, state, onCategoryPress }) => {
       </View>
 
       <CategoryCard 
-        title="Repetition of Yesterday"
-        data={tikrarPlan.repetitionOfYesterday}
-        type="repetitionOfYesterday"
+        title="New Memorization"
+        data={revisionPlan.newMemorization}
+        type="newMemorization"
         color="#009c4a"
-        currentProgress={
-          tikrarPlan.repetitionOfYesterday.active 
-            ? (todayProgress.repetitionOfYesterday || 0)
-            : tikrarPlan.repetitionOfYesterday.completed
-        }
-        target={tikrarPlan.repetitionOfYesterday.totalRecitations}
-        isCompleted={
-          tikrarPlan.repetitionOfYesterday.active 
-            ? (todayProgress.repetitionOfYesterday || 0) >= tikrarPlan.repetitionOfYesterday.totalRecitations
-            : true
-        }
-        isActive={tikrarPlan.repetitionOfYesterday.active}
-        onPress={onCategoryPress}
-      />
-
-      <CategoryCard 
-        title="Connection"
-        data={tikrarPlan.connection}
-        type="connection"
-        color="#058743"
-        currentProgress={todayProgress.connection || 0}
-        target={Math.max(1, tikrarPlan.connection.ayahs?.length || 0)}
-        isCompleted={
-          tikrarPlan.connection.ayahs?.length === 0 ? true : 
-          (todayProgress.connection || 0) >= (tikrarPlan.connection.ayahs?.length || 0)
-        }
+        currentProgress={todayProgress.newMemorization || 0}
+        target={revisionPlan.newMemorization.target}
+        isCompleted={newMemCompleted}
         isActive={true}
         onPress={onCategoryPress}
       />
 
       <CategoryCard 
         title="Revision"
-        data={tikrarPlan.revision}
+        data={revisionPlan.revision}
         type="revision"
         color="#004d24"
         currentProgress={todayProgress.revision || 0}
-        target={Math.max(1, tikrarPlan.revision.ayahs?.length || 0)}
-        isCompleted={
-          tikrarPlan.revision.ayahs?.length === 0 ? true :
-          (todayProgress.revision || 0) >= (tikrarPlan.revision.ayahs?.length || 0)
-        }
-        isActive={true}
+        target={revisionPlan.revision.target}
+        isCompleted={revisionCompleted}
+        isActive={revisionPlan.revision.target > 0}
         onPress={onCategoryPress}
+        displayText={revisionPlan.revision.displayText}
       />
 
-      {completedCategories === 3 && (
+      {totalCompleted === 2 && (
         <View style={styles.congratsCard}>
-          <Text style={styles.congratsText}>🎉 All Tikrar completed for today!</Text>
+          <Text style={styles.congratsText}>🎉 All tasks completed for today!</Text>
           <Text style={styles.congratsSubtext}>
-            Total recitations: {tikrarPlan.totalDailyLoad}
+            Total: {revisionPlan.totalDailyLoad} ayahs
           </Text>
         </View>
       )}
@@ -298,6 +280,17 @@ const styles = StyleSheet.create({
   inactiveText: {
     color: '#999',
   },
+  revisionDetails: {
+    fontSize: 14,
+    color: '#004d24',
+    fontWeight: '600',
+    marginTop: 8,
+    marginBottom: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(0, 77, 36, 0.1)',
+    borderRadius: 8,
+  },
   progressSection: {
     marginTop: 5,
   },
@@ -335,6 +328,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#5a8a5a',
   },
+  encouragementText: {
+  fontSize: 14,
+  color: '#999',
+  fontStyle: 'italic',
+  marginTop: 8,
+  marginBottom: 5,
+  paddingHorizontal: 10,
+  paddingVertical: 8,
+  backgroundColor: 'rgba(153, 153, 153, 0.1)',
+  borderRadius: 8,
+  textAlign: 'center',
+},
 });
 
 export default TikrarPlan;
