@@ -9,6 +9,7 @@ import AnimatedProgressRing from '../components/AnimatedProgressRing';
 import AnimatedCard from '../components/AnimatedCard';
 import AnimatedButton from '../components/AnimatedButton';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
+import { Logger } from '../utils/Logger';
 
 const { width } = Dimensions.get('window');
 
@@ -28,7 +29,7 @@ export default function DashboardScreen({ navigation }) {
     loadData();
     
     const unsubscribe = navigation.addListener('focus', () => {
-      console.log('Dashboard focused - reloading data');
+      Logger.log('Dashboard focused - reloading data');
       loadData();
     });
     
@@ -37,13 +38,13 @@ export default function DashboardScreen({ navigation }) {
 
   const loadData = async () => {
     try {
-      console.log('Loading dashboard data...');
+      Logger.log('Loading dashboard data...');
       let appState = await StorageService.getState();
       if (!appState) {
         appState = await StorageService.initializeState();
       }
       
-      console.log('App state loaded:', {
+      Logger.log('App state loaded:', {
         ayahProgressKeys: Object.keys(appState?.ayahProgress || {}),
         progressKeys: Object.keys(appState?.progress || {}),
         userName: appState?.settings?.userName
@@ -62,8 +63,8 @@ export default function DashboardScreen({ navigation }) {
       const computedStats = QuranUtils.computeStats(updatedState);
       const todaysRevision = QuranUtils.getRevisionPlan(updatedState);
       
-      console.log('Computed stats:', computedStats);
-      console.log('Revision plan exists:', !!todaysRevision);
+      Logger.log('Computed stats:', computedStats);
+      Logger.log('Revision plan exists:', !!todaysRevision);
       
       setStats(computedStats);
       setRevisionPlan(todaysRevision);
@@ -80,7 +81,7 @@ export default function DashboardScreen({ navigation }) {
         });
       }
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
+      Logger.error('Error loading dashboard data:', error);
     }
   };
   if (!stats) {
@@ -132,7 +133,7 @@ export default function DashboardScreen({ navigation }) {
   hafidhhETA.setDate(hafidhhETA.getDate() + daysLeftTillHafidh);
 
   return (
-    <LinearGradient colors={['#2b9153', '#009c4a']} style={styles.container}>
+    <LinearGradient colors={['#052815ff', '#058743']} style={styles.container}>
       <ScrollView 
   contentContainerStyle={styles.scrollContent} 
   showsVerticalScrollIndicator={false}

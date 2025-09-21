@@ -7,20 +7,18 @@ import { TestingUtils } from '../utils/TestingUtils';
 
 export default function SettingsScreen({ navigation }) {
   const [settings, setSettings] = useState({
-    // Audio Settings
-    autoPlayNext: false,
-    
-    // Display Settings
-    showTranslations: true,
-    arabicFontSize: 'Medium',
-    translationFontSize: 'Medium',
-    darkMode: false,
-    
-    // App Settings
-    dailyGoal: 10,
-    userName: 'Student',
-    translationLanguage: 'English',
-  });
+  // Audio Settings
+  autoPlayNext: false,
+  
+  // Display Settings
+  showTranslations: true,
+  arabicFontSize: 'Medium',
+  translationFontSize: 'Medium',
+  
+  // App Settings
+  dailyGoal: 10,
+  userName: 'Student',
+});
 
   const [fontPreviewModal, setFontPreviewModal] = useState(false);
   const [previewFontSize, setPreviewFontSize] = useState('Medium');
@@ -34,16 +32,14 @@ export default function SettingsScreen({ navigation }) {
       const state = await StorageService.getState();
       if (state && state.settings) {
         setSettings(prev => ({
-          ...prev,
-          dailyGoal: state.settings.dailyGoal || 10,
-          userName: state.settings.userName || 'Student',
-          autoPlayNext: state.settings.autoPlayNext || false,
-          showTranslations: state.settings.showTranslations !== false,
-          arabicFontSize: state.settings.arabicFontSize || 'Medium',
-          translationFontSize: state.settings.translationFontSize || 'Medium',
-          darkMode: state.settings.darkMode || false,
-          translationLanguage: state.settings.translationLanguage || 'English',
-        }));
+  ...prev,
+  dailyGoal: state.settings.dailyGoal || 10,
+  userName: state.settings.userName || 'Student',
+  autoPlayNext: state.settings.autoPlayNext || false,
+  showTranslations: state.settings.showTranslations !== false,
+  arabicFontSize: state.settings.arabicFontSize || 'Medium',
+  translationFontSize: state.settings.translationFontSize || 'Medium',
+}));
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -196,109 +192,97 @@ export default function SettingsScreen({ navigation }) {
           onValueChange: (value) => updateSetting('showTranslations', value)
         },
         {
-          type: 'button',
-          title: 'Arabic Font Size',
-          subtitle: `Current: ${settings.arabicFontSize}`,
+  type: 'button',
+  title: 'Arabic Font Size',
+  subtitle: `Current: ${settings.arabicFontSize}`,
+  onPress: () => {
+    Alert.alert(
+      'Arabic Font Size',
+      'Choose your preferred size for Arabic text',
+      [
+        { 
+          text: 'Small', 
           onPress: () => {
-            Alert.alert(
-              'Arabic Font Size',
-              'Choose your preferred size for Arabic text',
-              [
-                { text: 'Small', onPress: () => showFontPreview('Small') },
-                { text: 'Medium', onPress: () => showFontPreview('Medium') },
-                { text: 'Large', onPress: () => showFontPreview('Large') },
-                { text: 'Extra Large', onPress: () => showFontPreview('Extra Large') },
-                { text: 'Cancel', style: 'cancel' }
-              ]
-            );
+            setPreviewFontSize('Small');
+            setFontPreviewModal(true);
           }
         },
-        {
-          type: 'button',
-          title: 'Translation Font Size',
-          subtitle: `Current: ${settings.translationFontSize}`,
+        { 
+          text: 'Medium', 
           onPress: () => {
-            Alert.alert(
-              'Translation Font Size',
-              'Choose your preferred size for translation text',
-              [
-                { text: 'Small', onPress: () => updateSetting('translationFontSize', 'Small') },
-                { text: 'Medium', onPress: () => updateSetting('translationFontSize', 'Medium') },
-                { text: 'Large', onPress: () => updateSetting('translationFontSize', 'Large') },
-                { text: 'Extra Large', onPress: () => updateSetting('translationFontSize', 'Extra Large') },
-                { text: 'Cancel', style: 'cancel' }
-              ]
-            );
+            setPreviewFontSize('Medium');
+            setFontPreviewModal(true);
           }
         },
-        {
-          type: 'switch',
-          title: 'Dark Mode',
-          subtitle: 'Use dark theme for reading screens',
-          value: settings.darkMode,
-          onValueChange: (value) => updateSetting('darkMode', value)
-        }
+        { 
+          text: 'Large', 
+          onPress: () => {
+            setPreviewFontSize('Large');
+            setFontPreviewModal(true);
+          }
+        },
+        { 
+          text: 'Extra Large', 
+          onPress: () => {
+            setPreviewFontSize('Extra Large');
+            setFontPreviewModal(true);
+          }
+        },
+        { text: 'Cancel', style: 'cancel' }
       ]
-    },
-    {
-      title: '📱 App Settings',
-      items: [
-        {
-          type: 'button',
-          title: 'Daily Memorization Goal',
-          subtitle: `${settings.dailyGoal} ayahs per day`,
+    );
+  }
+},
+{
+  type: 'button',
+  title: 'Translation Font Size',
+  subtitle: `Current: ${settings.translationFontSize}`,
+  onPress: () => {
+    Alert.alert(
+      'Translation Font Size',
+      'Choose your preferred size for translation text',
+      [
+        { 
+          text: 'Small', 
           onPress: () => {
-            Alert.alert(
-              'Daily Goal',
-              'Select your daily memorization target',
-              [
-                { text: '5 ayahs', onPress: () => updateSetting('dailyGoal', 5) },
-                { text: '10 ayahs', onPress: () => updateSetting('dailyGoal', 10) },
-                { text: '15 ayahs', onPress: () => updateSetting('dailyGoal', 15) },
-                { text: '20 ayahs', onPress: () => updateSetting('dailyGoal', 20) },
-                { text: '25 ayahs', onPress: () => updateSetting('dailyGoal', 25) },
-                { text: 'Cancel', style: 'cancel' }
-              ]
-            );
+            setPreviewFontSize(settings.arabicFontSize);
+            setSettings(prev => ({ ...prev, translationFontSize: 'Small' }));
+            updateSetting('translationFontSize', 'Small');
+            setFontPreviewModal(true);
           }
         },
-        {
-          type: 'button',
-          title: 'Your Name',
-          subtitle: settings.userName,
+        { 
+          text: 'Medium', 
           onPress: () => {
-            Alert.prompt(
-              'Change Name',
-              'Enter your name',
-              (text) => {
-                if (text && text.trim()) {
-                  updateSetting('userName', text.trim());
-                }
-              },
-              'plain-text',
-              settings.userName
-            );
+            setPreviewFontSize(settings.arabicFontSize);
+            setSettings(prev => ({ ...prev, translationFontSize: 'Medium' }));
+            updateSetting('translationFontSize', 'Medium');
+            setFontPreviewModal(true);
           }
         },
-        {
-          type: 'button',
-          title: 'Translation Language',
-          subtitle: `Current: ${settings.translationLanguage}`,
+        { 
+          text: 'Large', 
           onPress: () => {
-            Alert.alert(
-              'Translation Language',
-              'Choose your preferred translation language',
-              [
-                { text: 'English', onPress: () => updateSetting('translationLanguage', 'English') },
-                { text: 'Arabic', onPress: () => updateSetting('translationLanguage', 'Arabic') },
-                { text: 'Urdu', onPress: () => updateSetting('translationLanguage', 'Urdu') },
-                { text: 'French', onPress: () => updateSetting('translationLanguage', 'French') },
-                { text: 'Spanish', onPress: () => updateSetting('translationLanguage', 'Spanish') },
-                { text: 'Cancel', style: 'cancel' }
-              ]
-            );
+            setPreviewFontSize(settings.arabicFontSize);
+            setSettings(prev => ({ ...prev, translationFontSize: 'Large' }));
+            updateSetting('translationFontSize', 'Large');
+            setFontPreviewModal(true);
           }
-        }
+        },
+        { 
+          text: 'Extra Large', 
+          onPress: () => {
+            setPreviewFontSize(settings.arabicFontSize);
+            setSettings(prev => ({ ...prev, translationFontSize: 'Extra Large' }));
+            updateSetting('translationFontSize', 'Extra Large');
+            setFontPreviewModal(true);
+          }
+        },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  }
+},
       ]
     },
     {

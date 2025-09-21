@@ -115,11 +115,11 @@ export default function AnalyticsScreen({ navigation }) {
                 color="#058743"
               />
               <StatCard 
-                title="Tikrar Rate"
-                value={`${weeklyData.tikrarCompletionRate}/7`}
-                subtitle="days completed"
-                color="#004d24"
-              />
+  title="Revision Rate"
+  value={`${weeklyData.revisionCompletionRate}/7`}
+  subtitle="days completed"
+  color="#004d24"
+/>
             </View>
 
             <View style={styles.chartCard}>

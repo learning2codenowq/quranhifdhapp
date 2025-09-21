@@ -27,29 +27,57 @@ export class AudioService {
       throw new Error('No audio URL provided');
     }
 
+    // Validate URL format
+    if (!audioUrl.startsWith('http://') && !audioUrl.startsWith('https://')) {
+      throw new Error('Invalid audio URL format');
+    }
+
     console.log('Playing audio from URL:', audioUrl);
     
     await this.stopAudio();
     
+    // Test if URL is accessible first
+    try {
+      const response = await fetch(audioUrl, { method: 'HEAD' });
+      if (!response.ok) {
+        throw new Error(`Audio file not accessible: ${response.status}`);
+      }
+    } catch (fetchError) {
+      console.warn('Could not verify audio URL:', fetchError);
+      // Continue anyway as some servers might block HEAD requests
+    }
+    
     const { sound } = await Audio.Sound.createAsync(
       { uri: audioUrl },
-      { shouldPlay: true, volume: 1.0 }
+      { 
+        shouldPlay: true, 
+        volume: 1.0,
+        isLooping: false,
+        isMuted: false,
+        rate: 1.0,
+        shouldCorrectPitch: true
+      }
     );
     
     this.sound = sound;
     this.isPlaying = true;
 
     sound.setOnPlaybackStatusUpdate((status) => {
-      this.isPlaying = status.isLoaded && status.isPlaying;
-      
-      if (status.didJustFinish) {
-        console.log('🎵 Audio finished playing naturally');
-        this.isPlaying = false;
-        // Don't set sound to null immediately, let it be cleaned up properly
-      }
-      
-      if (status.error) {
-        console.error('Audio playback error:', status.error);
+      if (status.isLoaded) {
+        this.isPlaying = status.isPlaying;
+        
+        if (status.didJustFinish) {
+          console.log('🎵 Audio finished playing naturally');
+          this.isPlaying = false;
+        }
+        
+        if (status.error) {
+          console.error('Audio playback error:', status.error);
+          this.isPlaying = false;
+          this.sound = null;
+        }
+      } else if (status.error) {
+        console.error('Audio loading error:', status.error);
         this.isPlaying = false;
         this.sound = null;
       }

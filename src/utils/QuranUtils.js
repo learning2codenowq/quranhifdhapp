@@ -1,5 +1,6 @@
 import { StorageService } from '../services/StorageService';
 import { AchievementSystem } from './AchievementSystem';
+import { Logger } from './Logger';
 
 export class QuranUtils {
   static localISO(date = new Date()) {
@@ -28,12 +29,12 @@ export class QuranUtils {
         state.progress[today] = (state.progress[today] || 0) + 1;
       }
 
-      console.log('Ayah marked as memorized:', surahId, ayahNumber, 'Total today:', state.progress[today]);
+      Logger.log('Ayah marked as memorized:', surahId, ayahNumber, 'Total today:', state.progress[today]);
       
       await StorageService.saveState(state);
       return state;
     } catch (error) {
-      console.error('Error marking ayah as memorized:', error);
+      Logger.error('Error marking ayah as memorized:', error);
       throw error;
     }
   }
@@ -62,7 +63,7 @@ export class QuranUtils {
       await StorageService.saveState(state);
       return state;
     } catch (error) {
-      console.error('Error unmarking ayah:', error);
+      Logger.error('Error unmarking ayah:', error);
       throw error;
     }
   }
@@ -83,7 +84,7 @@ export class QuranUtils {
       });
     }
     
-    console.log('Computing stats - Total memorized:', memorized, 'AyahProgress keys:', Object.keys(state?.ayahProgress || {}));
+    Logger.log('Computing stats - Total memorized:', memorized, 'AyahProgress keys:', Object.keys(state?.ayahProgress || {}));
     
     const remaining = total - memorized;
     const percentComplete = total > 0 ? (memorized / total) * 100 : 0;

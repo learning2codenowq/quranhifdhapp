@@ -49,11 +49,10 @@ export default function AchievementsScreen({ navigation }) {
   );
 
   const categorizedAchievements = {
-    memorization: AchievementSystem.achievements.filter(a => a.type === 'memorization'),
-    streak: AchievementSystem.achievements.filter(a => a.type === 'streak'),
-    tikrar_completion: AchievementSystem.achievements.filter(a => a.type === 'tikrar_completion'),
-    special: AchievementSystem.achievements.filter(a => ['surah_completion', 'specific_surah', 'juz_completion', 'special'].includes(a.type))
-  };
+  memorization: AchievementSystem.achievements.filter(a => a.type === 'memorization'),
+  streak: AchievementSystem.achievements.filter(a => a.type === 'streak'),
+  special: AchievementSystem.achievements.filter(a => ['surah_completion', 'specific_surah', 'juz_completion', 'special'].includes(a.type))
+};
 
   return (
     <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
@@ -83,17 +82,6 @@ export default function AchievementsScreen({ navigation }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Consistency Streaks</Text>
           {categorizedAchievements.streak.map(achievement => (
-            <AchievementCard 
-              key={achievement.id}
-              achievement={achievement}
-              isEarned={earnedAchievements.includes(achievement.id)}
-            />
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tikrar Mastery</Text>
-          {categorizedAchievements.tikrar_completion.map(achievement => (
             <AchievementCard 
               key={achievement.id}
               achievement={achievement}

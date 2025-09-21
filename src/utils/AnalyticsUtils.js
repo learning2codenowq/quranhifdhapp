@@ -2,32 +2,32 @@ import { QuranUtils } from './QuranUtils';
 
 export class AnalyticsUtils {
   static getWeeklyAnalytics(state) {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 6); // Last 7 days
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 6); // Last 7 days
+  
+  const dailyData = [];
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    const dateStr = QuranUtils.localISO(d);
+    const progress = state?.progress?.[dateStr] || 0;
+    const revisionProgress = state?.revisionProgress?.[dateStr] || {};
     
-    const dailyData = [];
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      const dateStr = QuranUtils.localISO(d);
-      const progress = state?.progress?.[dateStr] || 0;
-      const tikrarProgress = state?.tikrarProgress?.[dateStr] || {};
-      
-      dailyData.push({
-        date: dateStr,
-        dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
-        memorized: progress,
-        tikrarCompleted: this.calculateTikrarCompletion(tikrarProgress)
-      });
-    }
-    
-    return {
-      dailyData,
-      totalWeekAyahs: dailyData.reduce((sum, day) => sum + day.memorized, 0),
-      averageDaily: dailyData.reduce((sum, day) => sum + day.memorized, 0) / dailyData.length,
-      streak: QuranUtils.computeStreak(state?.progress || {}),
-      tikrarCompletionRate: dailyData.filter(day => day.tikrarCompleted >= 0.75).length
-    };
+    dailyData.push({
+      date: dateStr,
+      dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
+      memorized: progress,
+      revisionCompleted: (revisionProgress.revision || 0) > 0 ? 1 : 0
+    });
   }
+  
+  return {
+    dailyData,
+    totalWeekAyahs: dailyData.reduce((sum, day) => sum + day.memorized, 0),
+    averageDaily: dailyData.reduce((sum, day) => sum + day.memorized, 0) / dailyData.length,
+    streak: QuranUtils.computeStreak(state?.progress || {}),
+    revisionCompletionRate: dailyData.filter(day => day.revisionCompleted > 0).length
+  };
+}
 
   static getMonthlyAnalytics(state) {
     const endDate = new Date();
@@ -63,29 +63,54 @@ export class AnalyticsUtils {
   }
 
   static getSurahProgress(state) {
-    const surahProgress = [];
-    
-    // Basic surah info (you might want to expand this with actual surah data)
-    const commonSurahs = [
-      { id: 1, name: 'Al-Fatihah', totalAyahs: 7 },
-      { id: 2, name: 'Al-Baqarah', totalAyahs: 286 },
-      { id: 67, name: 'Al-Mulk', totalAyahs: 30 },
-      { id: 114, name: 'An-Nas', totalAyahs: 6 }
-    ];
-    
-    commonSurahs.forEach(surah => {
-      const memorizedAyahs = this.getMemorizedAyahsInSurah(state, surah.id);
+  const surahProgress = [];
+  
+  // Get all surahs that have memorized ayahs
+  const memorizedSurahs = Object.keys(state?.ayahProgress || {}).map(id => parseInt(id));
+  
+  // Surah data with actual ayah counts
+  const surahData = {
+    1: { name: 'Al-Fatihah', totalAyahs: 7 },
+    2: { name: 'Al-Baqarah', totalAyahs: 286 },
+    3: { name: 'Ali-Imran', totalAyahs: 200 },
+    4: { name: 'An-Nisa', totalAyahs: 176 },
+    5: { name: 'Al-Maidah', totalAyahs: 120 },
+    6: { name: 'Al-Anam', totalAyahs: 165 },
+    7: { name: 'Al-Araf', totalAyahs: 206 },
+    67: { name: 'Al-Mulk', totalAyahs: 30 },
+    114: { name: 'An-Nas', totalAyahs: 6 }
+  };
+  
+  memorizedSurahs.forEach(surahId => {
+    const surahInfo = surahData[surahId];
+    if (surahInfo) {
+      const memorizedAyahs = this.getMemorizedAyahsInSurah(state, surahId);
       if (memorizedAyahs > 0) {
         surahProgress.push({
-          ...surah,
+          id: surahId,
+          name: surahInfo.name,
+          totalAyahs: surahInfo.totalAyahs,
           memorized: memorizedAyahs,
-          percentage: (memorizedAyahs / surah.totalAyahs) * 100
+          percentage: (memorizedAyahs / surahInfo.totalAyahs) * 100
         });
       }
-    });
-    
-    return surahProgress.sort((a, b) => b.percentage - a.percentage);
-  }
+    } else {
+      // For surahs not in our data, use QuranUtils.getSurahName
+      const memorizedAyahs = this.getMemorizedAyahsInSurah(state, surahId);
+      if (memorizedAyahs > 0) {
+        surahProgress.push({
+          id: surahId,
+          name: QuranUtils.getSurahName(surahId),
+          totalAyahs: memorizedAyahs, // Use memorized count as approximation
+          memorized: memorizedAyahs,
+          percentage: 100 // Assume complete if we don't have total count
+        });
+      }
+    }
+  });
+  
+  return surahProgress.sort((a, b) => b.percentage - a.percentage);
+}
 
   static calculateTikrarCompletion(tikrarProgress) {
     const categories = ['newMemorization', 'repetitionOfYesterday', 'connection', 'revision'];

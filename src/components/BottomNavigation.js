@@ -1,28 +1,29 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppIcons } from './AppIcons';
 
 export default function BottomNavigation({ currentRoute, onNavigate }) {
   const tabs = [
-    { 
-      key: 'Dashboard', 
-      label: 'Home', 
-      icon: '🏠',
-      route: 'Dashboard'
-    },
-    { 
-      key: 'Reading', 
-      label: 'Reading', 
-      icon: '📖',
-      route: 'Reading'
-    },
-    { 
-      key: 'Settings', 
-      label: 'Settings', 
-      icon: '⚙️',
-      route: 'Settings'
-    }
-  ];
+  { 
+    key: 'Dashboard', 
+    label: 'Home', 
+    icon: AppIcons.Home,
+    route: 'Dashboard'
+  },
+  { 
+    key: 'Reading', 
+    label: 'Reading', 
+    icon: AppIcons.Book,
+    route: 'Reading'
+  },
+  { 
+    key: 'Settings', 
+    label: 'Settings', 
+    icon: AppIcons.Settings,
+    route: 'Settings'
+  }
+];
 
   const handleTabPress = (tab) => {
     if (currentRoute !== tab.route) {
@@ -43,10 +44,11 @@ export default function BottomNavigation({ currentRoute, onNavigate }) {
               onPress={() => handleTabPress(tab)}
             >
               <View style={[styles.iconContainer, isActive && styles.activeIconContainer]}>
-                <Text style={[styles.icon, isActive && styles.activeIcon]}>
-                  {tab.icon}
-                </Text>
-              </View>
+  <tab.icon 
+    size={20} 
+    color={isActive ? 'white' : '#666'} 
+  />
+</View>
               <Text style={[styles.label, isActive && styles.activeLabel]}>
                 {tab.label}
               </Text>

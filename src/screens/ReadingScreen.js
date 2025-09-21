@@ -220,7 +220,7 @@ export default function ReadingScreen() {
   if (!isReading) {
     return (
       <SafeAreaProvider>
-        <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+        <LinearGradient colors={['#052815ff', '#058743']} style={styles.container}>
           <SafeAreaView style={styles.safeArea}>
             <View style={styles.welcomeContainer}>
               <Text style={styles.welcomeTitle}>Quran Reading</Text>

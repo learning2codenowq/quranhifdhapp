@@ -17,6 +17,7 @@ import { QuranUtils } from '../utils/QuranUtils';
 import { StorageService } from '../services/StorageService';
 import { AudioService } from '../services/AudioService';
 import { cleanArabicText } from '../utils/TextCleaner';
+import { Logger } from '../utils/Logger';
 
 export default function QuranReaderScreen({ route, navigation }) {
   const surahId = route?.params?.surahId || 1;
@@ -28,6 +29,13 @@ export default function QuranReaderScreen({ route, navigation }) {
   const [audioStatus, setAudioStatus] = useState({ isPlaying: false, hasSound: false });
   const [playingAyah, setPlayingAyah] = useState(null);
   const [ayahAudioUrls, setAyahAudioUrls] = useState({});
+  
+  // Settings state
+  const [settings, setSettings] = useState({
+    showTranslations: true,
+    arabicFontSize: 'Medium',
+    translationFontSize: 'Medium'
+  });
   
   // Replay segment states
   const [showReplayModal, setShowReplayModal] = useState(false);
@@ -49,6 +57,7 @@ export default function QuranReaderScreen({ route, navigation }) {
 
   useEffect(() => {
     if (surahId) {
+      loadSettings();
       loadSurahData();
       loadMemorizedAyahs();
       AudioService.setupAudio();
@@ -62,11 +71,26 @@ export default function QuranReaderScreen({ route, navigation }) {
   // Cleanup on component unmount
   useEffect(() => {
     return () => {
-      console.log('🧹 Component unmounting - stopping any ongoing replay');
+      Logger.log('🧹 Component unmounting - stopping any ongoing replay');
       isReplayingRef.current = false;
       AudioService.stopAudio();
     };
   }, []);
+
+  const loadSettings = async () => {
+    try {
+      const state = await StorageService.getState();
+      if (state?.settings) {
+        setSettings({
+          showTranslations: state.settings.showTranslations !== false,
+          arabicFontSize: state.settings.arabicFontSize || 'Medium',
+          translationFontSize: state.settings.translationFontSize || 'Medium'
+        });
+      }
+    } catch (error) {
+      Logger.error('Error loading settings:', error);
+    }
+  };
 
   const loadSurahData = async () => {
     try {
@@ -80,12 +104,15 @@ export default function QuranReaderScreen({ route, navigation }) {
       (data.ayahs || []).forEach(ayah => {
         if (ayah.audioUrl) {
           audioMap[ayah.verse_number] = ayah.audioUrl;
+          Logger.log(`Audio URL for ayah ${ayah.verse_number}:`, ayah.audioUrl);
+        } else {
+          Logger.warn(`No audio URL for ayah ${ayah.verse_number}`);
         }
       });
       setAyahAudioUrls(audioMap);
       
     } catch (error) {
-      console.error('Error loading surah:', error);
+      Logger.error('Error loading surah:', error);
       Alert.alert('Error', 'Failed to load surah data. Please check your internet connection.', [
         { text: 'Go Back', onPress: () => navigation.goBack() },
         { text: 'Retry', onPress: () => loadSurahData() }
@@ -114,7 +141,7 @@ export default function QuranReaderScreen({ route, navigation }) {
         setMemorizedAyahs(memorized);
       }
     } catch (error) {
-      console.error('Error loading memorized ayahs:', error);
+      Logger.error('Error loading memorized ayahs:', error);
     }
   };
 
@@ -134,49 +161,67 @@ export default function QuranReaderScreen({ route, navigation }) {
       
       await loadMemorizedAyahs();
     } catch (error) {
-      console.error('Error toggling memorization:', error);
+      Logger.error('Error toggling memorization:', error);
       Alert.alert('Error', 'Failed to update memorization status');
     }
   };
 
   const handleAudioPlay = async (currentSurahId, ayahNumber) => {
-  try {
-    const audioUrl = ayahAudioUrls[ayahNumber];
-    
-    if (!audioUrl) {
-      Alert.alert('Audio Error', 'Audio not available for this ayah');
-      return;
-    }
-
-    if (playingAyah && playingAyah.surahId === currentSurahId && playingAyah.ayahNumber === ayahNumber) {
-      if (audioStatus.isPlaying) {
-        await AudioService.pauseAudio();
-        setPlayingAyah(null);
-      } else {
-        await AudioService.resumeAudio();
-      }
-    } else {
-      setPlayingAyah({ surahId: currentSurahId, ayahNumber });
-      const success = await AudioService.playAyahFromUrl(audioUrl);
+    try {
+      const audioUrl = ayahAudioUrls[ayahNumber];
       
-      if (!success) {
-        Alert.alert('Audio Error', 'Could not play audio for this ayah');
-        setPlayingAyah(null);
-      } else {
-        // Auto-play next ayah when current finishes
-        checkForAutoPlayNext(currentSurahId, ayahNumber);
+      if (!audioUrl) {
+        Alert.alert('Audio Error', 'Audio not available for this ayah');
+        return;
       }
-    }
-    
-    const status = AudioService.getPlaybackStatus();
-    setAudioStatus(status);
-  } catch (error) {
-    console.error('Audio error:', error);
-    Alert.alert('Audio Error', 'Failed to play audio');
-  }
-};
 
-const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
+      Logger.log(`Attempting to play audio for ayah ${ayahNumber}:`, audioUrl);
+
+      if (playingAyah && playingAyah.surahId === currentSurahId && playingAyah.ayahNumber === ayahNumber) {
+        if (audioStatus.isPlaying) {
+          await AudioService.pauseAudio();
+          setPlayingAyah(null);
+        } else {
+          await AudioService.resumeAudio();
+        }
+      } else {
+        setPlayingAyah({ surahId: currentSurahId, ayahNumber });
+        const success = await AudioService.playAyahFromUrl(audioUrl);
+        
+        if (!success) {
+          Alert.alert(
+            'Audio Error', 
+            'Could not play audio for this ayah. Please check your internet connection and try again.',
+            [
+              { text: 'OK', onPress: () => setPlayingAyah(null) }
+            ]
+          );
+        } else {
+          // Auto-play next ayah when current finishes
+          checkForAutoPlayNext(currentSurahId, ayahNumber);
+        }
+      }
+      
+      const status = AudioService.getPlaybackStatus();
+      setAudioStatus(status);
+    } catch (error) {
+      Logger.error('Audio error:', error);
+      setPlayingAyah(null);
+      Alert.alert(
+        'Audio Error', 
+        'Failed to play audio. The audio file may not be available or there may be a network issue.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
+  // Check if auto-play is enabled in settings
+  if (!settings.autoPlayNext) {
+    Logger.log('🎵 Auto-play is disabled in settings');
+    return;
+  }
+
   const checkInterval = setInterval(() => {
     const status = AudioService.getPlaybackStatus();
     
@@ -188,12 +233,12 @@ const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
       const nextAyahExists = ayahs.find(ayah => ayah.verse_number === nextAyahNumber);
       
       if (nextAyahExists && ayahAudioUrls[nextAyahNumber]) {
-        console.log(`🎵 Auto-playing next ayah: ${nextAyahNumber}`);
+        Logger.log(`🎵 Auto-playing next ayah: ${nextAyahNumber}`);
         setTimeout(() => {
           handleAudioPlay(currentSurahId, nextAyahNumber);
         }, 500); // Small delay before next ayah
       } else {
-        console.log('🎵 No more ayahs to auto-play');
+        Logger.log('🎵 No more ayahs to auto-play');
         setPlayingAyah(null);
       }
     }
@@ -220,7 +265,7 @@ const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
     const end = parseInt(replaySegment.endAyah);
     const reps = parseInt(replaySegment.repetitions);
 
-    console.log('🚀 Starting replay:', { start, end, reps, totalAyahs: ayahs.length });
+    Logger.log('🚀 Starting replay:', { start, end, reps, totalAyahs: ayahs.length });
 
     // Basic validation
     if (isNaN(start) || isNaN(end) || isNaN(reps) || start < 1 || end < 1 || reps < 1) {
@@ -252,24 +297,24 @@ const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
       totalAyahs: end - start + 1
     });
     
-    console.log('📱 State set, calling playSegmentSequence...');
+    Logger.log('📱 State set, calling playSegmentSequence...');
     
     // Start the sequence
     playSegmentSequence(start, end, reps);
   };
 
   const playSegmentSequence = async (startAyah, endAyah, repetitions) => {
-    console.log('🎵 playSegmentSequence called with:', { startAyah, endAyah, repetitions });
+    Logger.log('🎵 playSegmentSequence called with:', { startAyah, endAyah, repetitions });
     
     try {
       for (let rep = 1; rep <= repetitions; rep++) {
         // Check if stopped
         if (!isReplayingRef.current) {
-          console.log('🛑 Replay stopped by user - exiting repetition loop');
+          Logger.log('🛑 Replay stopped by user - exiting repetition loop');
           break;
         }
         
-        console.log(`🔄 Starting repetition ${rep}/${repetitions}`);
+        Logger.log(`🔄 Starting repetition ${rep}/${repetitions}`);
         
         setReplayProgress(prev => ({ 
           ...prev, 
@@ -280,11 +325,11 @@ const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
         for (let ayahNum = startAyah; ayahNum <= endAyah; ayahNum++) {
           // Check if stopped before each ayah
           if (!isReplayingRef.current) {
-            console.log('🛑 Replay stopped by user - exiting ayah loop');
+            Logger.log('🛑 Replay stopped by user - exiting ayah loop');
             break;
           }
           
-          console.log(`🎯 Processing ayah ${ayahNum}`);
+          Logger.log(`🎯 Processing ayah ${ayahNum}`);
           
           setReplayProgress(prev => ({ 
             ...prev, 
@@ -292,20 +337,20 @@ const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
           }));
 
           const audioUrl = ayahAudioUrls[ayahNum];
-          console.log(`🔊 Audio URL for ayah ${ayahNum}:`, audioUrl ? 'EXISTS' : 'MISSING');
+          Logger.log(`🔊 Audio URL for ayah ${ayahNum}:`, audioUrl ? 'EXISTS' : 'MISSING');
           
           if (!audioUrl) {
-            console.warn(`❌ No audio URL for ayah ${ayahNum} - skipping`);
+            Logger.warn(`❌ No audio URL for ayah ${ayahNum} - skipping`);
             await delayWithStopCheck(2000);
             continue;
           }
 
           // Stop any current audio
-          console.log('🛑 Stopping previous audio...');
+          Logger.log('🛑 Stopping previous audio...');
           try {
             await AudioService.stopAudio();
           } catch (e) {
-            console.warn('⚠️ Error stopping audio:', e);
+            Logger.warn('⚠️ Error stopping audio:', e);
           }
 
           // Small delay with stop check
@@ -313,7 +358,7 @@ const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
           
           // Check again before playing
           if (!isReplayingRef.current) {
-            console.log('🛑 Replay stopped - not starting new audio');
+            Logger.log('🛑 Replay stopped - not starting new audio');
             break;
           }
 
@@ -321,40 +366,40 @@ const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
           setPlayingAyah({ surahId: surahData?.id || surahId, ayahNumber: ayahNum });
           
           // Play the ayah
-          console.log(`▶️ Calling AudioService.playAyahFromUrl for ayah ${ayahNum}...`);
+          Logger.log(`▶️ Calling AudioService.playAyahFromUrl for ayah ${ayahNum}...`);
           const success = await AudioService.playAyahFromUrl(audioUrl);
-          console.log(`🎵 AudioService.playAyahFromUrl returned:`, success);
+          Logger.log(`🎵 AudioService.playAyahFromUrl returned:`, success);
           
           if (success) {
-            console.log(`⏳ Waiting for ayah ${ayahNum} to finish...`);
+            Logger.log(`⏳ Waiting for ayah ${ayahNum} to finish...`);
             await waitForAudioCompletion();
-            console.log(`✅ Done waiting for ayah ${ayahNum}`);
+            Logger.log(`✅ Done waiting for ayah ${ayahNum}`);
           } else {
-            console.error(`❌ AudioService failed for ayah ${ayahNum}`);
+            Logger.error(`❌ AudioService failed for ayah ${ayahNum}`);
             await delayWithStopCheck(3000);
           }
           
           // Pause between ayahs (with stop check)
           if (ayahNum < endAyah && isReplayingRef.current) {
-            console.log(`💤 Brief pause between ayahs...`);
+            Logger.log(`💤 Brief pause between ayahs...`);
             await delayWithStopCheck(300); // Reduced from 1000ms to 300ms
           }
         }
         
         // Pause between repetitions (with stop check)
         if (rep < repetitions && isReplayingRef.current) {
-          console.log(`🔄 Brief pause between repetitions...`);
+          Logger.log(`🔄 Brief pause between repetitions...`);
           await delayWithStopCheck(800); // Reduced from 2000ms to 800ms
         }
       }
 
-      console.log('🎉 All repetitions completed');
+      Logger.log('🎉 All repetitions completed');
       
     } catch (error) {
-      console.error('💥 Error in playSegmentSequence:', error);
+      Logger.error('💥 Error in playSegmentSequence:', error);
     } finally {
       // Always cleanup
-      console.log('🧹 Cleaning up...');
+      Logger.log('🧹 Cleaning up...');
       const wasStoppedByUser = !isReplayingRef.current;
       
       isReplayingRef.current = false;
@@ -366,19 +411,19 @@ const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
       try {
         await AudioService.stopAudio();
       } catch (e) {
-        console.warn('⚠️ Error stopping audio in cleanup:', e);
+        Logger.warn('⚠️ Error stopping audio in cleanup:', e);
       }
       
       if (!wasStoppedByUser) {
         Alert.alert('✅ Replay Complete', 'Segment replay finished!');
       } else {
-        console.log('🛑 Replay was stopped by user');
+        Logger.log('🛑 Replay was stopped by user');
       }
     }
   };
 
   const stopReplaySegment = async () => {
-    console.log('🛑 STOP BUTTON CLICKED');
+    Logger.log('🛑 STOP BUTTON CLICKED');
     
     // Immediately set ref to false to stop all loops
     isReplayingRef.current = false;
@@ -391,9 +436,9 @@ const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
     // Force stop audio
     try {
       await AudioService.stopAudio();
-      console.log('🛑 Audio force stopped');
+      Logger.log('🛑 Audio force stopped');
     } catch (error) {
-      console.warn('⚠️ Error force stopping audio:', error);
+      Logger.warn('⚠️ Error force stopping audio:', error);
     }
     
     Alert.alert('🛑 Stopped', 'Replay has been stopped');
@@ -418,43 +463,43 @@ const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
 
   // Helper function to wait for audio with stop checking
   const waitForAudioCompletion = () => {
-  return new Promise((resolve) => {
-    const checkInterval = 100; // Check more frequently
-    let noAudioCount = 0;
-    
-    const intervalId = setInterval(() => {
-      // Check if stopped by user
-      if (!isReplayingRef.current) {
-        console.log('🛑 Audio wait interrupted by stop');
-        clearInterval(intervalId);
-        resolve();
-        return;
-      }
+    return new Promise((resolve) => {
+      const checkInterval = 100; // Check more frequently
+      let noAudioCount = 0;
       
-      // Check audio status
-      const status = AudioService.getPlaybackStatus();
-      
-      if (!status.isPlaying) {
-        noAudioCount++;
-        // Shorter wait to ensure audio finished
-        if (noAudioCount >= 5) { // 0.5 seconds of no audio = finished
-          console.log('🎵 Audio playback completed');
+      const intervalId = setInterval(() => {
+        // Check if stopped by user
+        if (!isReplayingRef.current) {
+          Logger.log('🛑 Audio wait interrupted by stop');
           clearInterval(intervalId);
           resolve();
+          return;
         }
-      } else {
-        noAudioCount = 0; // Reset counter if audio is still playing
-      }
-    }, checkInterval);
-    
-    // Safety timeout - maximum 30 seconds per ayah
-    setTimeout(() => {
-      console.log('⏰ Audio timeout reached (30s safety limit)');
-      clearInterval(intervalId);
-      resolve();
-    }, 30000);
-  });
-};
+        
+        // Check audio status
+        const status = AudioService.getPlaybackStatus();
+        
+        if (!status.isPlaying) {
+          noAudioCount++;
+          // Shorter wait to ensure audio finished
+          if (noAudioCount >= 5) { // 0.5 seconds of no audio = finished
+            Logger.log('🎵 Audio playback completed');
+            clearInterval(intervalId);
+            resolve();
+          }
+        } else {
+          noAudioCount = 0; // Reset counter if audio is still playing
+        }
+      }, checkInterval);
+      
+      // Safety timeout - maximum 30 seconds per ayah
+      setTimeout(() => {
+        Logger.log('⏰ Audio timeout reached (30s safety limit)');
+        clearInterval(intervalId);
+        resolve();
+      }, 30000);
+    });
+  };
 
   const cleanTranslation = (text) => {
     if (!text) return '';
@@ -475,6 +520,27 @@ const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
     const memorizedCount = memorizedAyahs.filter(ayah => ayah.surahId === currentSurahId).length;
     const totalAyahs = surahData?.total_ayahs || ayahs.length;
     return { memorized: memorizedCount, total: totalAyahs };
+  };
+
+  // Font size helper functions
+  const getFontSize = (sizeCategory) => {
+    const sizes = {
+      'Small': 20,
+      'Medium': 24,
+      'Large': 28,
+      'Extra Large': 32
+    };
+    return sizes[sizeCategory] || 24;
+  };
+
+  const getTranslationFontSize = (sizeCategory) => {
+    const sizes = {
+      'Small': 14,
+      'Medium': 16,
+      'Large': 18,
+      'Extra Large': 20
+    };
+    return sizes[sizeCategory] || 16;
   };
 
   const BasmalaComponent = () => {
@@ -505,11 +571,21 @@ const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
         <View style={styles.ayahContent}>
           <Text style={styles.ayahNumber}>{item.verse_number}</Text>
           
-          <Text style={styles.arabicText}>{cleanArabicText(item.text)}</Text>
-          
-          <Text style={styles.translationText}>
-            {cleanTranslation(item.translation)}
+          <Text style={[
+            styles.arabicText, 
+            { fontSize: getFontSize(settings.arabicFontSize) }
+          ]}>
+            {cleanArabicText(item.text)}
           </Text>
+          
+          {settings.showTranslations && (
+            <Text style={[
+              styles.translationText,
+              { fontSize: getTranslationFontSize(settings.translationFontSize) }
+            ]}>
+              {cleanTranslation(item.translation)}
+            </Text>
+          )}
           
           <View style={styles.controlsContainer}>
             <TouchableOpacity
@@ -789,13 +865,13 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
   },
   basmalaText: {
-  fontFamily: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
-  fontSize: 22,
-  color: '#004d24',
-  textAlign: 'center',
-  lineHeight: 40,
-  paddingVertical: 10,
-},
+    fontFamily: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
+    fontSize: 22,
+    color: '#004d24',
+    textAlign: 'center',
+    lineHeight: 40,
+    paddingVertical: 10,
+  },
   ayahContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
@@ -839,20 +915,18 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   arabicText: {
-  fontFamily: 'UthmanicFont',
-  fontSize: 24,
-  lineHeight: 45,
-  textAlign: 'right',
-  color: '#2c3e50',
-  marginBottom: 25,
-  marginTop: 15,
-  paddingTop: 15,
-  paddingBottom: 15,
-  paddingHorizontal: 10,
-  textAlignVertical: 'center',
-},
+    fontFamily: 'UthmanicFont',
+    lineHeight: 45,
+    textAlign: 'right',
+    color: '#2c3e50',
+    marginBottom: 25,
+    marginTop: 15,
+    paddingTop: 15,
+    paddingBottom: 15,
+    paddingHorizontal: 10,
+    textAlignVertical: 'center',
+  },
   translationText: {
-    fontSize: 16,
     lineHeight: 26,
     color: '#5a6c7d',
     marginBottom: 20,
