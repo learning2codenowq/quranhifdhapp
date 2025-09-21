@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Quran Memorization Tracker",
-    "slug": "quran-memorization-tracker",
+    "name": "Quran Hifdh",
+    "slug": "quran-hifdh",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,26 +12,27 @@
       "backgroundColor": "#004d24"
     },
     "assetBundlePatterns": [
-      "assets/fonts/*"
+      "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourname.quranmemorizationtracker"
+      "bundleIdentifier": "com.quranhifdh.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#004d24"
       },
-      "package": "com.yourname.quranmemorizationtracker"
+      "package": "com.quranhifdh.app",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "WRITE_EXTERNAL_STORAGE",
+        "WAKE_LOCK"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-splash-screen",
-      "expo-font",
-      "expo-audio"
-    ]
+    }
   }
 }

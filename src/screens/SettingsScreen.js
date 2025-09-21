@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../services/StorageService';
 import { TestingUtils } from '../utils/TestingUtils';
+import { Logger } from '../utils/Logger'
 
 export default function SettingsScreen({ navigation }) {
   const [settings, setSettings] = useState({
@@ -286,38 +287,44 @@ export default function SettingsScreen({ navigation }) {
       ]
     },
     {
-      title: '🔒 Data & Privacy',
-      items: [
-        {
-          type: 'button',
-          title: 'Export Data Backup',
-          subtitle: 'Save your progress to share or backup',
-          onPress: () => {
-            Alert.alert('Coming Soon', 'Data export feature will be available in the next update.');
-          }
-        },
-        {
-          type: 'button',
-          title: 'Import Data Backup',
-          subtitle: 'Restore progress from a backup file',
-          onPress: () => {
-            Alert.alert('Coming Soon', 'Data import feature will be available in the next update.');
-          }
-        },
-        {
-          type: 'button',
-          title: 'About This App',
-          subtitle: 'Version info and credits',
-          onPress: () => {
-            Alert.alert(
-              'Hifdh Journey',
-              'Version 1.0.0\n\nA modern app designed to help you memorize the Holy Quran with ease and consistency.\n\n© 2024 Hifdh Journey\nMade with ❤️ for the Muslim community',
-              [{ text: 'OK' }]
-            );
-          }
-        }
-      ]
+  title: '🔒 Data & Privacy',
+  items: [
+    {
+      type: 'button',
+      title: 'Privacy Policy',
+      subtitle: 'How we handle your data',
+      onPress: () => navigation.navigate('PrivacyPolicy')
     },
+    {
+      type: 'button',
+      title: 'Terms of Service',
+      subtitle: 'App usage terms and conditions',
+      onPress: () => navigation.navigate('TermsOfService')
+    },
+    {
+      type: 'button',
+      title: 'Export Data Backup',
+      subtitle: 'Save your progress to share or backup',
+      onPress: () => {
+        Alert.alert('Coming Soon', 'Data export feature will be available in the next update.');
+      }
+    },
+    {
+      type: 'button',
+      title: 'Import Data Backup',
+      subtitle: 'Restore progress from a backup file',
+      onPress: () => {
+        Alert.alert('Coming Soon', 'Data import feature will be available in the next update.');
+      }
+    },
+    {
+      type: 'button',
+      title: 'About This App',
+      subtitle: 'Version info and credits',
+      onPress: () => navigation.navigate('About')
+    }
+  ]
+},
     {
       title: '🧪 Testing & Diagnostics',
       items: [
