@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   fontSize: 20,
   color: '#d4af37',
   textAlign: 'center',
-  fontFamily: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
+  fontFamily: 'UthmanicFont',
   },
   footer: {
     paddingBottom: 40,

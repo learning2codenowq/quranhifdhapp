@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { QuranService } from '../services/QuranService';
+import { cleanArabicText } from '../utils/TextCleaner';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
@@ -196,13 +197,13 @@ export default function ReadingScreen() {
           
           <View style={styles.versesContainer}>
             {pageData.verses?.map((verse, index) => (
-              <Text key={verse.key || index} style={styles.arabicText}>
-                {verse.text}
-                {verse.number && (
-                  <Text style={styles.verseNumber}> ﴿{verse.number}﴾ </Text>
-                )}
-              </Text>
-            ))}
+  <Text key={verse.key || index} style={styles.arabicText}>
+    {cleanArabicText(verse.text)}
+    {verse.number && (
+      <Text style={styles.verseNumber}> ﴿{verse.number}﴾ </Text>
+    )}
+  </Text>
+))}
           </View>
         </View>
       </View>
@@ -231,19 +232,22 @@ export default function ReadingScreen() {
                 </Text>
               </View>
 
-              {lastReadPage > 1 && (
-                <View style={styles.continueCard}>
-                  <Text style={styles.continueText}>
-                    Continue from page {lastReadPage}
-                  </Text>
-                </View>
-              )}
+              {/* Removed continue card since feature is disabled */}
 
-              <TouchableOpacity style={styles.startButton} onPress={startReading}>
-                <Text style={styles.startButtonText}>
-                  {lastReadPage > 1 ? 'Continue Reading' : 'Start Reading'}
-                </Text>
+              <TouchableOpacity 
+                style={[styles.startButton, styles.disabledButton]} 
+                onPress={() => {}} 
+                disabled={true}
+              >
+                <Text style={styles.startButtonText}>Start Reading</Text>
               </TouchableOpacity>
+              
+              <Text style={styles.comingSoonText}>
+                🚧 This feature is coming soon! 🚧
+              </Text>
+              <Text style={styles.comingSoonSubtext}>
+                We're working hard to bring you the best page-by-page reading experience.
+              </Text>
             </View>
           </SafeAreaView>
         </LinearGradient>
@@ -467,7 +471,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   arabicText: {
-  fontFamily: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
+  fontFamily: 'UthmanicFont',
   fontSize: 18,
   lineHeight: 30,
   color: '#2c3e50',
@@ -519,4 +523,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  disabledButton: {
+  backgroundColor: '#999',
+  opacity: 0.6,
+},
+comingSoonText: {
+  fontSize: 16,
+  color: '#d4af37',
+  textAlign: 'center',
+  fontWeight: 'bold',
+  marginTop: 20,
+},
+comingSoonSubtext: {
+  fontSize: 14,
+  color: 'rgba(255, 255, 255, 0.8)',
+  textAlign: 'center',
+  marginTop: 10,
+  paddingHorizontal: 20,
+  lineHeight: 20,
+},
 });

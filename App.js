@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { loadFonts } from './src/utils/FontLoader';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { View, StyleSheet } from 'react-native';
@@ -22,6 +23,7 @@ export default function App() {
   const [showBottomNav, setShowBottomNav] = React.useState(false);
   const [showSplash, setShowSplash] = React.useState(true);
   const navigationRef = React.useRef();
+  const [fontsLoaded, setFontsLoaded] = React.useState(false);
 
   const onStateChange = (state) => {
     if (state) {
@@ -51,7 +53,9 @@ export default function App() {
     }
   };
 
-  const handleSplashComplete = () => {
+  const handleSplashComplete = async () => {
+    const loaded = await loadFonts();
+    setFontsLoaded(loaded);
     setShowSplash(false);
   };
 

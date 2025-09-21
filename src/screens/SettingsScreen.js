@@ -1,13 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../services/StorageService';
 import { TestingUtils } from '../utils/TestingUtils';
 
 export default function SettingsScreen({ navigation }) {
-  const [dailyGoal, setDailyGoal] = useState(10);
-  const [userName, setUserName] = useState('Student');
+  const [settings, setSettings] = useState({
+    // Audio Settings
+    autoPlayNext: false,
+    
+    // Display Settings
+    showTranslations: true,
+    arabicFontSize: 'Medium',
+    translationFontSize: 'Medium',
+    darkMode: false,
+    
+    // App Settings
+    dailyGoal: 10,
+    userName: 'Student',
+    translationLanguage: 'English',
+  });
+
+  const [fontPreviewModal, setFontPreviewModal] = useState(false);
+  const [previewFontSize, setPreviewFontSize] = useState('Medium');
 
   useEffect(() => {
     loadSettings();
@@ -17,8 +33,17 @@ export default function SettingsScreen({ navigation }) {
     try {
       const state = await StorageService.getState();
       if (state && state.settings) {
-        setDailyGoal(state.settings.dailyGoal || 10);
-        setUserName(state.settings.userName || 'Student');
+        setSettings(prev => ({
+          ...prev,
+          dailyGoal: state.settings.dailyGoal || 10,
+          userName: state.settings.userName || 'Student',
+          autoPlayNext: state.settings.autoPlayNext || false,
+          showTranslations: state.settings.showTranslations !== false,
+          arabicFontSize: state.settings.arabicFontSize || 'Medium',
+          translationFontSize: state.settings.translationFontSize || 'Medium',
+          darkMode: state.settings.darkMode || false,
+          translationLanguage: state.settings.translationLanguage || 'English',
+        }));
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -27,6 +52,9 @@ export default function SettingsScreen({ navigation }) {
 
   const updateSetting = async (key, value) => {
     try {
+      const newSettings = { ...settings, [key]: value };
+      setSettings(newSettings);
+      
       const state = await StorageService.getState();
       if (!state.settings) state.settings = {};
       state.settings[key] = value;
@@ -36,85 +64,298 @@ export default function SettingsScreen({ navigation }) {
     }
   };
 
-  const settingItems = [
+  const getFontSize = (sizeCategory) => {
+    const sizes = {
+      'Small': 18,
+      'Medium': 24,
+      'Large': 30,
+      'Extra Large': 36
+    };
+    return sizes[sizeCategory] || 24;
+  };
+
+  const getTranslationFontSize = (sizeCategory) => {
+    const sizes = {
+      'Small': 12,
+      'Medium': 16,
+      'Large': 20,
+      'Extra Large': 24
+    };
+    return sizes[sizeCategory] || 16;
+  };
+
+  const showFontPreview = (fontSize) => {
+    setPreviewFontSize(fontSize);
+    setFontPreviewModal(true);
+  };
+
+  const FontPreviewModal = () => (
+    <Modal visible={fontPreviewModal} transparent={true} animationType="slide">
+      <View style={styles.modalOverlay}>
+        <View style={styles.fontPreviewModal}>
+          <Text style={styles.modalTitle}>Font Size Preview</Text>
+          
+          <View style={styles.previewContainer}>
+            <Text style={styles.previewLabel}>Arabic Text ({previewFontSize})</Text>
+            <Text style={[
+              styles.arabicPreview, 
+              { 
+                fontSize: getFontSize(previewFontSize),
+                fontFamily: 'UthmanicFont'
+              }
+            ]}>
+              بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
+            </Text>
+            
+            <Text style={styles.previewLabel}>Translation Text ({settings.translationFontSize})</Text>
+            <Text style={[
+              styles.translationPreview,
+              { fontSize: getTranslationFontSize(settings.translationFontSize) }
+            ]}>
+              In the name of Allah, the Most Gracious, the Most Merciful.
+            </Text>
+          </View>
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity 
+              style={styles.cancelButton}
+              onPress={() => setFontPreviewModal(false)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.applyButton}
+              onPress={() => {
+                updateSetting('arabicFontSize', previewFontSize);
+                setFontPreviewModal(false);
+              }}
+            >
+              <Text style={styles.applyButtonText}>Apply</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  const SettingItem = ({ title, subtitle, onPress, rightComponent, dangerous = false }) => (
+    <TouchableOpacity
+      style={[styles.settingItem, dangerous && styles.dangerousItem]}
+      onPress={onPress}
+      disabled={!onPress}
+    >
+      <View style={styles.settingContent}>
+        <Text style={[styles.settingTitle, dangerous && styles.dangerousText]}>
+          {title}
+        </Text>
+        <Text style={[styles.settingSubtitle, dangerous && { color: 'rgba(255, 255, 255, 0.8)' }]}>
+          {subtitle}
+        </Text>
+      </View>
+      {rightComponent || <Text style={[styles.settingArrow, dangerous && { color: 'white' }]}>→</Text>}
+    </TouchableOpacity>
+  );
+
+  const SwitchItem = ({ title, subtitle, value, onValueChange }) => (
+    <View style={styles.settingItem}>
+      <View style={styles.settingContent}>
+        <Text style={styles.settingTitle}>{title}</Text>
+        <Text style={styles.settingSubtitle}>{subtitle}</Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: '#ccc', true: '#d4af37' }}
+        thumbColor={value ? '#004d24' : '#f4f3f4'}
+      />
+    </View>
+  );
+
+  const settingSections = [
     {
-      title: 'Profile',
+      title: '🎵 Audio Settings',
       items: [
         {
-          title: 'Daily Goal',
-          subtitle: `${dailyGoal} ayahs per day`,
+          type: 'switch',
+          title: 'Auto-play Next Ayah',
+          subtitle: 'Automatically play the next ayah when current finishes',
+          value: settings.autoPlayNext,
+          onValueChange: (value) => updateSetting('autoPlayNext', value)
+        }
+      ]
+    },
+    {
+      title: '🎨 Display Settings',
+      items: [
+        {
+          type: 'switch',
+          title: 'Show Translations',
+          subtitle: 'Display English translations below Arabic text',
+          value: settings.showTranslations,
+          onValueChange: (value) => updateSetting('showTranslations', value)
+        },
+        {
+          type: 'button',
+          title: 'Arabic Font Size',
+          subtitle: `Current: ${settings.arabicFontSize}`,
           onPress: () => {
             Alert.alert(
-              'Change Daily Goal',
-              'Select your new daily target',
+              'Arabic Font Size',
+              'Choose your preferred size for Arabic text',
               [
-                { text: '5 ayahs', onPress: () => { setDailyGoal(5); updateSetting('dailyGoal', 5); }},
-                { text: '10 ayahs', onPress: () => { setDailyGoal(10); updateSetting('dailyGoal', 10); }},
-                { text: '15 ayahs', onPress: () => { setDailyGoal(15); updateSetting('dailyGoal', 15); }},
-                { text: '20 ayahs', onPress: () => { setDailyGoal(20); updateSetting('dailyGoal', 20); }},
+                { text: 'Small', onPress: () => showFontPreview('Small') },
+                { text: 'Medium', onPress: () => showFontPreview('Medium') },
+                { text: 'Large', onPress: () => showFontPreview('Large') },
+                { text: 'Extra Large', onPress: () => showFontPreview('Extra Large') },
                 { text: 'Cancel', style: 'cancel' }
               ]
             );
           }
         },
         {
-          title: 'Name',
-          subtitle: userName,
+          type: 'button',
+          title: 'Translation Font Size',
+          subtitle: `Current: ${settings.translationFontSize}`,
+          onPress: () => {
+            Alert.alert(
+              'Translation Font Size',
+              'Choose your preferred size for translation text',
+              [
+                { text: 'Small', onPress: () => updateSetting('translationFontSize', 'Small') },
+                { text: 'Medium', onPress: () => updateSetting('translationFontSize', 'Medium') },
+                { text: 'Large', onPress: () => updateSetting('translationFontSize', 'Large') },
+                { text: 'Extra Large', onPress: () => updateSetting('translationFontSize', 'Extra Large') },
+                { text: 'Cancel', style: 'cancel' }
+              ]
+            );
+          }
+        },
+        {
+          type: 'switch',
+          title: 'Dark Mode',
+          subtitle: 'Use dark theme for reading screens',
+          value: settings.darkMode,
+          onValueChange: (value) => updateSetting('darkMode', value)
+        }
+      ]
+    },
+    {
+      title: '📱 App Settings',
+      items: [
+        {
+          type: 'button',
+          title: 'Daily Memorization Goal',
+          subtitle: `${settings.dailyGoal} ayahs per day`,
+          onPress: () => {
+            Alert.alert(
+              'Daily Goal',
+              'Select your daily memorization target',
+              [
+                { text: '5 ayahs', onPress: () => updateSetting('dailyGoal', 5) },
+                { text: '10 ayahs', onPress: () => updateSetting('dailyGoal', 10) },
+                { text: '15 ayahs', onPress: () => updateSetting('dailyGoal', 15) },
+                { text: '20 ayahs', onPress: () => updateSetting('dailyGoal', 20) },
+                { text: '25 ayahs', onPress: () => updateSetting('dailyGoal', 25) },
+                { text: 'Cancel', style: 'cancel' }
+              ]
+            );
+          }
+        },
+        {
+          type: 'button',
+          title: 'Your Name',
+          subtitle: settings.userName,
           onPress: () => {
             Alert.prompt(
               'Change Name',
-              'Enter your new name',
+              'Enter your name',
               (text) => {
-                if (text) {
-                  setUserName(text);
-                  updateSetting('userName', text);
+                if (text && text.trim()) {
+                  updateSetting('userName', text.trim());
                 }
               },
               'plain-text',
-              userName
+              settings.userName
+            );
+          }
+        },
+        {
+          type: 'button',
+          title: 'Translation Language',
+          subtitle: `Current: ${settings.translationLanguage}`,
+          onPress: () => {
+            Alert.alert(
+              'Translation Language',
+              'Choose your preferred translation language',
+              [
+                { text: 'English', onPress: () => updateSetting('translationLanguage', 'English') },
+                { text: 'Arabic', onPress: () => updateSetting('translationLanguage', 'Arabic') },
+                { text: 'Urdu', onPress: () => updateSetting('translationLanguage', 'Urdu') },
+                { text: 'French', onPress: () => updateSetting('translationLanguage', 'French') },
+                { text: 'Spanish', onPress: () => updateSetting('translationLanguage', 'Spanish') },
+                { text: 'Cancel', style: 'cancel' }
+              ]
             );
           }
         }
       ]
     },
     {
-      title: 'Data',
+      title: '🔒 Data & Privacy',
       items: [
         {
-          title: 'Backup Data',
-          subtitle: 'Export your progress',
+          type: 'button',
+          title: 'Export Data Backup',
+          subtitle: 'Save your progress to share or backup',
           onPress: () => {
-            Alert.alert('Coming Soon', 'Backup feature will be available in the next update.');
+            Alert.alert('Coming Soon', 'Data export feature will be available in the next update.');
           }
         },
         {
-          title: 'Restore Data',
-          subtitle: 'Import previous backup',
+          type: 'button',
+          title: 'Import Data Backup',
+          subtitle: 'Restore progress from a backup file',
           onPress: () => {
-            Alert.alert('Coming Soon', 'Restore feature will be available in the next update.');
+            Alert.alert('Coming Soon', 'Data import feature will be available in the next update.');
+          }
+        },
+        {
+          type: 'button',
+          title: 'About This App',
+          subtitle: 'Version info and credits',
+          onPress: () => {
+            Alert.alert(
+              'Hifdh Journey',
+              'Version 1.0.0\n\nA modern app designed to help you memorize the Holy Quran with ease and consistency.\n\n© 2024 Hifdh Journey\nMade with ❤️ for the Muslim community',
+              [{ text: 'OK' }]
+            );
           }
         }
       ]
     },
     {
-      title: 'Testing',
+      title: '🧪 Testing & Diagnostics',
       items: [
         {
+          type: 'button',
           title: 'Run Diagnostics',
-          subtitle: 'Test app functionality',
+          subtitle: 'Test app functionality and performance',
           onPress: async () => {
             const results = await TestingUtils.runDiagnostics();
             TestingUtils.showDiagnosticResults(results);
           }
         },
         {
+          type: 'button',
           title: 'Load Test Data',
-          subtitle: 'Generate sample progress',
+          subtitle: 'Generate sample progress for testing',
           onPress: TestingUtils.loadTestData
         },
         {
+          type: 'button',
           title: 'Reset All Data',
-          subtitle: 'Delete all progress',
+          subtitle: 'Delete all progress and restart',
           onPress: () => {
             Alert.alert(
               'Reset All Data',
@@ -146,23 +387,6 @@ export default function SettingsScreen({ navigation }) {
     }
   ];
 
-  const SettingItem = ({ item }) => (
-  <TouchableOpacity
-    style={[styles.settingItem, item.dangerous && styles.dangerousItem]}
-    onPress={item.onPress}
-  >
-    <View style={styles.settingContent}>
-      <Text style={[styles.settingTitle, item.dangerous && styles.dangerousText]}>
-        {item.title}
-      </Text>
-      <Text style={[styles.settingSubtitle, item.dangerous && { color: 'rgba(255, 255, 255, 0.8)' }]}>
-        {item.subtitle}
-      </Text>
-    </View>
-    <Text style={[styles.settingArrow, item.dangerous && { color: 'white' }]}>→</Text>
-  </TouchableOpacity>
-);
-
   return (
     <SafeAreaProvider>
       <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
@@ -175,15 +399,37 @@ export default function SettingsScreen({ navigation }) {
           </View>
 
           <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-            {settingItems.map((section, sectionIndex) => (
+            {settingSections.map((section, sectionIndex) => (
               <View key={sectionIndex} style={styles.section}>
                 <Text style={styles.sectionTitle}>{section.title}</Text>
-                {section.items.map((item, itemIndex) => (
-                  <SettingItem key={itemIndex} item={item} />
-                ))}
+                {section.items.map((item, itemIndex) => {
+                  if (item.type === 'switch') {
+                    return (
+                      <SwitchItem
+                        key={itemIndex}
+                        title={item.title}
+                        subtitle={item.subtitle}
+                        value={item.value}
+                        onValueChange={item.onValueChange}
+                      />
+                    );
+                  } else {
+                    return (
+                      <SettingItem
+                        key={itemIndex}
+                        title={item.title}
+                        subtitle={item.subtitle}
+                        onPress={item.onPress}
+                        dangerous={item.dangerous}
+                      />
+                    );
+                  }
+                })}
               </View>
             ))}
           </ScrollView>
+
+          <FontPreviewModal />
         </SafeAreaView>
       </LinearGradient>
     </SafeAreaProvider>
@@ -224,7 +470,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 15,
@@ -238,16 +484,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dangerousItem: {
-  backgroundColor: '#ff3b30',
-  borderWidth: 1,
-  borderColor: '#ff3b30',
-  },
-  dangerousText: {
-  color: 'white',
-  },
-  settingSubtitle: {
-  fontSize: 14,
-  color: '#666',
+    backgroundColor: '#ff3b30',
+    borderWidth: 1,
+    borderColor: '#ff3b30',
   },
   settingContent: {
     flex: 1,
@@ -259,7 +498,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   dangerousText: {
-    color: '#ff3b30',
+    color: 'white',
   },
   settingSubtitle: {
     fontSize: 14,
@@ -269,5 +508,79 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#d4af37',
     fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  fontPreviewModal: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 25,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#004d24',
+    textAlign: 'center',
+    marginBottom: 25,
+  },
+  previewContainer: {
+    marginBottom: 25,
+  },
+  previewLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 10,
+    marginTop: 15,
+  },
+  arabicPreview: {
+    textAlign: 'center',
+    color: '#004d24',
+    marginBottom: 10,
+    paddingVertical: 10,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+  },
+  translationPreview: {
+    textAlign: 'center',
+    color: '#666',
+    paddingVertical: 10,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    fontStyle: 'italic',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 15,
+    paddingVertical: 12,
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  applyButton: {
+    flex: 1,
+    backgroundColor: '#d4af37',
+    borderRadius: 15,
+    paddingVertical: 12,
+  },
+  applyButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

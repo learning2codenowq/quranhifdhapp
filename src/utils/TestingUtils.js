@@ -6,13 +6,13 @@ import { AnalyticsUtils } from './AnalyticsUtils';
 
 export class TestingUtils {
   static async runDiagnostics() {
-    const results = {
-      storage: await this.testStorage(),
-      tikrar: await this.testTikrarCalculations(),
-      achievements: await this.testAchievements(),
-      analytics: await this.testAnalytics(),
-      overall: 'PASS'
-    };
+  const results = {
+    storage: await this.testStorage(),
+    revision: await this.testRevisionCalculations(),
+    achievements: await this.testAchievements(),
+    analytics: await this.testAnalytics(),
+    overall: 'PASS'
+  };
 
     const hasFailures = Object.values(results).some(result => 
       typeof result === 'object' ? result.status === 'FAIL' : result === 'FAIL'
@@ -42,9 +42,8 @@ export class TestingUtils {
     }
   }
 
-  static async testTikrarCalculations() {
+  static async testRevisionCalculations() {
   try {
-    // Create a more realistic mock state
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
@@ -59,10 +58,9 @@ export class TestingUtils {
         [yesterday]: 1,
         [today]: 1
       },
-      tikrarProgress: {
+      revisionProgress: {
         [today]: {
-          repetitionOfYesterday: 0,
-          connection: 0,
+          newMemorization: 1,
           revision: 0
         }
       },
@@ -72,17 +70,16 @@ export class TestingUtils {
       }
     };
 
-    const tikrarPlan = QuranUtils.getTikrarPlan(mockState);
+    const revisionPlan = QuranUtils.getRevisionPlan(mockState);
     
-    if (!tikrarPlan || 
-        !tikrarPlan.repetitionOfYesterday || 
-        !tikrarPlan.connection || 
-        !tikrarPlan.revision ||
-        typeof tikrarPlan.totalDailyLoad !== 'number') {
-      return { status: 'FAIL', error: 'Tikrar plan structure invalid' };
+    if (!revisionPlan || 
+        !revisionPlan.newMemorization || 
+        !revisionPlan.revision ||
+        typeof revisionPlan.totalDailyLoad !== 'number') {
+      return { status: 'FAIL', error: 'Revision plan structure invalid' };
     }
 
-    return { status: 'PASS', message: 'Tikrar calculations working' };
+    return { status: 'PASS', message: 'Revision calculations working' };
   } catch (error) {
     return { status: 'FAIL', error: error.message };
   }
@@ -205,7 +202,7 @@ export class TestingUtils {
     const testState = {
       ayahProgress: {},
       progress: {},
-      tikrarProgress: {},
+      revisionProgress: {},
       settings: {
         dailyGoal: 10,
         userName: 'Test User'
@@ -213,42 +210,63 @@ export class TestingUtils {
       earnedAchievements: []
     };
 
-    // Generate realistic test data over 60 days
-    for (let i = 0; i < 60; i++) {
+    // Realistic Surah data (actual ayah counts)
+    const surahData = [
+      { id: 1, name: 'Al-Fatihah', ayahCount: 7 },
+      { id: 2, name: 'Al-Baqarah', ayahCount: 286 },
+      { id: 3, name: 'Ali-Imran', ayahCount: 200 },
+      { id: 4, name: 'An-Nisa', ayahCount: 176 },
+      { id: 5, name: 'Al-Maidah', ayahCount: 120 },
+      { id: 6, name: 'Al-Anam', ayahCount: 165 },
+      { id: 114, name: 'An-Nas', ayahCount: 6 }
+    ];
+
+    let totalAyahsMemorized = 0;
+    let currentSurahIndex = 0;
+    let currentAyahInSurah = 1;
+
+    // Generate realistic test data over 90 days
+    for (let i = 89; i >= 0; i--) { // Start from 90 days ago
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
       
-      // Simulate consistent daily progress
-      const dailyProgress = Math.floor(Math.random() * 8) + 7; // 7-15 ayahs per day
+      // Simulate realistic daily progress (5-15 ayahs)
+      const dailyProgress = Math.floor(Math.random() * 11) + 5; // 5-15 ayahs per day
       testState.progress[dateStr] = dailyProgress;
       
-      // Generate ayah progress for this day
-      const startingSurah = Math.floor(i / 20) + 1; // Change surah every ~20 days
-      const surahId = Math.min(startingSurah, 5); // Max 5 surahs for test
-      
-      if (!testState.ayahProgress[surahId]) {
-        testState.ayahProgress[surahId] = {};
-      }
-      
-      // Add ayahs for this day
-      for (let j = 1; j <= dailyProgress; j++) {
-        const ayahNumber = Object.keys(testState.ayahProgress[surahId]).length + 1;
-        if (ayahNumber <= 50) { // Max 50 ayahs per surah for test
-          testState.ayahProgress[surahId][ayahNumber] = {
-            memorized: true,
-            dateMemorized: dateStr,
-            difficulty: Math.floor(Math.random() * 3) + 1
-          };
+      // Add ayahs for this day realistically
+      for (let j = 0; j < dailyProgress; j++) {
+        if (currentSurahIndex >= surahData.length) break;
+        
+        const currentSurah = surahData[currentSurahIndex];
+        
+        if (!testState.ayahProgress[currentSurah.id]) {
+          testState.ayahProgress[currentSurah.id] = {};
+        }
+        
+        // Add this ayah as memorized
+        testState.ayahProgress[currentSurah.id][currentAyahInSurah] = {
+          memorized: true,
+          dateMemorized: dateStr,
+          difficulty: Math.floor(Math.random() * 3) + 1
+        };
+        
+        totalAyahsMemorized++;
+        currentAyahInSurah++;
+        
+        // Move to next surah when current is completed
+        if (currentAyahInSurah > currentSurah.ayahCount) {
+          currentSurahIndex++;
+          currentAyahInSurah = 1;
         }
       }
       
-      // Generate some Tikrar progress for recent days
+      // Generate revision progress for recent days
       if (i < 30) {
-        testState.tikrarProgress[dateStr] = {
-          repetitionOfYesterday: Math.floor(Math.random() * 50),
-          connection: Math.floor(Math.random() * 100),
-          revision: Math.floor(Math.random() * 80)
+        testState.revisionProgress[dateStr] = {
+          newMemorization: dailyProgress,
+          revision: Math.floor(Math.random() * 5)
         };
       }
     }
@@ -258,7 +276,7 @@ export class TestingUtils {
     if (success) {
       Alert.alert(
         'Test Data Loaded',
-        'Generated 60 days of realistic memorization data for testing.',
+        `Generated realistic memorization data:\n• ${totalAyahsMemorized} ayahs memorized\n• ${currentSurahIndex + 1} surahs completed/started\n• 90 days of progress`,
         [{ text: 'OK' }]
       );
       return true;

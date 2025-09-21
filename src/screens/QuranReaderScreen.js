@@ -16,6 +16,7 @@ import { QuranService } from '../services/QuranService';
 import { QuranUtils } from '../utils/QuranUtils';
 import { StorageService } from '../services/StorageService';
 import { AudioService } from '../services/AudioService';
+import { cleanArabicText } from '../utils/TextCleaner';
 
 export default function QuranReaderScreen({ route, navigation }) {
   const surahId = route?.params?.surahId || 1;
@@ -139,38 +140,70 @@ export default function QuranReaderScreen({ route, navigation }) {
   };
 
   const handleAudioPlay = async (currentSurahId, ayahNumber) => {
-    try {
-      const audioUrl = ayahAudioUrls[ayahNumber];
-      
-      if (!audioUrl) {
-        Alert.alert('Audio Error', 'Audio not available for this ayah');
-        return;
-      }
-
-      if (playingAyah && playingAyah.surahId === currentSurahId && playingAyah.ayahNumber === ayahNumber) {
-        if (audioStatus.isPlaying) {
-          await AudioService.pauseAudio();
-          setPlayingAyah(null);
-        } else {
-          await AudioService.resumeAudio();
-        }
-      } else {
-        setPlayingAyah({ surahId: currentSurahId, ayahNumber });
-        const success = await AudioService.playAyahFromUrl(audioUrl);
-        
-        if (!success) {
-          Alert.alert('Audio Error', 'Could not play audio for this ayah');
-          setPlayingAyah(null);
-        }
-      }
-      
-      const status = AudioService.getPlaybackStatus();
-      setAudioStatus(status);
-    } catch (error) {
-      console.error('Audio error:', error);
-      Alert.alert('Audio Error', 'Failed to play audio');
+  try {
+    const audioUrl = ayahAudioUrls[ayahNumber];
+    
+    if (!audioUrl) {
+      Alert.alert('Audio Error', 'Audio not available for this ayah');
+      return;
     }
-  };
+
+    if (playingAyah && playingAyah.surahId === currentSurahId && playingAyah.ayahNumber === ayahNumber) {
+      if (audioStatus.isPlaying) {
+        await AudioService.pauseAudio();
+        setPlayingAyah(null);
+      } else {
+        await AudioService.resumeAudio();
+      }
+    } else {
+      setPlayingAyah({ surahId: currentSurahId, ayahNumber });
+      const success = await AudioService.playAyahFromUrl(audioUrl);
+      
+      if (!success) {
+        Alert.alert('Audio Error', 'Could not play audio for this ayah');
+        setPlayingAyah(null);
+      } else {
+        // Auto-play next ayah when current finishes
+        checkForAutoPlayNext(currentSurahId, ayahNumber);
+      }
+    }
+    
+    const status = AudioService.getPlaybackStatus();
+    setAudioStatus(status);
+  } catch (error) {
+    console.error('Audio error:', error);
+    Alert.alert('Audio Error', 'Failed to play audio');
+  }
+};
+
+const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
+  const checkInterval = setInterval(() => {
+    const status = AudioService.getPlaybackStatus();
+    
+    if (!status.isPlaying && playingAyah?.ayahNumber === currentAyahNumber) {
+      // Audio finished, play next ayah
+      clearInterval(checkInterval);
+      
+      const nextAyahNumber = currentAyahNumber + 1;
+      const nextAyahExists = ayahs.find(ayah => ayah.verse_number === nextAyahNumber);
+      
+      if (nextAyahExists && ayahAudioUrls[nextAyahNumber]) {
+        console.log(`🎵 Auto-playing next ayah: ${nextAyahNumber}`);
+        setTimeout(() => {
+          handleAudioPlay(currentSurahId, nextAyahNumber);
+        }, 500); // Small delay before next ayah
+      } else {
+        console.log('🎵 No more ayahs to auto-play');
+        setPlayingAyah(null);
+      }
+    }
+  }, 500); // Check every 500ms
+  
+  // Clear interval after 60 seconds to prevent memory leaks
+  setTimeout(() => {
+    clearInterval(checkInterval);
+  }, 60000);
+};
 
   const openReplayModal = () => {
     const maxAyahs = ayahs.length;
@@ -276,7 +309,7 @@ export default function QuranReaderScreen({ route, navigation }) {
           }
 
           // Small delay with stop check
-          await delayWithStopCheck(300);
+          await delayWithStopCheck(100);
           
           // Check again before playing
           if (!isReplayingRef.current) {
@@ -294,7 +327,7 @@ export default function QuranReaderScreen({ route, navigation }) {
           
           if (success) {
             console.log(`⏳ Waiting for ayah ${ayahNum} to finish...`);
-            await waitWithStopCheck(5000);
+            await waitForAudioCompletion();
             console.log(`✅ Done waiting for ayah ${ayahNum}`);
           } else {
             console.error(`❌ AudioService failed for ayah ${ayahNum}`);
@@ -303,15 +336,15 @@ export default function QuranReaderScreen({ route, navigation }) {
           
           // Pause between ayahs (with stop check)
           if (ayahNum < endAyah && isReplayingRef.current) {
-            console.log(`💤 Pausing between ayahs...`);
-            await delayWithStopCheck(1000);
+            console.log(`💤 Brief pause between ayahs...`);
+            await delayWithStopCheck(300); // Reduced from 1000ms to 300ms
           }
         }
         
         // Pause between repetitions (with stop check)
         if (rep < repetitions && isReplayingRef.current) {
-          console.log(`🔄 Pausing between repetitions...`);
-          await delayWithStopCheck(2000);
+          console.log(`🔄 Brief pause between repetitions...`);
+          await delayWithStopCheck(800); // Reduced from 2000ms to 800ms
         }
       }
 
@@ -384,39 +417,44 @@ export default function QuranReaderScreen({ route, navigation }) {
   };
 
   // Helper function to wait for audio with stop checking
-  const waitWithStopCheck = (ms) => {
-    return new Promise((resolve) => {
-      const checkInterval = 200;
-      let elapsed = 0;
+  const waitForAudioCompletion = () => {
+  return new Promise((resolve) => {
+    const checkInterval = 100; // Check more frequently
+    let noAudioCount = 0;
+    
+    const intervalId = setInterval(() => {
+      // Check if stopped by user
+      if (!isReplayingRef.current) {
+        console.log('🛑 Audio wait interrupted by stop');
+        clearInterval(intervalId);
+        resolve();
+        return;
+      }
       
-      const intervalId = setInterval(() => {
-        elapsed += checkInterval;
-        
-        // Check if stopped
-        if (!isReplayingRef.current) {
-          console.log('🛑 Wait interrupted by stop');
-          clearInterval(intervalId);
-          resolve();
-          return;
-        }
-        
-        // Check if time elapsed
-        if (elapsed >= ms) {
-          clearInterval(intervalId);
-          resolve();
-          return;
-        }
-        
-        // Could also check audio status here if needed
-        const status = AudioService.getPlaybackStatus();
-        if (!status.isPlaying && elapsed > 2000) {
-          console.log('🎵 Audio finished early');
+      // Check audio status
+      const status = AudioService.getPlaybackStatus();
+      
+      if (!status.isPlaying) {
+        noAudioCount++;
+        // Shorter wait to ensure audio finished
+        if (noAudioCount >= 5) { // 0.5 seconds of no audio = finished
+          console.log('🎵 Audio playback completed');
           clearInterval(intervalId);
           resolve();
         }
-      }, checkInterval);
-    });
-  };
+      } else {
+        noAudioCount = 0; // Reset counter if audio is still playing
+      }
+    }, checkInterval);
+    
+    // Safety timeout - maximum 30 seconds per ayah
+    setTimeout(() => {
+      console.log('⏰ Audio timeout reached (30s safety limit)');
+      clearInterval(intervalId);
+      resolve();
+    }, 30000);
+  });
+};
 
   const cleanTranslation = (text) => {
     if (!text) return '';
@@ -467,7 +505,7 @@ export default function QuranReaderScreen({ route, navigation }) {
         <View style={styles.ayahContent}>
           <Text style={styles.ayahNumber}>{item.verse_number}</Text>
           
-          <Text style={styles.arabicText}>{item.text}</Text>
+          <Text style={styles.arabicText}>{cleanArabicText(item.text)}</Text>
           
           <Text style={styles.translationText}>
             {cleanTranslation(item.translation)}
@@ -801,7 +839,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   arabicText: {
-  fontFamily: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
+  fontFamily: 'UthmanicFont',
   fontSize: 24,
   lineHeight: 45,
   textAlign: 'right',

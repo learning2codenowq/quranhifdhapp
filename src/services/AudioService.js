@@ -22,43 +22,47 @@ export class AudioService {
   }
 
   static async playAyahFromUrl(audioUrl) {
-    try {
-      if (!audioUrl) {
-        throw new Error('No audio URL provided');
-      }
-
-      console.log('Playing audio from URL:', audioUrl);
-      
-      await this.stopAudio();
-      
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: audioUrl },
-        { shouldPlay: true, volume: 1.0 }
-      );
-      
-      this.sound = sound;
-      this.isPlaying = true;
-
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.didJustFinish) {
-          console.log('Audio finished playing');
-          this.isPlaying = false;
-          this.sound = null;
-        }
-        if (status.error) {
-          console.error('Audio playback error:', status.error);
-          this.isPlaying = false;
-          this.sound = null;
-        }
-      });
-
-      console.log('Audio should now be playing...');
-      return true;
-    } catch (error) {
-      console.error('Audio playback failed:', error);
-      return false;
+  try {
+    if (!audioUrl) {
+      throw new Error('No audio URL provided');
     }
+
+    console.log('Playing audio from URL:', audioUrl);
+    
+    await this.stopAudio();
+    
+    const { sound } = await Audio.Sound.createAsync(
+      { uri: audioUrl },
+      { shouldPlay: true, volume: 1.0 }
+    );
+    
+    this.sound = sound;
+    this.isPlaying = true;
+
+    sound.setOnPlaybackStatusUpdate((status) => {
+      this.isPlaying = status.isLoaded && status.isPlaying;
+      
+      if (status.didJustFinish) {
+        console.log('🎵 Audio finished playing naturally');
+        this.isPlaying = false;
+        // Don't set sound to null immediately, let it be cleaned up properly
+      }
+      
+      if (status.error) {
+        console.error('Audio playback error:', status.error);
+        this.isPlaying = false;
+        this.sound = null;
+      }
+    });
+
+    console.log('Audio should now be playing...');
+    return true;
+  } catch (error) {
+    console.error('Audio playback failed:', error);
+    this.isPlaying = false;
+    return false;
   }
+}
 
   // Keep this for backward compatibility but use the new method
   static async playAyah(surahId, ayahNumber, reciter = 'alafasy') {
