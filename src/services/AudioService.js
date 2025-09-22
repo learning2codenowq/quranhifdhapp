@@ -63,25 +63,32 @@ export class AudioService {
     this.isPlaying = true;
 
     sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded) {
-        this.isPlaying = status.isPlaying;
-        
-        if (status.didJustFinish) {
-          console.log('🎵 Audio finished playing naturally');
-          this.isPlaying = false;
-        }
-        
-        if (status.error) {
-          console.error('Audio playback error:', status.error);
-          this.isPlaying = false;
+  if (status.isLoaded) {
+    this.isPlaying = status.isPlaying;
+    
+    if (status.didJustFinish) {
+      console.log('🎵 Audio finished playing naturally');
+      this.isPlaying = false;
+      // Don't set sound to null immediately to allow auto-play detection
+      setTimeout(() => {
+        // Clear the sound after a short delay
+        if (this.sound === sound) {
           this.sound = null;
         }
-      } else if (status.error) {
-        console.error('Audio loading error:', status.error);
-        this.isPlaying = false;
-        this.sound = null;
-      }
-    });
+      }, 200);
+    }
+    
+    if (status.error) {
+      console.error('Audio playback error:', status.error);
+      this.isPlaying = false;
+      this.sound = null;
+    }
+  } else if (status.error) {
+    console.error('Audio loading error:', status.error);
+    this.isPlaying = false;
+    this.sound = null;
+  }
+});
 
     console.log('Audio should now be playing...');
     return true;

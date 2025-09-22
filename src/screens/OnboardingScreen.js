@@ -5,7 +5,8 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   Dimensions,
-  TextInput
+  TextInput,
+  Modal
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -30,8 +31,8 @@ const onboardingData = [
   },
   {
     id: 3,
-    title: 'As-salaamu alaykum, welcome!',
-    subtitle: 'السلام عليكم، مَرْحَبًا!',
+    title: 'As-salaamu alaykum,',
+    subtitle: 'Welcome to your hifdh journey!',
     description: '',
     showNameInput: true
   }
@@ -42,6 +43,7 @@ export default function OnboardingScreen({ navigation }) {
   const [selectedTarget, setSelectedTarget] = useState(10);
   const [userName, setUserName] = useState('');
   const [hoveredTarget, setHoveredTarget] = useState(null);
+  const [showHadithModal, setShowHadithModal] = useState(false);
 
   const targetOptions = [
     { 
@@ -52,12 +54,12 @@ export default function OnboardingScreen({ navigation }) {
       completionDate: new Date(Date.now() + Math.ceil(6236 / 5) * 24 * 60 * 60 * 1000)
     },
     { 
-      value: 10, 
-      label: '10', 
-      subtitle: 'ayahs/day', 
-      recommended: true,
-      completionDays: Math.ceil(6236 / 10),
-      completionDate: new Date(Date.now() + Math.ceil(6236 / 10) * 24 * 60 * 60 * 1000)
+    value: 10, 
+    label: '10', 
+    subtitle: 'ayahs/day', 
+    recommended: true,
+    completionDays: Math.ceil(6236 / 10),
+    completionDate: new Date(Date.now() + Math.ceil(6236 / 10) * 24 * 60 * 60 * 1000)
     },
     { 
       value: 15, 
@@ -120,64 +122,109 @@ export default function OnboardingScreen({ navigation }) {
             </View>
 
             {currentScreen.showTargetSelection && (
-              <View style={styles.targetSection}>
-                <View style={styles.targetGrid}>
-                  {targetOptions.map((option) => (
-                    <View key={option.value} style={styles.targetItemContainer}>
-                      <TouchableOpacity
-                        style={[
-                          styles.targetButton,
-                          selectedTarget === option.value && styles.selectedTarget,
-                          option.recommended && styles.recommendedBorder
-                        ]}
-                        onPress={() => setSelectedTarget(option.value)}
-                        onPressIn={() => setHoveredTarget(option.value)}
-                        onPressOut={() => setHoveredTarget(null)}
-                      >
-                        <Text style={[
-                          styles.targetNumber,
-                          selectedTarget === option.value && styles.selectedTargetText
-                        ]}>
-                          {option.label}
-                        </Text>
-                        <Text style={[
-                          styles.targetLabel,
-                          selectedTarget === option.value && styles.selectedTargetText
-                        ]}>
-                          {option.subtitle}
-                        </Text>
-                        {option.recommended && (
-                          <Text style={styles.recommendedText}>Recommended</Text>
-                        )}
-                      </TouchableOpacity>
-                      
-                      {(hoveredTarget === option.value || selectedTarget === option.value) && 
-                       getWarningMessage(option.value) && (
-                        <View style={styles.warningContainer}>
-                          <Text style={styles.warningText}>
-                            ⚠️ {getWarningMessage(option.value)}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  ))}
-                </View>
+  <View style={styles.targetSection}>
+    <View style={styles.targetGrid}>
+      {targetOptions.map((option) => (
+        <View key={option.value} style={styles.targetItemContainer}>
+          <TouchableOpacity
+            style={[
+              styles.targetButton,
+              selectedTarget === option.value && styles.selectedTarget,
+              option.recommended && styles.recommendedBorder
+            ]}
+            onPress={() => setSelectedTarget(option.value)}
+            onPressIn={() => setHoveredTarget(option.value)}
+            onPressOut={() => setHoveredTarget(null)}
+          >
+            <View style={styles.targetContent}>
+              <Text style={[
+                styles.targetNumber,
+                selectedTarget === option.value && styles.selectedTargetText
+              ]}>
+                {option.label}
+              </Text>
+              <Text style={[
+                styles.targetLabel,
+                selectedTarget === option.value && styles.selectedTargetText
+              ]}>
+                {option.subtitle}
+              </Text>
+              
+              {/* Recommended text with dynamic styling */}
+              {option.recommended && (
+                <Text style={[
+                  styles.recommendedText,
+                  hoveredTarget && hoveredTarget !== option.value && styles.recommendedTextGolden
+                ]}>
+                  Recommended
+                </Text>
+              )}
+              
+              {/* Question mark for option 10 */}
+              {option.value === 10 && (
+                <TouchableOpacity 
+                  style={styles.questionMark}
+                  onPress={() => setShowHadithModal(true)}
+                >
+                  <Text style={styles.questionMarkText}>?</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </TouchableOpacity>
+          
+          {/* Show warning for high targets only */}
+          {(hoveredTarget === option.value || selectedTarget === option.value) && 
+           getWarningMessage(option.value) && (
+            <View style={styles.warningContainer}>
+              <Text style={styles.warningText}>
+                ⚠️ {getWarningMessage(option.value)}
+              </Text>
+            </View>
+          )}
+        </View>
+      ))}
+    </View>
 
-                <View style={styles.estimateContainer}>
-                  <Text style={styles.estimateTitle}>Completion Estimate</Text>
-                  {selectedTarget && (
-                    <View style={styles.estimateDetails}>
-                      <Text style={styles.estimateText}>
-                        📅 {targetOptions.find(t => t.value === selectedTarget)?.completionDays} days
-                      </Text>
-                      <Text style={styles.estimateDate}>
-                        Expected completion: {targetOptions.find(t => t.value === selectedTarget)?.completionDate.toLocaleDateString()}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            )}
+    <View style={styles.estimateContainer}>
+      <Text style={styles.estimateTitle}>Completion Estimate</Text>
+      {selectedTarget && (
+        <View style={styles.estimateDetails}>
+          <Text style={styles.estimateText}>
+            📅 {targetOptions.find(t => t.value === selectedTarget)?.completionDays} days
+          </Text>
+          <Text style={styles.estimateDate}>
+            Expected completion: {targetOptions.find(t => t.value === selectedTarget)?.completionDate.toLocaleDateString()}
+          </Text>
+        </View>
+      )}
+    </View>
+    
+    {/* Hadith Modal */}
+    <Modal
+      visible={showHadithModal}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setShowHadithModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.hadithModal}>
+          <Text style={styles.hadithModalTitle}>Why 10 Ayahs Per Day?</Text>
+          <Text style={styles.hadithModalText}>
+            <Text style={styles.hadithBold}>Reported from Ibn Masʿūd (رضي الله عنه):</Text>{'\n\n'}
+            "They would learn 10 ayat and not move on until they had learned their knowledge and acted upon them."{'\n\n'}
+            <Text style={styles.hadithSource}>(al-Ṭabarī in Tafsīr; Ibn Kathīr graded the chain sound)</Text>
+          </Text>
+          <TouchableOpacity 
+            style={styles.hadithCloseButton}
+            onPress={() => setShowHadithModal(false)}
+          >
+            <Text style={styles.hadithCloseText}>Got it!</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  </View>
+)}
 
             {currentScreen.showNameInput && (
               <View style={styles.nameSection}>
@@ -425,4 +472,93 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
   },
+  targetContent: {
+  alignItems: 'center',
+  position: 'relative',
+  width: '100%',
+},
+questionMark: {
+  position: 'absolute',
+  top: -5,
+  right: -5,
+  backgroundColor: '#d4af37',
+  borderRadius: 10,
+  width: 20,
+  height: 20,
+  justifyContent: 'center',
+  alignItems: 'center',
+  elevation: 2,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.2,
+  shadowRadius: 2,
+},
+questionMarkText: {
+  fontSize: 12,
+  color: 'white',
+  fontWeight: 'bold',
+},
+recommendedText: {
+  fontSize: 12,
+  color: '#004d24', // Dark green by default
+  fontWeight: '600',
+  marginTop: 5,
+},
+recommendedTextGolden: {
+  color: '#d4af37', // Golden when hovering other options
+},
+modalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 20,
+},
+hadithModal: {
+  backgroundColor: 'white',
+  borderRadius: 20,
+  padding: 25,
+  maxWidth: 350,
+  width: '100%',
+  elevation: 10,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 5 },
+  shadowOpacity: 0.3,
+  shadowRadius: 10,
+},
+hadithModalTitle: {
+  fontSize: 20,
+  fontWeight: 'bold',
+  color: '#004d24',
+  textAlign: 'center',
+  marginBottom: 15,
+},
+hadithModalText: {
+  fontSize: 15,
+  color: '#333',
+  lineHeight: 22,
+  textAlign: 'center',
+  marginBottom: 20,
+},
+hadithBold: {
+  fontWeight: 'bold',
+  color: '#004d24',
+},
+hadithSource: {
+  fontSize: 13,
+  fontStyle: 'italic',
+  color: '#666',
+},
+hadithCloseButton: {
+  backgroundColor: '#d4af37',
+  borderRadius: 25,
+  paddingVertical: 12,
+  paddingHorizontal: 30,
+  alignSelf: 'center',
+},
+hadithCloseText: {
+  color: 'white',
+  fontSize: 16,
+  fontWeight: '600',
+},
 });

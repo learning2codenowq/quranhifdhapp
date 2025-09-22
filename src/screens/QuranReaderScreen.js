@@ -32,10 +32,11 @@ export default function QuranReaderScreen({ route, navigation }) {
   
   // Settings state
   const [settings, setSettings] = useState({
-    showTranslations: true,
-    arabicFontSize: 'Medium',
-    translationFontSize: 'Medium'
-  });
+  showTranslations: true,
+  arabicFontSize: 'Medium',
+  translationFontSize: 'Medium',
+  autoPlayNext: false 
+});
   
   // Replay segment states
   const [showReplayModal, setShowReplayModal] = useState(false);
@@ -54,6 +55,7 @@ export default function QuranReaderScreen({ route, navigation }) {
 
   // Ref for immediate stop checking
   const isReplayingRef = React.useRef(false);
+  const autoPlayIntervalRef = React.useRef(null);
 
   useEffect(() => {
     if (surahId) {
@@ -68,29 +70,38 @@ export default function QuranReaderScreen({ route, navigation }) {
     };
   }, [surahId]);
 
-  // Cleanup on component unmount
-  useEffect(() => {
-    return () => {
-      Logger.log('🧹 Component unmounting - stopping any ongoing replay');
-      isReplayingRef.current = false;
-      AudioService.stopAudio();
-    };
-  }, []);
+useEffect(() => {
+  return () => {
+    Logger.log('🧹 Component unmounting - stopping any ongoing replay');
+    isReplayingRef.current = false;
+    
+    // Clear auto-play interval
+    if (autoPlayIntervalRef.current) {
+      clearInterval(autoPlayIntervalRef.current);
+      autoPlayIntervalRef.current = null;
+    }
+    
+    AudioService.stopAudio();
+  };
+}, []);
 
   const loadSettings = async () => {
-    try {
-      const state = await StorageService.getState();
-      if (state?.settings) {
-        setSettings({
-          showTranslations: state.settings.showTranslations !== false,
-          arabicFontSize: state.settings.arabicFontSize || 'Medium',
-          translationFontSize: state.settings.translationFontSize || 'Medium'
-        });
-      }
-    } catch (error) {
-      Logger.error('Error loading settings:', error);
+  try {
+    const state = await StorageService.getState();
+    if (state?.settings) {
+      const newSettings = {
+        showTranslations: state.settings.showTranslations !== false,
+        arabicFontSize: state.settings.arabicFontSize || 'Medium',
+        translationFontSize: state.settings.translationFontSize || 'Medium',
+        autoPlayNext: state.settings.autoPlayNext || false // Add this line
+      };
+      Logger.log('🎵 Loaded settings:', newSettings); // Debug log
+      setSettings(newSettings);
     }
-  };
+  } catch (error) {
+    Logger.error('Error loading settings:', error);
+  }
+};
 
   const loadSurahData = async () => {
     try {
@@ -167,53 +178,59 @@ export default function QuranReaderScreen({ route, navigation }) {
   };
 
   const handleAudioPlay = async (currentSurahId, ayahNumber) => {
-    try {
-      const audioUrl = ayahAudioUrls[ayahNumber];
-      
-      if (!audioUrl) {
-        Alert.alert('Audio Error', 'Audio not available for this ayah');
-        return;
-      }
-
-      Logger.log(`Attempting to play audio for ayah ${ayahNumber}:`, audioUrl);
-
-      if (playingAyah && playingAyah.surahId === currentSurahId && playingAyah.ayahNumber === ayahNumber) {
-        if (audioStatus.isPlaying) {
-          await AudioService.pauseAudio();
-          setPlayingAyah(null);
-        } else {
-          await AudioService.resumeAudio();
-        }
-      } else {
-        setPlayingAyah({ surahId: currentSurahId, ayahNumber });
-        const success = await AudioService.playAyahFromUrl(audioUrl);
-        
-        if (!success) {
-          Alert.alert(
-            'Audio Error', 
-            'Could not play audio for this ayah. Please check your internet connection and try again.',
-            [
-              { text: 'OK', onPress: () => setPlayingAyah(null) }
-            ]
-          );
-        } else {
-          // Auto-play next ayah when current finishes
-          checkForAutoPlayNext(currentSurahId, ayahNumber);
-        }
-      }
-      
-      const status = AudioService.getPlaybackStatus();
-      setAudioStatus(status);
-    } catch (error) {
-      Logger.error('Audio error:', error);
-      setPlayingAyah(null);
-      Alert.alert(
-        'Audio Error', 
-        'Failed to play audio. The audio file may not be available or there may be a network issue.',
-        [{ text: 'OK' }]
-      );
+  try {
+    const audioUrl = ayahAudioUrls[ayahNumber];
+    
+    if (!audioUrl) {
+      Alert.alert('Audio Error', 'Audio not available for this ayah');
+      return;
     }
-  };
+
+    Logger.log(`Attempting to play audio for ayah ${ayahNumber}:`, audioUrl);
+
+    if (playingAyah && playingAyah.surahId === currentSurahId && playingAyah.ayahNumber === ayahNumber) {
+      if (audioStatus.isPlaying) {
+        // Clear auto-play when pausing
+        if (autoPlayIntervalRef.current) {
+          clearInterval(autoPlayIntervalRef.current);
+          autoPlayIntervalRef.current = null;
+        }
+        
+        await AudioService.pauseAudio();
+        setPlayingAyah(null);
+      } else {
+        await AudioService.resumeAudio();
+      }
+    } else {
+      setPlayingAyah({ surahId: currentSurahId, ayahNumber });
+      const success = await AudioService.playAyahFromUrl(audioUrl);
+      
+      if (!success) {
+        Alert.alert(
+          'Audio Error', 
+          'Could not play audio for this ayah. Please check your internet connection and try again.',
+          [
+            { text: 'OK', onPress: () => setPlayingAyah(null) }
+          ]
+        );
+      } else {
+        // Set up auto-play for next ayah
+        checkForAutoPlayNext(currentSurahId, ayahNumber);
+      }
+    }
+    
+    const status = AudioService.getPlaybackStatus();
+    setAudioStatus(status);
+  } catch (error) {
+    Logger.error('Audio error:', error);
+    setPlayingAyah(null);
+    Alert.alert(
+      'Audio Error', 
+      'Failed to play audio. The audio file may not be available or there may be a network issue.',
+      [{ text: 'OK' }]
+    );
+  }
+};
 
   const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
   // Check if auto-play is enabled in settings
@@ -222,32 +239,48 @@ export default function QuranReaderScreen({ route, navigation }) {
     return;
   }
 
-  const checkInterval = setInterval(() => {
+  Logger.log('🎵 Auto-play enabled, setting up listener for ayah', currentAyahNumber);
+
+  // Clear any existing interval first
+  if (autoPlayIntervalRef.current) {
+    clearInterval(autoPlayIntervalRef.current);
+    autoPlayIntervalRef.current = null;
+  }
+
+  autoPlayIntervalRef.current = setInterval(() => {
     const status = AudioService.getPlaybackStatus();
     
+    // Check if the current ayah finished playing and we're still on the same ayah
     if (!status.isPlaying && playingAyah?.ayahNumber === currentAyahNumber) {
-      // Audio finished, play next ayah
-      clearInterval(checkInterval);
+      Logger.log('🎵 Current ayah finished, preparing next...');
+      clearInterval(autoPlayIntervalRef.current);
+      autoPlayIntervalRef.current = null;
       
       const nextAyahNumber = currentAyahNumber + 1;
       const nextAyahExists = ayahs.find(ayah => ayah.verse_number === nextAyahNumber);
       
       if (nextAyahExists && ayahAudioUrls[nextAyahNumber]) {
         Logger.log(`🎵 Auto-playing next ayah: ${nextAyahNumber}`);
+        
+        // Set a small timeout to ensure audio service is ready
         setTimeout(() => {
           handleAudioPlay(currentSurahId, nextAyahNumber);
-        }, 500); // Small delay before next ayah
+        }, 100);
       } else {
-        Logger.log('🎵 No more ayahs to auto-play');
+        Logger.log('🎵 No more ayahs to auto-play - end of surah reached');
         setPlayingAyah(null);
       }
     }
-  }, 500); // Check every 500ms
+  }, 100); // Check every 100ms for faster response
   
-  // Clear interval after 60 seconds to prevent memory leaks
+  // Clear interval after 2 minutes to prevent memory leaks
   setTimeout(() => {
-    clearInterval(checkInterval);
-  }, 60000);
+    if (autoPlayIntervalRef.current) {
+      clearInterval(autoPlayIntervalRef.current);
+      autoPlayIntervalRef.current = null;
+      Logger.log('🎵 Auto-play timeout reached');
+    }
+  }, 120000);
 };
 
   const openReplayModal = () => {
