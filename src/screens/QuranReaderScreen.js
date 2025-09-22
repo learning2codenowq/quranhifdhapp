@@ -35,7 +35,7 @@ export default function QuranReaderScreen({ route, navigation }) {
   showTranslations: true,
   arabicFontSize: 'Medium',
   translationFontSize: 'Medium',
-  autoPlayNext: false 
+  autoPlayNext: true 
 });
   
   // Replay segment states
@@ -55,7 +55,7 @@ export default function QuranReaderScreen({ route, navigation }) {
 
   // Ref for immediate stop checking
   const isReplayingRef = React.useRef(false);
-  const autoPlayIntervalRef = React.useRef(null);
+  const flatListRef = React.useRef(null);
 
   useEffect(() => {
     if (surahId) {
@@ -70,17 +70,11 @@ export default function QuranReaderScreen({ route, navigation }) {
     };
   }, [surahId]);
 
+// Cleanup on component unmount
 useEffect(() => {
   return () => {
-    Logger.log('🧹 Component unmounting - stopping any ongoing replay');
+    console.log('🧹 Component unmounting - stopping any ongoing replay');
     isReplayingRef.current = false;
-    
-    // Clear auto-play interval
-    if (autoPlayIntervalRef.current) {
-      clearInterval(autoPlayIntervalRef.current);
-      autoPlayIntervalRef.current = null;
-    }
-    
     AudioService.stopAudio();
   };
 }, []);
@@ -93,9 +87,9 @@ useEffect(() => {
         showTranslations: state.settings.showTranslations !== false,
         arabicFontSize: state.settings.arabicFontSize || 'Medium',
         translationFontSize: state.settings.translationFontSize || 'Medium',
-        autoPlayNext: state.settings.autoPlayNext || false // Add this line
+        autoPlayNext: state.settings.autoPlayNext !== false // Changed: default true if not explicitly false
       };
-      Logger.log('🎵 Loaded settings:', newSettings); // Debug log
+      Logger.log('🎵 Loaded settings:', newSettings);
       setSettings(newSettings);
     }
   } catch (error) {
@@ -186,24 +180,45 @@ useEffect(() => {
       return;
     }
 
-    Logger.log(`Attempting to play audio for ayah ${ayahNumber}:`, audioUrl);
+    console.log(`Attempting to play audio for ayah ${ayahNumber}:`, audioUrl);
 
     if (playingAyah && playingAyah.surahId === currentSurahId && playingAyah.ayahNumber === ayahNumber) {
-      if (audioStatus.isPlaying) {
-        // Clear auto-play when pausing
-        if (autoPlayIntervalRef.current) {
-          clearInterval(autoPlayIntervalRef.current);
-          autoPlayIntervalRef.current = null;
-        }
-        
-        await AudioService.pauseAudio();
-        setPlayingAyah(null);
-      } else {
-        await AudioService.resumeAudio();
-      }
+  if (audioStatus.isPlaying) {
+    console.log('🛑 User clicked pause - stopping audio');
+    await AudioService.stopAudio(); // Use stopAudio instead of pauseAudio for cleaner stop
+    setPlayingAyah(null);
+  } else {
+    await AudioService.resumeAudio();
+  }
     } else {
       setPlayingAyah({ surahId: currentSurahId, ayahNumber });
-      const success = await AudioService.playAyahFromUrl(audioUrl);
+      
+      // Scroll to current ayah
+      scrollToAyah(ayahNumber);
+      
+      // Define what happens when this ayah finishes
+      const onAyahComplete = () => {
+        if (settings.autoPlayNext) {
+          console.log('🎵 Auto-play enabled, looking for next ayah...');
+          const nextAyahNumber = ayahNumber + 1;
+          const nextAyahExists = ayahs.find(ayah => ayah.verse_number === nextAyahNumber);
+          
+          if (nextAyahExists && ayahAudioUrls[nextAyahNumber]) {
+            console.log(`🎵 Playing next ayah: ${nextAyahNumber}`);
+            setTimeout(() => {
+              handleAudioPlay(currentSurahId, nextAyahNumber);
+            }, 500); // Small delay for smooth transition
+          } else {
+            console.log('🎵 Reached end of surah');
+            setPlayingAyah(null);
+          }
+        } else {
+          console.log('🎵 Auto-play disabled, stopping');
+          setPlayingAyah(null);
+        }
+      };
+      
+      const success = await AudioService.playAyahFromUrl(audioUrl, onAyahComplete);
       
       if (!success) {
         Alert.alert(
@@ -213,16 +228,13 @@ useEffect(() => {
             { text: 'OK', onPress: () => setPlayingAyah(null) }
           ]
         );
-      } else {
-        // Set up auto-play for next ayah
-        checkForAutoPlayNext(currentSurahId, ayahNumber);
       }
     }
     
     const status = AudioService.getPlaybackStatus();
     setAudioStatus(status);
   } catch (error) {
-    Logger.error('Audio error:', error);
+    console.error('Audio error:', error);
     setPlayingAyah(null);
     Alert.alert(
       'Audio Error', 
@@ -232,55 +244,32 @@ useEffect(() => {
   }
 };
 
-  const checkForAutoPlayNext = (currentSurahId, currentAyahNumber) => {
-  // Check if auto-play is enabled in settings
-  if (!settings.autoPlayNext) {
-    Logger.log('🎵 Auto-play is disabled in settings');
-    return;
-  }
-
-  Logger.log('🎵 Auto-play enabled, setting up listener for ayah', currentAyahNumber);
-
-  // Clear any existing interval first
-  if (autoPlayIntervalRef.current) {
-    clearInterval(autoPlayIntervalRef.current);
-    autoPlayIntervalRef.current = null;
-  }
-
-  autoPlayIntervalRef.current = setInterval(() => {
-    const status = AudioService.getPlaybackStatus();
-    
-    // Check if the current ayah finished playing and we're still on the same ayah
-    if (!status.isPlaying && playingAyah?.ayahNumber === currentAyahNumber) {
-      Logger.log('🎵 Current ayah finished, preparing next...');
-      clearInterval(autoPlayIntervalRef.current);
-      autoPlayIntervalRef.current = null;
+const scrollToAyah = (ayahNumber) => {
+  if (flatListRef.current && ayahs.length > 0) {
+    try {
+      const ayahIndex = ayahs.findIndex(ayah => ayah.verse_number === ayahNumber);
       
-      const nextAyahNumber = currentAyahNumber + 1;
-      const nextAyahExists = ayahs.find(ayah => ayah.verse_number === nextAyahNumber);
-      
-      if (nextAyahExists && ayahAudioUrls[nextAyahNumber]) {
-        Logger.log(`🎵 Auto-playing next ayah: ${nextAyahNumber}`);
+      if (ayahIndex !== -1) {
+        console.log(`📱 Scrolling to ayah ${ayahNumber} at index ${ayahIndex}`);
         
-        // Set a small timeout to ensure audio service is ready
-        setTimeout(() => {
-          handleAudioPlay(currentSurahId, nextAyahNumber);
-        }, 100);
+        flatListRef.current.scrollToIndex({
+          index: ayahIndex,
+          animated: true,
+          viewPosition: 0.2 // Show ayah at 20% from top
+        });
       } else {
-        Logger.log('🎵 No more ayahs to auto-play - end of surah reached');
-        setPlayingAyah(null);
+        console.log(`📱 Ayah ${ayahNumber} not found in list`);
       }
+    } catch (error) {
+      console.log('📱 Scroll error, using fallback');
+      // Fallback: estimate scroll position
+      const estimatedOffset = (ayahNumber - 1) * 250;
+      flatListRef.current.scrollToOffset({
+        offset: estimatedOffset,
+        animated: true
+      });
     }
-  }, 100); // Check every 100ms for faster response
-  
-  // Clear interval after 2 minutes to prevent memory leaks
-  setTimeout(() => {
-    if (autoPlayIntervalRef.current) {
-      clearInterval(autoPlayIntervalRef.current);
-      autoPlayIntervalRef.current = null;
-      Logger.log('🎵 Auto-play timeout reached');
-    }
-  }, 120000);
+  }
 };
 
   const openReplayModal = () => {
@@ -397,6 +386,7 @@ useEffect(() => {
 
           // Update UI
           setPlayingAyah({ surahId: surahData?.id || surahId, ayahNumber: ayahNum });
+          scrollToAyah(ayahNum);
           
           // Play the ayah
           Logger.log(`▶️ Calling AudioService.playAyahFromUrl for ayah ${ayahNum}...`);
@@ -456,26 +446,26 @@ useEffect(() => {
   };
 
   const stopReplaySegment = async () => {
-    Logger.log('🛑 STOP BUTTON CLICKED');
-    
-    // Immediately set ref to false to stop all loops
-    isReplayingRef.current = false;
-    
-    // Update state
-    setIsReplaying(false);
-    setPlayingAyah(null);
-    setReplayProgress({ current: 0, total: 0, currentAyah: 0, totalAyahs: 0 });
-    
-    // Force stop audio
-    try {
-      await AudioService.stopAudio();
-      Logger.log('🛑 Audio force stopped');
-    } catch (error) {
-      Logger.warn('⚠️ Error force stopping audio:', error);
-    }
-    
-    Alert.alert('🛑 Stopped', 'Replay has been stopped');
-  };
+  console.log('🛑 STOP BUTTON CLICKED');
+  
+  // Immediately set ref to false to stop all loops
+  isReplayingRef.current = false;
+  
+  // Update state
+  setIsReplaying(false);
+  setPlayingAyah(null);
+  setReplayProgress({ current: 0, total: 0, currentAyah: 0, totalAyahs: 0 });
+  
+  // Force stop audio
+  try {
+    await AudioService.stopAudio();
+    console.log('🛑 Audio force stopped');
+  } catch (error) {
+    console.warn('⚠️ Error force stopping audio:', error);
+  }
+  
+  Alert.alert('🛑 Stopped', 'Replay has been stopped');
+};
 
   // Helper function to wait with stop checking
   const delayWithStopCheck = (ms) => {
@@ -698,16 +688,27 @@ useEffect(() => {
           </View>
 
           <FlatList
-            data={ayahs}
-            keyExtractor={(item, index) => `${surahId}-${item.verse_number || index}`}
-            renderItem={AyahItem}
-            ListHeaderComponent={BasmalaComponent}
-            contentContainerStyle={[
-              styles.listContent,
-              { paddingBottom: isReplaying ? 100 : 30 }
-            ]}
-            showsVerticalScrollIndicator={false}
-          />
+  ref={flatListRef} // Add this line
+  data={ayahs}
+  keyExtractor={(item, index) => `${surahId}-${item.verse_number || index}`}
+  renderItem={AyahItem}
+  ListHeaderComponent={BasmalaComponent}
+  contentContainerStyle={[
+    styles.listContent,
+    { paddingBottom: isReplaying ? 100 : 30 }
+  ]}
+  showsVerticalScrollIndicator={false}
+  onScrollToIndexFailed={(info) => {
+    // Handle scroll failures gracefully
+    console.log('📱 Scroll to index failed, using fallback');
+    setTimeout(() => {
+      flatListRef.current?.scrollToOffset({
+        offset: info.averageItemLength * info.index,
+        animated: true,
+      });
+    }, 100);
+  }}
+/>
 
           {/* Replay Segment Modal */}
           <Modal

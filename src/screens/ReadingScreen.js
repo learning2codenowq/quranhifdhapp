@@ -53,7 +53,6 @@ export default function ReadingScreen() {
     setIsReading(true);
     await loadPagesAround(lastReadPage);
     
-    // Scroll to the last read page after a short delay
     setTimeout(() => {
       if (flatListRef.current) {
         flatListRef.current.scrollToIndex({
@@ -66,7 +65,7 @@ export default function ReadingScreen() {
 
   const loadPagesAround = async (centerPage) => {
     const pagesToLoad = [];
-    const range = 5; // Load 5 pages before and after
+    const range = 5;
     
     for (let i = Math.max(1, centerPage - range); i <= Math.min(604, centerPage + range); i++) {
       if (!pages[i]) {
@@ -110,7 +109,6 @@ export default function ReadingScreen() {
     setCurrentPage(pageNumber);
     saveLastReadPage(pageNumber);
     
-    // Load more pages if we're getting close to the edge
     const loadedPages = Object.keys(pages).map(Number);
     const minLoaded = Math.min(...loadedPages);
     const maxLoaded = Math.max(...loadedPages);
@@ -149,12 +147,6 @@ export default function ReadingScreen() {
       'plain-text',
       currentPage.toString()
     );
-  };
-
-  const stopReading = () => {
-    setIsReading(false);
-    setPages({});
-    setCurrentPage(lastReadPage);
   };
 
   const navigateToPage = (direction) => {
@@ -197,13 +189,13 @@ export default function ReadingScreen() {
           
           <View style={styles.versesContainer}>
             {pageData.verses?.map((verse, index) => (
-  <Text key={verse.key || index} style={styles.arabicText}>
-    {cleanArabicText(verse.text)}
-    {verse.number && (
-      <Text style={styles.verseNumber}> ﴿{verse.number}﴾ </Text>
-    )}
-  </Text>
-))}
+              <Text key={verse.key || index} style={styles.arabicText}>
+                {cleanArabicText(verse.text)}
+                {verse.number && (
+                  <Text style={styles.verseNumber}> ﴿{verse.number}﴾ </Text>
+                )}
+              </Text>
+            ))}
           </View>
         </View>
       </View>
@@ -218,42 +210,34 @@ export default function ReadingScreen() {
   }).current;
 
   if (!isReading) {
-    return (
-      <SafeAreaProvider>
-        <LinearGradient colors={['#052815ff', '#058743']} style={styles.container}>
-          <SafeAreaView style={styles.safeArea}>
-            <View style={styles.welcomeContainer}>
-              <Text style={styles.welcomeTitle}>Quran Reading</Text>
-              <Text style={styles.welcomeSubtitle}>Read the complete Quran page by page</Text>
-              
-              <View style={styles.disclaimerCard}>
-                <Text style={styles.disclaimerText}>
-                  📖 This is for casual reading only. Your memorization progress and statistics will not be affected.
-                </Text>
-              </View>
-
-              {/* Removed continue card since feature is disabled */}
-
-              <TouchableOpacity 
-                style={[styles.startButton, styles.disabledButton]} 
-                onPress={() => {}} 
-                disabled={true}
-              >
-                <Text style={styles.startButtonText}>Start Reading</Text>
-              </TouchableOpacity>
-              
-              <Text style={styles.comingSoonText}>
-                🚧 This feature is coming soon! 🚧
-              </Text>
+  return (
+    <SafeAreaProvider>
+      <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.welcomeContainer}>
+            <Text style={styles.welcomeTitle}>Quran Reading</Text>
+            <Text style={styles.welcomeSubtitle}>Classic Mushaf-style reading experience</Text>
+            
+            <TouchableOpacity 
+              style={[styles.startButton, styles.disabledButton]} 
+              onPress={() => {}} 
+              disabled={true}
+            >
+              <Text style={styles.startButtonText}>Start Reading</Text>
+            </TouchableOpacity>
+            
+            <View style={styles.comingSoonContainer}>
+              <Text style={styles.comingSoonText}>Coming Soon</Text>
               <Text style={styles.comingSoonSubtext}>
-                We're working hard to bring you the best page-by-page reading experience.
+                We're working on bringing you the perfect reading experience
               </Text>
             </View>
-          </SafeAreaView>
-        </LinearGradient>
-      </SafeAreaProvider>
-    );
-  }
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    </SafeAreaProvider>
+  );
+}
 
   const pageNumbers = Array.from({ length: 604 }, (_, i) => i + 1);
 
@@ -262,9 +246,8 @@ export default function ReadingScreen() {
       <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           
-          {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={stopReading}>
+            <TouchableOpacity onPress={() => setIsReading(false)}>
               <Text style={styles.backText}>← Stop Reading</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.pageButton} onPress={goToPage}>
@@ -272,7 +255,6 @@ export default function ReadingScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Page Content */}
           <FlatList
             ref={flatListRef}
             data={pageNumbers}
@@ -299,7 +281,6 @@ export default function ReadingScreen() {
             }}
           />
 
-          {/* Navigation Controls */}
           <View style={styles.navigationContainer}>
             <TouchableOpacity 
               style={[styles.navButton, currentPage >= 604 && styles.navButtonDisabled]}
@@ -307,7 +288,7 @@ export default function ReadingScreen() {
               disabled={currentPage >= 604}
             >
               <Text style={[styles.navButtonText, currentPage >= 604 && styles.navButtonTextDisabled]}>
-                Next →
+                Next
               </Text>
             </TouchableOpacity>
 
@@ -321,7 +302,7 @@ export default function ReadingScreen() {
               disabled={currentPage <= 1}
             >
               <Text style={[styles.navButtonText, currentPage <= 1 && styles.navButtonTextDisabled]}>
-                ← Previous
+                Previous
               </Text>
             </TouchableOpacity>
           </View>
@@ -353,38 +334,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   welcomeSubtitle: {
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 40,
-    textAlign: 'center',
-  },
-  disclaimerCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.5)',
-  },
-  disclaimerText: {
-    fontSize: 16,
-    color: 'white',
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  continueCard: {
-    backgroundColor: 'rgba(212, 175, 55, 0.2)',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#d4af37',
-  },
-  continueText: {
-    fontSize: 16,
-    color: '#d4af37',
-    textAlign: 'center',
-    fontWeight: '600',
+  fontSize: 18,
+  color: 'rgba(255, 255, 255, 0.8)',
+  marginBottom: 60,
+  textAlign: 'center',
   },
   startButton: {
     backgroundColor: '#d4af37',
@@ -396,6 +349,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
+    marginBottom: 20,
   },
   startButtonText: {
     color: 'white',
@@ -471,14 +425,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   arabicText: {
-  fontFamily: 'UthmanicFont',
-  fontSize: 18,
-  lineHeight: 30,
-  color: '#2c3e50',
-  textAlign: 'right',
-  marginBottom: 6,
-  paddingHorizontal: 5,
-},
+    fontFamily: 'UthmanicFont',
+    fontSize: 18,
+    lineHeight: 30,
+    color: '#2c3e50',
+    textAlign: 'right',
+    marginBottom: 6,
+    paddingHorizontal: 5,
+  },
   verseNumber: {
     fontSize: 16,
     color: '#d4af37',
@@ -527,18 +481,22 @@ const styles = StyleSheet.create({
   backgroundColor: '#999',
   opacity: 0.6,
 },
+comingSoonContainer: {
+  alignItems: 'center',
+  marginTop: 20,
+  marginBottom: 0,
+},
 comingSoonText: {
-  fontSize: 16,
+  fontSize: 18,
   color: '#d4af37',
   textAlign: 'center',
   fontWeight: 'bold',
-  marginTop: 20,
+  marginBottom: 8,
 },
 comingSoonSubtext: {
   fontSize: 14,
   color: 'rgba(255, 255, 255, 0.8)',
   textAlign: 'center',
-  marginTop: 10,
   paddingHorizontal: 20,
   lineHeight: 20,
 },

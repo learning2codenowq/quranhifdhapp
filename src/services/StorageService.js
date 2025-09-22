@@ -58,28 +58,32 @@ export class StorageService {
   }
 
   static async initializeState(userSettings = {}) {
-    try {
-      const initialState = {
-        ayahProgress: {},
-        progress: {},
-        revisionProgress: {},
-        earnedAchievements: [],
-        settings: {
-          dailyGoal: userSettings.dailyGoal || 10,
-          userName: userSettings.userName || 'Student',
-          progressUnit: 'ayahs'
-        }
-      };
-      
-      console.log('Initializing state with:', initialState.settings);
-      
-      await this.saveState(initialState);
-      return initialState;
-    } catch (error) {
-      console.error('Error initializing state:', error);
-      throw error;
-    }
+  try {
+    const initialState = {
+      ayahProgress: {},
+      progress: {},
+      revisionProgress: {},
+      earnedAchievements: [],
+      settings: {
+        dailyGoal: userSettings.dailyGoal || 10,
+        userName: userSettings.userName || 'Student',
+        progressUnit: 'ayahs',
+        autoPlayNext: true, // Add this line - default ON
+        showTranslations: true,
+        arabicFontSize: 'Medium',
+        translationFontSize: 'Medium'
+      }
+    };
+    
+    console.log('Initializing state with:', initialState.settings);
+    
+    await this.saveState(initialState);
+    return initialState;
+  } catch (error) {
+    console.error('Error initializing state:', error);
+    throw error;
   }
+}
 
   static async clearState() {
     try {

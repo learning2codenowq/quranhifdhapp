@@ -3,6 +3,7 @@ import { Audio } from 'expo-av';
 export class AudioService {
   static sound = null;
   static isPlaying = false;
+  static isStoppingIntentionally = false;
 
   static async setupAudio() {
     try {
@@ -21,31 +22,15 @@ export class AudioService {
     }
   }
 
-  static async playAyahFromUrl(audioUrl) {
+  static async playAyahFromUrl(audioUrl, onComplete = null) {
   try {
     if (!audioUrl) {
       throw new Error('No audio URL provided');
     }
 
-    // Validate URL format
-    if (!audioUrl.startsWith('http://') && !audioUrl.startsWith('https://')) {
-      throw new Error('Invalid audio URL format');
-    }
-
     console.log('Playing audio from URL:', audioUrl);
     
     await this.stopAudio();
-    
-    // Test if URL is accessible first
-    try {
-      const response = await fetch(audioUrl, { method: 'HEAD' });
-      if (!response.ok) {
-        throw new Error(`Audio file not accessible: ${response.status}`);
-      }
-    } catch (fetchError) {
-      console.warn('Could not verify audio URL:', fetchError);
-      // Continue anyway as some servers might block HEAD requests
-    }
     
     const { sound } = await Audio.Sound.createAsync(
       { uri: audioUrl },
@@ -61,34 +46,41 @@ export class AudioService {
     
     this.sound = sound;
     this.isPlaying = true;
+    this.isStoppingIntentionally = false;
 
     sound.setOnPlaybackStatusUpdate((status) => {
-  if (status.isLoaded) {
-    this.isPlaying = status.isPlaying;
-    
-    if (status.didJustFinish) {
-      console.log('🎵 Audio finished playing naturally');
-      this.isPlaying = false;
-      // Don't set sound to null immediately to allow auto-play detection
-      setTimeout(() => {
-        // Clear the sound after a short delay
-        if (this.sound === sound) {
+      if (status.isLoaded) {
+        this.isPlaying = status.isPlaying;
+        
+        if (status.didJustFinish) {
+          console.log('🎵 Audio finished playing naturally');
+          this.isPlaying = false;
+          
+          // Call the completion callback if provided
+          if (onComplete) {
+            console.log('🎵 Calling completion callback');
+            setTimeout(() => onComplete(), 100); // Small delay to ensure state is updated
+          }
+          
+          // Clear sound after callback
+          setTimeout(() => {
+            if (this.sound === sound) {
+              this.sound = null;
+            }
+          }, 200);
+        }
+        
+        if (status.error) {
+          console.error('Audio playback error:', status.error);
+          this.isPlaying = false;
           this.sound = null;
         }
-      }, 200);
-    }
-    
-    if (status.error) {
-      console.error('Audio playback error:', status.error);
-      this.isPlaying = false;
-      this.sound = null;
-    }
-  } else if (status.error) {
-    console.error('Audio loading error:', status.error);
-    this.isPlaying = false;
-    this.sound = null;
-  }
-});
+      } else if (status.error) {
+        console.error('Audio loading error:', status.error);
+        this.isPlaying = false;
+        this.sound = null;
+      }
+    });
 
     console.log('Audio should now be playing...');
     return true;
@@ -109,17 +101,31 @@ export class AudioService {
   static async stopAudio() {
     try {
       if (this.sound) {
+        console.log('🛑 Stopping audio...');
+        this.isStoppingIntentionally = true; // Set flag to prevent callback
+        this.isPlaying = false;
+        
         await this.sound.stopAsync();
         await this.sound.unloadAsync();
         this.sound = null;
-        this.isPlaying = false;
+        console.log('🛑 Audio stopped successfully');
       }
     } catch (error) {
-      console.error('Audio stop failed:', error);
+      // Don't log "Seeking interrupted" as error - it's expected when stopping
+      if (error.message && error.message.includes('Seeking interrupted')) {
+        console.log('🛑 Audio stop interrupted (expected when stopping quickly)');
+      } else {
+        console.warn('Audio stop had minor issue:', error.message);
+      }
+      // Always reset state even if stop failed
+      this.isPlaying = false;
+      this.sound = null;
+    } finally {
+      this.isStoppingIntentionally = false; // Reset flag
     }
   }
 
-  static async pauseAudio() {
+   static async pauseAudio() {
     try {
       if (this.sound && this.isPlaying) {
         await this.sound.pauseAsync();
