@@ -3,103 +3,218 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { StorageService } from '../services/StorageService';
 import { AchievementSystem } from '../utils/AchievementSystem';
+import AnimatedCard from '../components/AnimatedCard';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { Icon, AppIcons } from '../components/Icon';
+import { Theme } from '../styles/theme';
 
 export default function AchievementsScreen({ navigation }) {
   const [earnedAchievements, setEarnedAchievements] = useState([]);
   const [totalAchievements] = useState(AchievementSystem.achievements.length);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadAchievements();
   }, []);
 
   const loadAchievements = async () => {
+    setLoading(true);
     const state = await StorageService.getState();
     const earned = state?.earnedAchievements || [];
     setEarnedAchievements(earned);
+    setLoading(false);
   };
 
   const getAchievementData = (achievementId) => {
     return AchievementSystem.achievements.find(a => a.id === achievementId);
   };
 
-  const AchievementCard = ({ achievement, isEarned }) => (
-    <View style={[styles.achievementCard, !isEarned && styles.lockedCard]}>
-      <View style={styles.achievementIcon}>
-        <Text style={styles.achievementEmoji}>
-          {isEarned ? '🏆' : '🔒'}
-        </Text>
-      </View>
-      <View style={styles.achievementInfo}>
-        <Text style={[styles.achievementTitle, !isEarned && styles.lockedText]}>
-          {achievement.title}
-        </Text>
-        <Text style={[styles.achievementDesc, !isEarned && styles.lockedText]}>
-          {achievement.description}
-        </Text>
-        <Text style={styles.achievementType}>
-          {achievement.type.replace('_', ' ').toUpperCase()}
-        </Text>
-      </View>
-      {isEarned && (
-        <View style={styles.earnedBadge}>
-          <Text style={styles.earnedText}>✓</Text>
+  const getAchievementIcon = (type, isEarned) => {
+    if (!isEarned) {
+      return { name: 'lock-closed', type: 'Ionicons', color: Theme.colors.textMuted };
+    }
+
+    switch (type) {
+      case 'memorization':
+        return { name: AppIcons.checkmark.name, type: AppIcons.checkmark.type, color: Theme.colors.success };
+      case 'streak':
+        return { name: AppIcons.flame.name, type: AppIcons.flame.type, color: Theme.colors.warning };
+      case 'surah_completion':
+      case 'specific_surah':
+        return { name: AppIcons.book.name, type: AppIcons.book.type, color: Theme.colors.info };
+      case 'juz_completion':
+        return { name: AppIcons.star.name, type: AppIcons.star.type, color: Theme.colors.secondary };
+      default:
+        return { name: AppIcons.trophy.name, type: AppIcons.trophy.type, color: Theme.colors.primary };
+    }
+  };
+
+  const AchievementCard = ({ achievement, isEarned }) => {
+    const iconData = getAchievementIcon(achievement.type, isEarned);
+    
+    return (
+      <AnimatedCard 
+        style={[
+          styles.achievementCard, 
+          !isEarned && styles.lockedCard,
+          isEarned && styles.earnedCard
+        ]}
+        variant={isEarned ? "elevated" : "outlined"}
+      >
+        <View style={styles.achievementContent}>
+          <View style={[
+            styles.achievementIconContainer,
+            { backgroundColor: isEarned ? `${iconData.color}20` : Theme.colors.gray100 }
+          ]}>
+            <Icon 
+              name={iconData.name}
+              type={iconData.type}
+              size={32}
+              color={iconData.color}
+            />
+          </View>
+          
+          <View style={styles.achievementInfo}>
+            <Text style={[
+              styles.achievementTitle, 
+              !isEarned && styles.lockedText
+            ]}>
+              {achievement.title}
+            </Text>
+            <Text style={[
+              styles.achievementDesc, 
+              !isEarned && styles.lockedText
+            ]}>
+              {achievement.description}
+            </Text>
+            <View style={styles.achievementTypeContainer}>
+              <Text style={styles.achievementType}>
+                {achievement.type.replace('_', ' ').toUpperCase()}
+              </Text>
+            </View>
+          </View>
+
+          {isEarned && (
+            <View style={styles.earnedBadge}>
+              <Icon 
+                name="checkmark" 
+                type="Ionicons" 
+                size={20} 
+                color={Theme.colors.textOnPrimary} 
+              />
+            </View>
+          )}
         </View>
-      )}
-    </View>
-  );
+      </AnimatedCard>
+    );
+  };
 
   const categorizedAchievements = {
-  memorization: AchievementSystem.achievements.filter(a => a.type === 'memorization'),
-  streak: AchievementSystem.achievements.filter(a => a.type === 'streak'),
-  special: AchievementSystem.achievements.filter(a => ['surah_completion', 'specific_surah', 'juz_completion', 'special'].includes(a.type))
-};
+    memorization: AchievementSystem.achievements.filter(a => a.type === 'memorization'),
+    streak: AchievementSystem.achievements.filter(a => a.type === 'streak'),
+    special: AchievementSystem.achievements.filter(a => 
+      ['surah_completion', 'specific_surah', 'juz_completion', 'special'].includes(a.type)
+    )
+  };
+
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case 'memorization':
+        return { name: 'library', type: 'Ionicons' };
+      case 'streak':
+        return { name: 'flame', type: 'Ionicons' };
+      case 'special':
+        return { name: 'star', type: 'Ionicons' };
+      default:
+        return { name: 'trophy', type: 'Ionicons' };
+    }
+  };
+
+  const getCategoryTitle = (category) => {
+    switch (category) {
+      case 'memorization':
+        return 'Memorization Milestones';
+      case 'streak':
+        return 'Consistency Streaks';
+      case 'special':
+        return 'Special Recognition';
+      default:
+        return 'Achievements';
+    }
+  };
+
+  if (loading) {
+    return (
+      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+        <LoadingSpinner message="Loading achievements..." />
+      </LinearGradient>
+    );
+  }
 
   return (
-    <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+    <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Dashboard</Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Icon 
+            name={AppIcons.back.name} 
+            type={AppIcons.back.type} 
+            size={24} 
+            color={Theme.colors.textOnDark} 
+          />
+          <Text style={styles.backText}>Dashboard</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Achievements</Text>
-        <Text style={styles.headerSubtitle}>
-          {earnedAchievements.length} / {totalAchievements} Unlocked
-        </Text>
+        
+        <View style={styles.headerTitleContainer}>
+          <Icon 
+            name={AppIcons.trophy.name} 
+            type={AppIcons.trophy.type} 
+            size={32} 
+            color={Theme.colors.secondary} 
+          />
+          <Text style={styles.headerTitle}>Achievements</Text>
+        </View>
+        
+        <View style={styles.progressContainer}>
+          <Text style={styles.progressText}>
+            {earnedAchievements.length} / {totalAchievements} Unlocked
+          </Text>
+          <View style={styles.progressBar}>
+            <View 
+              style={[
+                styles.progressFill,
+                { width: `${(earnedAchievements.length / totalAchievements) * 100}%` }
+              ]}
+            />
+          </View>
+        </View>
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Memorization Milestones</Text>
-          {categorizedAchievements.memorization.map(achievement => (
-            <AchievementCard 
-              key={achievement.id}
-              achievement={achievement}
-              isEarned={earnedAchievements.includes(achievement.id)}
-            />
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Consistency Streaks</Text>
-          {categorizedAchievements.streak.map(achievement => (
-            <AchievementCard 
-              key={achievement.id}
-              achievement={achievement}
-              isEarned={earnedAchievements.includes(achievement.id)}
-            />
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Special Recognition</Text>
-          {categorizedAchievements.special.map(achievement => (
-            <AchievementCard 
-              key={achievement.id}
-              achievement={achievement}
-              isEarned={earnedAchievements.includes(achievement.id)}
-            />
-          ))}
-        </View>
+        {Object.entries(categorizedAchievements).map(([category, achievements]) => (
+          <View key={category} style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Icon 
+                name={getCategoryIcon(category).name}
+                type={getCategoryIcon(category).type}
+                size={24}
+                color={Theme.colors.secondary}
+              />
+              <Text style={styles.sectionTitle}>{getCategoryTitle(category)}</Text>
+            </View>
+            
+            {achievements.map(achievement => (
+              <AchievementCard 
+                key={achievement.id}
+                achievement={achievement}
+                isEarned={earnedAchievements.includes(achievement.id)}
+              />
+            ))}
+          </View>
+        ))}
 
       </ScrollView>
     </LinearGradient>
@@ -111,99 +226,142 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    paddingHorizontal: Theme.spacing.xl,
     paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingBottom: Theme.spacing['3xl'],
     alignItems: 'center',
   },
-  backText: {
-    color: 'white',
-    fontSize: 16,
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
-    marginBottom: 20,
+    marginBottom: Theme.spacing.xl,
+  },
+  backText: {
+    color: Theme.colors.textOnDark,
+    fontSize: Theme.typography.fontSize.base,
+    marginLeft: Theme.spacing.sm,
+    fontWeight: Theme.typography.fontWeight.medium,
+  },
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Theme.spacing.xl,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 10,
+    fontSize: Theme.typography.fontSize['4xl'],
+    fontWeight: Theme.typography.fontWeight.bold,
+    color: Theme.colors.textOnDark,
+    marginLeft: Theme.spacing.md,
   },
-  headerSubtitle: {
-    fontSize: 16,
+  progressContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  progressText: {
+    fontSize: Theme.typography.fontSize.base,
     color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: Theme.spacing.sm,
+    fontWeight: Theme.typography.fontWeight.medium,
+  },
+  progressBar: {
+    width: '80%',
+    height: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: Theme.borderRadius.sm,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Theme.colors.secondary,
+    borderRadius: Theme.borderRadius.sm,
   },
   content: {
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingHorizontal: Theme.spacing.xl,
+    paddingBottom: Theme.spacing['6xl'],
   },
   section: {
-    marginBottom: 30,
+    marginBottom: Theme.spacing['3xl'],
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Theme.spacing.lg,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 15,
+    fontSize: Theme.typography.fontSize.xl,
+    fontWeight: Theme.typography.fontWeight.bold,
+    color: Theme.colors.textOnDark,
+    marginLeft: Theme.spacing.sm,
   },
   achievementCard: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 12,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    marginBottom: Theme.spacing.md,
+    padding: Theme.spacing.lg,
   },
   lockedCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    opacity: 0.6,
   },
-  achievementIcon: {
-    marginRight: 15,
+  earnedCard: {
+    backgroundColor: Theme.colors.successLight,
+    borderLeftWidth: 4,
+    borderLeftColor: Theme.colors.success,
   },
-  achievementEmoji: {
-    fontSize: 32,
+  achievementContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  achievementIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: Theme.borderRadius.xl,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Theme.spacing.lg,
   },
   achievementInfo: {
     flex: 1,
   },
   achievementTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#004d24',
-    marginBottom: 4,
+    fontSize: Theme.typography.fontSize.lg,
+    fontWeight: Theme.typography.fontWeight.bold,
+    color: Theme.colors.primary,
+    marginBottom: Theme.spacing.xs,
   },
   achievementDesc: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 6,
-    lineHeight: 20,
+    fontSize: Theme.typography.fontSize.sm,
+    color: Theme.colors.textSecondary,
+    marginBottom: Theme.spacing.sm,
+    lineHeight: Theme.typography.lineHeight.relaxed * Theme.typography.fontSize.sm,
+  },
+  achievementTypeContainer: {
+    alignSelf: 'flex-start',
   },
   achievementType: {
-    fontSize: 11,
-    color: '#999',
-    fontWeight: '500',
+    fontSize: Theme.typography.fontSize.xs,
+    color: Theme.colors.textMuted,
+    fontWeight: Theme.typography.fontWeight.semibold,
+    backgroundColor: Theme.colors.gray100,
+    paddingHorizontal: Theme.spacing.sm,
+    paddingVertical: Theme.spacing.xs,
+    borderRadius: Theme.borderRadius.sm,
   },
   lockedText: {
-    color: '#999',
+    color: Theme.colors.textMuted,
   },
   earnedBadge: {
-    backgroundColor: '#009c4a',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: Theme.colors.success,
+    width: 32,
+    height: 32,
+    borderRadius: Theme.borderRadius.full,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  earnedText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...Theme.shadows.md,
   },
 });

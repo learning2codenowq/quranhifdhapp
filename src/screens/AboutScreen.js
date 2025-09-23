@@ -6,8 +6,8 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 export default function AboutScreen({ navigation }) {
   
   const handleEmailPress = () => {
-    const email = 'support@hifdhjourney.com';
-    const subject = 'Hifdh Journey Support';
+    const email = 'shayanshehzadqureshi@gmail.com';
+    const subject = 'Quran Hifdh App Feedback';
     const url = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
     
     Linking.canOpenURL(url)
@@ -15,26 +15,11 @@ export default function AboutScreen({ navigation }) {
         if (supported) {
           Linking.openURL(url);
         } else {
-          Alert.alert('Email Not Available', `Please contact us at: ${email}`);
+          Alert.alert('Email Not Available', `Please contact me at: ${email}`);
         }
       })
       .catch(() => {
-        Alert.alert('Email Not Available', `Please contact us at: ${email}`);
-      });
-  };
-
-  const handleWebsitePress = () => {
-    const url = 'https://hifdhjourney.com'; // Replace with your actual website
-    Linking.canOpenURL(url)
-      .then((supported) => {
-        if (supported) {
-          Linking.openURL(url);
-        } else {
-          Alert.alert('Website Not Available', 'Please visit us later.');
-        }
-      })
-      .catch(() => {
-        Alert.alert('Website Not Available', 'Please visit us later.');
+        Alert.alert('Email Not Available', `Please contact me at: ${email}`);
       });
   };
 
@@ -55,8 +40,8 @@ export default function AboutScreen({ navigation }) {
             <View style={styles.section}>
               <View style={styles.logoContainer}>
                 <Text style={styles.arabicLogo}>القرآن</Text>
-                <Text style={styles.appName}>Hifdh Journey</Text>
-                <Text style={styles.tagline}>Your path to memorizing the Holy Quran</Text>
+                <Text style={styles.appName}>Quran Hifdh</Text>
+                <Text style={styles.tagline}>Your companion for memorizing the Holy Quran</Text>
               </View>
               
               <View style={styles.versionInfo}>
@@ -65,56 +50,39 @@ export default function AboutScreen({ navigation }) {
               </View>
             </View>
 
-            {/* Description */}
-            <View style={styles.section}>
-              <Text style={styles.sectionHeader}>About This App</Text>
-              <Text style={styles.bodyText}>
-                Hifdh Journey is a modern, comprehensive app designed to help Muslims memorize the Holy Quran with ease and consistency. Our app combines traditional memorization methods with modern technology to create an effective learning experience.
-              </Text>
-            </View>
-
             {/* Features */}
             <View style={styles.section}>
               <Text style={styles.sectionHeader}>Key Features</Text>
-              <Text style={styles.featureText}>📖 Complete Quran with audio recitations</Text>
-              <Text style={styles.featureText}>📊 Progress tracking and analytics</Text>
-              <Text style={styles.featureText}>🎯 Daily memorization goals</Text>
-              <Text style={styles.featureText}>🔄 Smart revision system</Text>
-              <Text style={styles.featureText}>🏆 Achievement system</Text>
-              <Text style={styles.featureText}>📈 Detailed statistics</Text>
-              <Text style={styles.featureText}>🎵 High-quality audio recitations</Text>
-            </View>
-
-            {/* Credits */}
-            <View style={styles.section}>
-              <Text style={styles.sectionHeader}>Credits & Acknowledgments</Text>
-              <Text style={styles.bodyText}>
-                • Quran text: Uthmanic script{'\n'}
-                • Audio recitations: Various qualified reciters{'\n'}
-                • Islamic calendar calculations{'\n'}
-                • Open source libraries and frameworks{'\n'}
-                • Beta testers and community feedback
-              </Text>
+              <Text style={styles.featureText}>📖 Complete Quran with high-quality audio recitations</Text>
+              <Text style={styles.featureText}>📊 Intelligent progress tracking and analytics</Text>
+              <Text style={styles.featureText}>🎯 Personalized daily memorization goals</Text>
+              <Text style={styles.featureText}>🔄 Smart revision system based on proven methods</Text>
+              <Text style={styles.featureText}>🏆 Motivational achievement system</Text>
+              <Text style={styles.featureText}>📈 Detailed statistics and insights</Text>
+              <Text style={styles.featureText}>🎵 Beautiful audio recitations with repeat functionality</Text>
+              <Text style={styles.featureText}>💚 Clean, distraction-free interface designed for focus</Text>
             </View>
 
             {/* Contact */}
             <View style={styles.section}>
-              <Text style={styles.sectionHeader}>Contact & Support</Text>
+              <Text style={styles.sectionHeader}>Connect & Support</Text>
               
               <TouchableOpacity style={styles.contactItem} onPress={handleEmailPress}>
-                <Text style={styles.contactLabel}>Email Support</Text>
-                <Text style={styles.contactValue}>support@hifdhjourney.com</Text>
+                <Text style={styles.contactLabel}>Email Me Directly</Text>
+                <Text style={styles.contactValue}>shayanshehzadqureshi@gmail.com</Text>
+                <Text style={styles.contactNote}>I personally read and respond to every email</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity style={styles.contactItem} onPress={handleWebsitePress}>
-                <Text style={styles.contactLabel}>Website</Text>
-                <Text style={styles.contactValue}>www.hifdhjourney.com</Text>
-              </TouchableOpacity>
+              <View style={styles.feedbackNote}>
+                <Text style={styles.feedbackText}>
+                  Your feedback, suggestions, and duas mean everything to me. Whether it's a feature request, bug report, or just to say jazakAllahu khayran - I'd love to hear from you!
+                </Text>
+              </View>
             </View>
 
             {/* Legal */}
             <View style={styles.section}>
-              <Text style={styles.sectionHeader}>Legal</Text>
+              <Text style={styles.sectionHeader}>Legal & Privacy</Text>
               
               <TouchableOpacity 
                 style={styles.legalItem}
@@ -136,12 +104,15 @@ export default function AboutScreen({ navigation }) {
             {/* Copyright */}
             <View style={styles.copyrightSection}>
               <Text style={styles.copyrightText}>
-                © 2024 Hifdh Journey{'\n'}
-                Made with ❤️ for the Muslim community
+                © 2025 Quran Hifdh{'\n'}
+                Developed with ❤️ for the Ummah
               </Text>
               <Text style={styles.islamicText}>
                 بارك الله فيكم{'\n'}
-                May Allah bless you
+                May Allah bless you and accept your efforts
+              </Text>
+              <Text style={styles.finalMessage}>
+                Uthman bin Affan reported: The Prophet ﷺ said, “The best of you are those who learn the Quran and teach it.” - Ṣaḥīḥ al-Bukhārī 5027
               </Text>
             </View>
 
@@ -233,6 +204,32 @@ const styles = StyleSheet.create({
     color: '#004d24',
     marginBottom: 12,
   },
+  personalMessage: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 24,
+    textAlign: 'left',
+  },
+  greeting: {
+    fontWeight: '600',
+    color: '#004d24',
+    fontSize: 15,
+  },
+  developerName: {
+    fontWeight: 'bold',
+    color: '#d4af37',
+  },
+  emphasis: {
+    fontWeight: '600',
+    color: '#004d24',
+    fontStyle: 'italic',
+  },
+  dua: {
+    fontStyle: 'italic',
+    color: '#058743',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
   bodyText: {
     fontSize: 14,
     color: '#333',
@@ -245,7 +242,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   contactItem: {
-    paddingVertical: 12,
+    paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
@@ -258,6 +255,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#004d24',
     fontWeight: '500',
+    marginBottom: 4,
+  },
+  contactNote: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  feedbackNote: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    padding: 15,
+    marginTop: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#d4af37',
+  },
+  feedbackText: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 20,
+    fontStyle: 'italic',
   },
   legalItem: {
     flexDirection: 'row',
@@ -280,7 +297,7 @@ const styles = StyleSheet.create({
   copyrightSection: {
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: 15,
-    padding: 20,
+    padding: 25,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#d4af37',
@@ -289,7 +306,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   islamicText: {
     fontSize: 16,
@@ -297,5 +314,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'UthmanicFont',
     lineHeight: 26,
+    marginBottom: 15,
+  },
+  finalMessage: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: 18,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
   },
 });

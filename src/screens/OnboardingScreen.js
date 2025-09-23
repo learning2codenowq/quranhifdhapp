@@ -108,7 +108,7 @@ export default function OnboardingScreen({ navigation }) {
 
   return (
     <SafeAreaProvider>
-      <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+      <LinearGradient colors={['#052815ff', '#058743']} style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           
           <View style={styles.content}>

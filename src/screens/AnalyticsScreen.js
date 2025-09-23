@@ -4,6 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StorageService } from '../services/StorageService';
 import { AnalyticsUtils } from '../utils/AnalyticsUtils';
 import { QuranUtils } from '../utils/QuranUtils';
+import AnimatedCard from '../components/AnimatedCard';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { Icon, AppIcons } from '../components/Icon';
+import { Theme } from '../styles/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -30,17 +34,28 @@ export default function AnalyticsScreen({ navigation }) {
     }
   };
 
-  const StatCard = ({ title, value, subtitle, color = '#004d24' }) => (
-    <View style={styles.statCard}>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statTitle}>{title}</Text>
-      <Text style={styles.statSubtitle}>{subtitle}</Text>
-    </View>
+  const StatCard = ({ title, value, subtitle, icon, color = Theme.colors.primary }) => (
+    <AnimatedCard style={styles.statCard}>
+      <View style={styles.statContent}>
+        <Icon 
+          name={icon.name} 
+          type={icon.type} 
+          size={28} 
+          color={color} 
+          style={styles.statIcon}
+        />
+        <View style={styles.statTextContent}>
+          <Text style={[styles.statValue, { color }]}>{value}</Text>
+          <Text style={styles.statTitle}>{title}</Text>
+          <Text style={styles.statSubtitle}>{subtitle}</Text>
+        </View>
+      </View>
+    </AnimatedCard>
   );
 
   const DailyBar = ({ day, maxValue }) => {
     const height = maxValue > 0 ? Math.max((day.memorized / maxValue) * 60, 2) : 2;
-    const tikrarColor = day.tikrarCompleted >= 0.75 ? '#009c4a' : '#ffc107';
+    const tikrarColor = day.tikrarCompleted >= 0.75 ? Theme.colors.success : Theme.colors.warning;
     
     return (
       <View style={styles.dayBarContainer}>
@@ -53,19 +68,37 @@ export default function AnalyticsScreen({ navigation }) {
 
   if (!weeklyData || !monthlyData) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text>Loading analytics...</Text>
-      </View>
+      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+        <LoadingSpinner message="Analyzing your progress..." />
+      </LinearGradient>
     );
   }
 
   return (
-    <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+    <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Dashboard</Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Icon 
+            name={AppIcons.back.name} 
+            type={AppIcons.back.type} 
+            size={24} 
+            color={Theme.colors.textOnDark} 
+          />
+          <Text style={styles.backText}>Dashboard</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Analytics</Text>
+        
+        <View style={styles.headerTitleContainer}>
+          <Icon 
+            name={AppIcons.stats.name} 
+            type={AppIcons.stats.type} 
+            size={32} 
+            color={Theme.colors.secondary} 
+          />
+          <Text style={styles.headerTitle}>Analytics</Text>
+        </View>
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
@@ -76,19 +109,45 @@ export default function AnalyticsScreen({ navigation }) {
             style={[styles.tab, activeTab === 'week' && styles.activeTab]}
             onPress={() => setActiveTab('week')}
           >
-            <Text style={[styles.tabText, activeTab === 'week' && styles.activeTabText]}>This Week</Text>
+            <Icon 
+              name={AppIcons.calendar.name} 
+              type={AppIcons.calendar.type} 
+              size={18} 
+              color={activeTab === 'week' ? Theme.colors.primary : Theme.colors.textOnDark} 
+            />
+            <Text style={[styles.tabText, activeTab === 'week' && styles.activeTabText]}>
+              This Week
+            </Text>
           </TouchableOpacity>
+          
           <TouchableOpacity 
             style={[styles.tab, activeTab === 'month' && styles.activeTab]}
             onPress={() => setActiveTab('month')}
           >
-            <Text style={[styles.tabText, activeTab === 'month' && styles.activeTabText]}>This Month</Text>
+            <Icon 
+              name="calendar-outline" 
+              type="Ionicons" 
+              size={18} 
+              color={activeTab === 'month' ? Theme.colors.primary : Theme.colors.textOnDark} 
+            />
+            <Text style={[styles.tabText, activeTab === 'month' && styles.activeTabText]}>
+              This Month
+            </Text>
           </TouchableOpacity>
+          
           <TouchableOpacity 
             style={[styles.tab, activeTab === 'projections' && styles.activeTab]}
             onPress={() => setActiveTab('projections')}
           >
-            <Text style={[styles.tabText, activeTab === 'projections' && styles.activeTabText]}>Projections</Text>
+            <Icon 
+              name={AppIcons.trending.name} 
+              type={AppIcons.trending.type} 
+              size={18} 
+              color={activeTab === 'projections' ? Theme.colors.primary : Theme.colors.textOnDark} 
+            />
+            <Text style={[styles.tabText, activeTab === 'projections' && styles.activeTabText]}>
+              Projections
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -100,30 +159,43 @@ export default function AnalyticsScreen({ navigation }) {
                 title="Week Total"
                 value={weeklyData.totalWeekAyahs}
                 subtitle="ayahs memorized"
-                color="#d4af37"
+                icon={AppIcons.checkmark}
+                color={Theme.colors.secondary}
               />
               <StatCard 
                 title="Daily Average"
                 value={weeklyData.averageDaily.toFixed(1)}
                 subtitle="ayahs per day"
-                color="#009c4a"
+                icon={AppIcons.trending}
+                color={Theme.colors.success}
               />
               <StatCard 
                 title="Current Streak"
                 value={weeklyData.streak}
                 subtitle="consecutive days"
-                color="#058743"
+                icon={AppIcons.flame}
+                color={Theme.colors.warning}
               />
               <StatCard 
-  title="Revision Rate"
-  value={`${weeklyData.revisionCompletionRate}/7`}
-  subtitle="days completed"
-  color="#004d24"
-/>
+                title="Revision Rate"
+                value={`${weeklyData.revisionCompletionRate}/7`}
+                subtitle="days completed"
+                icon={AppIcons.star}
+                color={Theme.colors.primary}
+              />
             </View>
 
-            <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>Daily Progress</Text>
+            <AnimatedCard style={styles.chartCard}>
+              <View style={styles.chartHeader}>
+                <Icon 
+                  name="bar-chart" 
+                  type="Ionicons" 
+                  size={24} 
+                  color={Theme.colors.primary} 
+                />
+                <Text style={styles.chartTitle}>Daily Progress</Text>
+              </View>
+              
               <View style={styles.barsContainer}>
                 {weeklyData.dailyData.map((day, index) => (
                   <DailyBar 
@@ -133,17 +205,18 @@ export default function AnalyticsScreen({ navigation }) {
                   />
                 ))}
               </View>
+              
               <View style={styles.legend}>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendColor, { backgroundColor: '#009c4a' }]} />
-                  <Text style={styles.legendText}>Full Tikrar</Text>
+                  <View style={[styles.legendColor, { backgroundColor: Theme.colors.success }]} />
+                  <Text style={styles.legendText}>Full Revision</Text>
                 </View>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendColor, { backgroundColor: '#ffc107' }]} />
-                  <Text style={styles.legendText}>Partial Tikrar</Text>
+                  <View style={[styles.legendColor, { backgroundColor: Theme.colors.warning }]} />
+                  <Text style={styles.legendText}>Partial Revision</Text>
                 </View>
               </View>
-            </View>
+            </AnimatedCard>
           </>
         )}
 
@@ -155,30 +228,43 @@ export default function AnalyticsScreen({ navigation }) {
                 title="Month Total"
                 value={monthlyData.totalMonthAyahs}
                 subtitle="ayahs memorized"
-                color="#d4af37"
+                icon={AppIcons.trophy}
+                color={Theme.colors.secondary}
               />
               <StatCard 
                 title="Best Week"
                 value={monthlyData.bestWeek}
                 subtitle="ayahs in one week"
-                color="#009c4a"
+                icon={AppIcons.star}
+                color={Theme.colors.success}
               />
               <StatCard 
                 title="Consistent Days"
                 value={monthlyData.consistentDays}
                 subtitle="out of 30 days"
-                color="#058743"
+                icon={AppIcons.flame}
+                color={Theme.colors.warning}
               />
               <StatCard 
                 title="Weekly Average"
                 value={(monthlyData.totalMonthAyahs / 4).toFixed(0)}
                 subtitle="ayahs per week"
-                color="#004d24"
+                icon={AppIcons.trending}
+                color={Theme.colors.primary}
               />
             </View>
 
-            <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>Weekly Breakdown</Text>
+            <AnimatedCard style={styles.chartCard}>
+              <View style={styles.chartHeader}>
+                <Icon 
+                  name="stats-chart" 
+                  type="Ionicons" 
+                  size={24} 
+                  color={Theme.colors.primary} 
+                />
+                <Text style={styles.chartTitle}>Weekly Breakdown</Text>
+              </View>
+              
               <View style={styles.weeklyBars}>
                 {monthlyData.weeklyData.map((week, index) => (
                   <View key={index} style={styles.weekBarContainer}>
@@ -187,7 +273,7 @@ export default function AnalyticsScreen({ navigation }) {
                         styles.weekBar, 
                         { 
                           height: Math.max((week.total / monthlyData.bestWeek) * 80, 5),
-                          backgroundColor: '#d4af37'
+                          backgroundColor: Theme.colors.secondary
                         }
                       ]} 
                     />
@@ -196,18 +282,34 @@ export default function AnalyticsScreen({ navigation }) {
                   </View>
                 ))}
               </View>
-            </View>
+            </AnimatedCard>
           </>
         )}
 
         {/* Projections */}
         {activeTab === 'projections' && projections && (
           <>
-            <View style={styles.projectionCard}>
-              <Text style={styles.projectionTitle}>Completion Projections</Text>
+            <AnimatedCard style={styles.projectionCard}>
+              <View style={styles.projectionHeader}>
+                <Icon 
+                  name="rocket" 
+                  type="Ionicons" 
+                  size={28} 
+                  color={Theme.colors.secondary} 
+                />
+                <Text style={styles.projectionTitle}>Completion Projections</Text>
+              </View>
               
               <View style={styles.projectionItem}>
-                <Text style={styles.projectionLabel}>Optimistic</Text>
+                <View style={styles.projectionLabelContainer}>
+                  <Icon 
+                    name="flash" 
+                    type="Ionicons" 
+                    size={16} 
+                    color={Theme.colors.success} 
+                  />
+                  <Text style={styles.projectionLabel}>Optimistic</Text>
+                </View>
                 <Text style={styles.projectionDate}>
                   {projections.optimistic.date.toLocaleDateString()}
                 </Text>
@@ -217,7 +319,15 @@ export default function AnalyticsScreen({ navigation }) {
               </View>
 
               <View style={styles.projectionItem}>
-                <Text style={styles.projectionLabel}>Realistic</Text>
+                <View style={styles.projectionLabelContainer}>
+                  <Icon 
+                    name="checkmark-circle" 
+                    type="Ionicons" 
+                    size={16} 
+                    color={Theme.colors.info} 
+                  />
+                  <Text style={styles.projectionLabel}>Realistic</Text>
+                </View>
                 <Text style={styles.projectionDate}>
                   {projections.realistic.date.toLocaleDateString()}
                 </Text>
@@ -227,7 +337,15 @@ export default function AnalyticsScreen({ navigation }) {
               </View>
 
               <View style={styles.projectionItem}>
-                <Text style={styles.projectionLabel}>Conservative</Text>
+                <View style={styles.projectionLabelContainer}>
+                  <Icon 
+                    name="time" 
+                    type="Ionicons" 
+                    size={16} 
+                    color={Theme.colors.warning} 
+                  />
+                  <Text style={styles.projectionLabel}>Conservative</Text>
+                </View>
                 <Text style={styles.projectionDate}>
                   {projections.conservative.date.toLocaleDateString()}
                 </Text>
@@ -235,11 +353,20 @@ export default function AnalyticsScreen({ navigation }) {
                   {projections.conservative.days} days
                 </Text>
               </View>
-            </View>
+            </AnimatedCard>
 
             {surahProgress.length > 0 && (
-              <View style={styles.surahCard}>
-                <Text style={styles.surahTitle}>Surah Progress</Text>
+              <AnimatedCard style={styles.surahCard}>
+                <View style={styles.surahHeader}>
+                  <Icon 
+                    name={AppIcons.book.name} 
+                    type={AppIcons.book.type} 
+                    size={24} 
+                    color={Theme.colors.primary} 
+                  />
+                  <Text style={styles.surahTitle}>Surah Progress</Text>
+                </View>
+                
                 {surahProgress.map((surah, index) => (
                   <View key={index} style={styles.surahItem}>
                     <Text style={styles.surahName}>{surah.name}</Text>
@@ -254,7 +381,7 @@ export default function AnalyticsScreen({ navigation }) {
                     <Text style={styles.surahPercent}>{surah.percentage.toFixed(0)}%</Text>
                   </View>
                 ))}
-              </View>
+              </AnimatedCard>
             )}
           </>
         )}
@@ -268,107 +395,128 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   header: {
+    paddingHorizontal: Theme.spacing.xl,
     paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: Theme.spacing.xl,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Theme.spacing.xl,
   },
   backText: {
-    color: 'white',
-    fontSize: 16,
-    marginBottom: 15,
+    color: Theme.colors.textOnDark,
+    fontSize: Theme.typography.fontSize.base,
+    marginLeft: Theme.spacing.sm,
+    fontWeight: Theme.typography.fontWeight.medium,
+  },
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-    textAlign: 'center',
+    fontSize: Theme.typography.fontSize['4xl'],
+    fontWeight: Theme.typography.fontWeight.bold,
+    color: Theme.colors.textOnDark,
+    marginLeft: Theme.spacing.md,
   },
   content: {
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingHorizontal: Theme.spacing.xl,
+    paddingBottom: Theme.spacing['6xl'],
   },
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 25,
-    marginBottom: 20,
+    borderRadius: Theme.borderRadius.full,
+    marginBottom: Theme.spacing.xl,
     padding: 4,
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 20,
+    justifyContent: 'center',
+    paddingVertical: Theme.spacing.md,
+    paddingHorizontal: Theme.spacing.sm,
+    borderRadius: Theme.borderRadius.xl,
   },
   activeTab: {
-    backgroundColor: 'white',
+    backgroundColor: Theme.colors.white,
   },
   tabText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
+    color: Theme.colors.textOnDark,
+    fontSize: Theme.typography.fontSize.sm,
+    fontWeight: Theme.typography.fontWeight.medium,
+    marginLeft: Theme.spacing.xs,
   },
   activeTabText: {
-    color: '#004d24',
-    fontWeight: '600',
+    color: Theme.colors.primary,
+    fontWeight: Theme.typography.fontWeight.semibold,
   },
   statsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: Theme.spacing.xl,
   },
   statCard: {
-    width: (width - 50) / 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: 15,
+    width: (width - Theme.spacing.xl * 2 - Theme.spacing.md) / 2,
+    marginBottom: Theme.spacing.md,
+    padding: Theme.spacing.lg,
+  },
+  statContent: {
     alignItems: 'center',
-    marginBottom: 10,
+  },
+  statIcon: {
+    marginBottom: Theme.spacing.sm,
+  },
+  statTextContent: {
+    alignItems: 'center',
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 5,
+    fontSize: Theme.typography.fontSize['2xl'],
+    fontWeight: Theme.typography.fontWeight.bold,
+    marginBottom: Theme.spacing.xs,
   },
   statTitle: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '600',
-    marginBottom: 2,
+    fontSize: Theme.typography.fontSize.xs,
+    color: Theme.colors.textSecondary,
+    fontWeight: Theme.typography.fontWeight.semibold,
+    marginBottom: Theme.spacing.xs,
+    textAlign: 'center',
   },
   statSubtitle: {
-    fontSize: 10,
-    color: '#999',
+    fontSize: Theme.typography.fontSize.xs,
+    color: Theme.colors.textMuted,
+    textAlign: 'center',
   },
   chartCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 20,
+    padding: Theme.spacing.xl,
+    marginBottom: Theme.spacing.xl,
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Theme.spacing.lg,
+    justifyContent: 'center',
   },
   chartTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#004d24',
-    marginBottom: 15,
-    textAlign: 'center',
+    fontSize: Theme.typography.fontSize.lg,
+    fontWeight: Theme.typography.fontWeight.bold,
+    color: Theme.colors.primary,
+    marginLeft: Theme.spacing.sm,
   },
   barsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'end',
     height: 100,
-    marginBottom: 15,
+    marginBottom: Theme.spacing.lg,
   },
   dayBarContainer: {
     alignItems: 'center',
@@ -376,18 +524,19 @@ const styles = StyleSheet.create({
   },
   dayBar: {
     width: 20,
-    borderRadius: 10,
-    marginBottom: 8,
+    borderRadius: Theme.borderRadius.sm,
+    marginBottom: Theme.spacing.sm,
   },
   dayLabel: {
-    fontSize: 10,
-    color: '#666',
-    marginBottom: 2,
+    fontSize: Theme.typography.fontSize.xs,
+    color: Theme.colors.textSecondary,
+    marginBottom: Theme.spacing.xs,
+    fontWeight: Theme.typography.fontWeight.medium,
   },
   dayValue: {
-    fontSize: 10,
-    color: '#004d24',
-    fontWeight: 'bold',
+    fontSize: Theme.typography.fontSize.xs,
+    color: Theme.colors.primary,
+    fontWeight: Theme.typography.fontWeight.bold,
   },
   weeklyBars: {
     flexDirection: 'row',
@@ -401,23 +550,24 @@ const styles = StyleSheet.create({
   },
   weekBar: {
     width: 30,
-    borderRadius: 15,
-    marginBottom: 10,
+    borderRadius: Theme.borderRadius.md,
+    marginBottom: Theme.spacing.md,
   },
   weekLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
+    fontSize: Theme.typography.fontSize.sm,
+    color: Theme.colors.textSecondary,
+    marginBottom: Theme.spacing.xs,
+    fontWeight: Theme.typography.fontWeight.medium,
   },
   weekValue: {
-    fontSize: 12,
-    color: '#004d24',
-    fontWeight: 'bold',
+    fontSize: Theme.typography.fontSize.sm,
+    color: Theme.colors.primary,
+    fontWeight: Theme.typography.fontWeight.bold,
   },
   legend: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 20,
+    gap: Theme.spacing.xl,
   },
   legendItem: {
     flexDirection: 'row',
@@ -426,91 +576,106 @@ const styles = StyleSheet.create({
   legendColor: {
     width: 12,
     height: 12,
-    borderRadius: 6,
-    marginRight: 6,
+    borderRadius: Theme.borderRadius.sm,
+    marginRight: Theme.spacing.xs,
   },
   legendText: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: Theme.typography.fontSize.xs,
+    color: Theme.colors.textSecondary,
+    fontWeight: Theme.typography.fontWeight.medium,
   },
   projectionCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 20,
+    padding: Theme.spacing.xl,
+    marginBottom: Theme.spacing.xl,
+  },
+  projectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Theme.spacing.lg,
+    justifyContent: 'center',
   },
   projectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#004d24',
-    marginBottom: 15,
-    textAlign: 'center',
+    fontSize: Theme.typography.fontSize.lg,
+    fontWeight: Theme.typography.fontWeight.bold,
+    color: Theme.colors.primary,
+    marginLeft: Theme.spacing.sm,
   },
   projectionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: Theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: Theme.colors.gray200,
   },
-  projectionLabel: {
-    fontSize: 14,
-    color: '#666',
+  projectionLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
   },
+  projectionLabel: {
+    fontSize: Theme.typography.fontSize.sm,
+    color: Theme.colors.textSecondary,
+    marginLeft: Theme.spacing.sm,
+    fontWeight: Theme.typography.fontWeight.medium,
+  },
   projectionDate: {
-    fontSize: 14,
-    color: '#004d24',
-    fontWeight: '600',
+    fontSize: Theme.typography.fontSize.sm,
+    color: Theme.colors.primary,
+    fontWeight: Theme.typography.fontWeight.semibold,
     flex: 1,
     textAlign: 'center',
   },
   projectionDays: {
-    fontSize: 14,
-    color: '#d4af37',
-    fontWeight: 'bold',
+    fontSize: Theme.typography.fontSize.sm,
+    color: Theme.colors.secondary,
+    fontWeight: Theme.typography.fontWeight.bold,
     flex: 1,
     textAlign: 'right',
   },
   surahCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: 20,
+    padding: Theme.spacing.xl,
+  },
+  surahHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Theme.spacing.lg,
+    justifyContent: 'center',
   },
   surahTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#004d24',
-    marginBottom: 15,
+    fontSize: Theme.typography.fontSize.lg,
+    fontWeight: Theme.typography.fontWeight.bold,
+    color: Theme.colors.primary,
+    marginLeft: Theme.spacing.sm,
   },
   surahItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: Theme.spacing.md,
   },
   surahName: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: Theme.typography.fontSize.sm,
+    color: Theme.colors.textSecondary,
     width: 100,
+    fontWeight: Theme.typography.fontWeight.medium,
   },
   surahProgressBar: {
     flex: 1,
     height: 8,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 4,
-    marginHorizontal: 10,
+    backgroundColor: Theme.colors.gray200,
+    borderRadius: Theme.borderRadius.sm,
+    marginHorizontal: Theme.spacing.md,
     overflow: 'hidden',
   },
   surahProgressFill: {
     height: '100%',
-    backgroundColor: '#009c4a',
-    borderRadius: 4,
+    backgroundColor: Theme.colors.success,
+    borderRadius: Theme.borderRadius.sm,
   },
   surahPercent: {
-    fontSize: 12,
-    color: '#004d24',
-    fontWeight: 'bold',
+    fontSize: Theme.typography.fontSize.xs,
+    color: Theme.colors.primary,
+    fontWeight: Theme.typography.fontWeight.bold,
     width: 40,
     textAlign: 'right',
   },

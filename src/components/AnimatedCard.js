@@ -1,7 +1,15 @@
 import React, { useRef } from 'react';
 import { Animated, TouchableOpacity, StyleSheet } from 'react-native';
+import { Theme } from '../styles/theme';
 
-export default function AnimatedCard({ children, onPress, style, disabled = false }) {
+export default function AnimatedCard({ 
+  children, 
+  onPress, 
+  style, 
+  disabled = false,
+  variant = 'default', // 'default', 'elevated', 'outlined'
+  padding = 'default', // 'none', 'small', 'default', 'large'
+}) {
   const scaleValue = useRef(new Animated.Value(1)).current;
   const shadowValue = useRef(new Animated.Value(1)).current;
 
@@ -37,6 +45,49 @@ export default function AnimatedCard({ children, onPress, style, disabled = fals
     ]).start();
   };
 
+  const getCardStyle = () => {
+    const baseStyle = {
+      ...styles.card,
+      ...getPaddingStyle(),
+    };
+
+    switch (variant) {
+      case 'elevated':
+        return {
+          ...baseStyle,
+          ...Theme.shadows.lg,
+          backgroundColor: Theme.colors.white,
+        };
+      case 'outlined':
+        return {
+          ...baseStyle,
+          backgroundColor: Theme.colors.cardBackground,
+          borderWidth: 1,
+          borderColor: Theme.colors.gray300,
+          ...Theme.shadows.sm,
+        };
+      default:
+        return {
+          ...baseStyle,
+          backgroundColor: Theme.colors.cardBackground,
+          ...Theme.shadows.md,
+        };
+    }
+  };
+
+  const getPaddingStyle = () => {
+    switch (padding) {
+      case 'none':
+        return { padding: 0 };
+      case 'small':
+        return { padding: Theme.spacing.md };
+      case 'large':
+        return { padding: Theme.spacing['3xl'] };
+      default:
+        return { padding: Theme.spacing.xl };
+    }
+  };
+
   const shadowOpacity = shadowValue.interpolate({
     inputRange: [0.5, 1],
     outputRange: [0.1, 0.25],
@@ -49,7 +100,7 @@ export default function AnimatedCard({ children, onPress, style, disabled = fals
 
   if (!onPress) {
     return (
-      <Animated.View style={[styles.card, style, { elevation }]}>
+      <Animated.View style={[getCardStyle(), style, { elevation }]}>
         {children}
       </Animated.View>
     );
@@ -65,7 +116,7 @@ export default function AnimatedCard({ children, onPress, style, disabled = fals
     >
       <Animated.View
         style={[
-          styles.card,
+          getCardStyle(),
           style,
           {
             transform: [{ scale: scaleValue }],
@@ -82,12 +133,9 @@ export default function AnimatedCard({ children, onPress, style, disabled = fals
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: 20,
+    borderRadius: Theme.borderRadius.xl,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 8,
-    elevation: 4,
   },
 });

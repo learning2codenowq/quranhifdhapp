@@ -14,11 +14,11 @@ export default function SplashScreen({ onComplete }) {
   }, [onComplete]);
 
   return (
-    <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+    <LinearGradient colors={['#052815ff', '#058743']} style={styles.container}>
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Text style={styles.arabicLogo}>القرآن</Text>
-          <Text style={styles.appName}>Hifdh Journey</Text>
+          <Text style={styles.appName}>Quran Hifdh</Text>
         </View>
         
         <View style={styles.taglineContainer}>

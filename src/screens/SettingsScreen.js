@@ -170,213 +170,227 @@ export default function SettingsScreen({ navigation }) {
   );
 
   const settingSections = [
-    {
-      title: '🎵 Audio Settings',
-      items: [
-        {
-          type: 'switch',
-          title: 'Auto-play Next Ayah',
-          subtitle: 'Automatically play the next ayah when current finishes',
-          value: settings.autoPlayNext,
-          onValueChange: (value) => updateSetting('autoPlayNext', value)
-        }
-      ]
-    },
-    {
-      title: '🎨 Display Settings',
-      items: [
-        {
-          type: 'switch',
-          title: 'Show Translations',
-          subtitle: 'Display English translations below Arabic text',
-          value: settings.showTranslations,
-          onValueChange: (value) => updateSetting('showTranslations', value)
-        },
-        {
-  type: 'button',
-  title: 'Arabic Font Size',
-  subtitle: `Current: ${settings.arabicFontSize}`,
-  onPress: () => {
-    Alert.alert(
-      'Arabic Font Size',
-      'Choose your preferred size for Arabic text',
-      [
-        { 
-          text: 'Small', 
-          onPress: () => {
-            setPreviewFontSize('Small');
-            setFontPreviewModal(true);
-          }
-        },
-        { 
-          text: 'Medium', 
-          onPress: () => {
-            setPreviewFontSize('Medium');
-            setFontPreviewModal(true);
-          }
-        },
-        { 
-          text: 'Large', 
-          onPress: () => {
-            setPreviewFontSize('Large');
-            setFontPreviewModal(true);
-          }
-        },
-        { 
-          text: 'Extra Large', 
-          onPress: () => {
-            setPreviewFontSize('Extra Large');
-            setFontPreviewModal(true);
-          }
-        },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
-  }
-},
-{
-  type: 'button',
-  title: 'Translation Font Size',
-  subtitle: `Current: ${settings.translationFontSize}`,
-  onPress: () => {
-    Alert.alert(
-      'Translation Font Size',
-      'Choose your preferred size for translation text',
-      [
-        { 
-          text: 'Small', 
-          onPress: () => {
-            setPreviewFontSize(settings.arabicFontSize);
-            setSettings(prev => ({ ...prev, translationFontSize: 'Small' }));
-            updateSetting('translationFontSize', 'Small');
-            setFontPreviewModal(true);
-          }
-        },
-        { 
-          text: 'Medium', 
-          onPress: () => {
-            setPreviewFontSize(settings.arabicFontSize);
-            setSettings(prev => ({ ...prev, translationFontSize: 'Medium' }));
-            updateSetting('translationFontSize', 'Medium');
-            setFontPreviewModal(true);
-          }
-        },
-        { 
-          text: 'Large', 
-          onPress: () => {
-            setPreviewFontSize(settings.arabicFontSize);
-            setSettings(prev => ({ ...prev, translationFontSize: 'Large' }));
-            updateSetting('translationFontSize', 'Large');
-            setFontPreviewModal(true);
-          }
-        },
-        { 
-          text: 'Extra Large', 
-          onPress: () => {
-            setPreviewFontSize(settings.arabicFontSize);
-            setSettings(prev => ({ ...prev, translationFontSize: 'Extra Large' }));
-            updateSetting('translationFontSize', 'Extra Large');
-            setFontPreviewModal(true);
-          }
-        },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
-  }
-},
-      ]
-    },
-    {
-  title: '🔒 Data & Privacy',
-  items: [
-    {
-      type: 'button',
-      title: 'Privacy Policy',
-      subtitle: 'How we handle your data',
-      onPress: () => navigation.navigate('PrivacyPolicy')
-    },
-    {
-      type: 'button',
-      title: 'Terms of Service',
-      subtitle: 'App usage terms and conditions',
-      onPress: () => navigation.navigate('TermsOfService')
-    },
-    {
-      type: 'button',
-      title: 'Export Data Backup',
-      subtitle: 'Save your progress to share or backup',
-      onPress: () => {
-        Alert.alert('Coming Soon', 'Data export feature will be available in the next update.');
+  {
+    title: '🔊 Audio Settings',
+    icon: { name: 'volume-high', type: 'Ionicons' },
+    items: [
+      {
+        type: 'switch',
+        title: 'Auto-play Next Ayah',
+        subtitle: 'Automatically play the next ayah when current finishes',
+        value: settings.autoPlayNext,
+        onValueChange: (value) => updateSetting('autoPlayNext', value)
       }
-    },
-    {
-      type: 'button',
-      title: 'Import Data Backup',
-      subtitle: 'Restore progress from a backup file',
-      onPress: () => {
-        Alert.alert('Coming Soon', 'Data import feature will be available in the next update.');
-      }
-    },
-    {
-      type: 'button',
-      title: 'About This App',
-      subtitle: 'Version info and credits',
-      onPress: () => navigation.navigate('About')
-    }
-  ]
-},
-    {
-      title: '🧪 Testing & Diagnostics',
-      items: [
-        {
-          type: 'button',
-          title: 'Run Diagnostics',
-          subtitle: 'Test app functionality and performance',
-          onPress: async () => {
-            const results = await TestingUtils.runDiagnostics();
-            TestingUtils.showDiagnosticResults(results);
-          }
-        },
-        {
-          type: 'button',
-          title: 'Load Test Data',
-          subtitle: 'Generate sample progress for testing',
-          onPress: TestingUtils.loadTestData
-        },
-        {
-          type: 'button',
-          title: 'Reset All Data',
-          subtitle: 'Delete all progress and restart',
-          onPress: () => {
-            Alert.alert(
-              'Reset All Data',
-              'This will permanently delete all your memorization progress and restart the onboarding. Are you sure?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { 
-                  text: 'Reset', 
-                  style: 'destructive',
-                  onPress: async () => {
-                    await StorageService.clearState();
-                    Alert.alert('Data Reset', 'All data has been deleted.', [
-                      { 
-                        text: 'OK', 
-                        onPress: () => navigation.reset({
-                          index: 0,
-                          routes: [{ name: 'Onboarding' }],
-                        })
-                      }
-                    ]);
-                  }
+    ]
+  },
+  {
+    title: '🎨 Display Settings', 
+    icon: { name: 'color-palette', type: 'Ionicons' },
+    items: [
+      {
+        type: 'switch',
+        title: 'Show Translations',
+        subtitle: 'Display English translations below Arabic text',
+        value: settings.showTranslations,
+        onValueChange: (value) => updateSetting('showTranslations', value)
+      },
+      {
+        type: 'button',
+        title: 'Arabic Font Size',
+        subtitle: `Current: ${settings.arabicFontSize}`,
+        icon: { name: 'text', type: 'Ionicons' },
+        onPress: () => {
+          Alert.alert(
+            'Arabic Font Size',
+            'Choose your preferred size for Arabic text',
+            [
+              { 
+                text: 'Small', 
+                onPress: () => {
+                  setPreviewFontSize('Small');
+                  setFontPreviewModal(true);
                 }
-              ]
-            );
-          },
-          dangerous: true
+              },
+              { 
+                text: 'Medium', 
+                onPress: () => {
+                  setPreviewFontSize('Medium');
+                  setFontPreviewModal(true);
+                }
+              },
+              { 
+                text: 'Large', 
+                onPress: () => {
+                  setPreviewFontSize('Large');
+                  setFontPreviewModal(true);
+                }
+              },
+              { 
+                text: 'Extra Large', 
+                onPress: () => {
+                  setPreviewFontSize('Extra Large');
+                  setFontPreviewModal(true);
+                }
+              },
+              { text: 'Cancel', style: 'cancel' }
+            ]
+          );
         }
-      ]
-    }
-  ];
+      },
+      {
+        type: 'button',
+        title: 'Translation Font Size',
+        subtitle: `Current: ${settings.translationFontSize}`,
+        icon: { name: 'text-outline', type: 'Ionicons' },
+        onPress: () => {
+          Alert.alert(
+            'Translation Font Size',
+            'Choose your preferred size for translation text',
+            [
+              { 
+                text: 'Small', 
+                onPress: () => {
+                  setPreviewFontSize(settings.arabicFontSize);
+                  setSettings(prev => ({ ...prev, translationFontSize: 'Small' }));
+                  updateSetting('translationFontSize', 'Small');
+                  setFontPreviewModal(true);
+                }
+              },
+              { 
+                text: 'Medium', 
+                onPress: () => {
+                  setPreviewFontSize(settings.arabicFontSize);
+                  setSettings(prev => ({ ...prev, translationFontSize: 'Medium' }));
+                  updateSetting('translationFontSize', 'Medium');
+                  setFontPreviewModal(true);
+                }
+              },
+              { 
+                text: 'Large', 
+                onPress: () => {
+                  setPreviewFontSize(settings.arabicFontSize);
+                  setSettings(prev => ({ ...prev, translationFontSize: 'Large' }));
+                  updateSetting('translationFontSize', 'Large');
+                  setFontPreviewModal(true);
+                }
+              },
+              { 
+                text: 'Extra Large', 
+                onPress: () => {
+                  setPreviewFontSize(settings.arabicFontSize);
+                  setSettings(prev => ({ ...prev, translationFontSize: 'Extra Large' }));
+                  updateSetting('translationFontSize', 'Extra Large');
+                  setFontPreviewModal(true);
+                }
+              },
+              { text: 'Cancel', style: 'cancel' }
+            ]
+          );
+        }
+      },
+    ]
+  },
+  {
+    title: '🔒 Data & Privacy',
+    icon: { name: 'shield-checkmark', type: 'Ionicons' },
+    items: [
+      {
+        type: 'button',
+        title: 'Privacy Policy',
+        subtitle: 'How we handle your data',
+        icon: { name: 'document-text', type: 'Ionicons' },
+        onPress: () => navigation.navigate('PrivacyPolicy')
+      },
+      {
+        type: 'button',
+        title: 'Terms of Service',
+        subtitle: 'App usage terms and conditions',
+        icon: { name: 'document', type: 'Ionicons' },
+        onPress: () => navigation.navigate('TermsOfService')
+      },
+      {
+        type: 'button',
+        title: 'Export Data Backup',
+        subtitle: 'Save your progress to share or backup',
+        icon: { name: 'cloud-upload', type: 'Ionicons' },
+        onPress: () => {
+          Alert.alert('Coming Soon', 'Data export feature will be available in the next update.');
+        }
+      },
+      {
+        type: 'button',
+        title: 'Import Data Backup',
+        subtitle: 'Restore progress from a backup file',
+        icon: { name: 'cloud-download', type: 'Ionicons' },
+        onPress: () => {
+          Alert.alert('Coming Soon', 'Data import feature will be available in the next update.');
+        }
+      },
+      {
+        type: 'button',
+        title: 'About This App',
+        subtitle: 'Version info and credits',
+        icon: { name: 'information-circle', type: 'Ionicons' },
+        onPress: () => navigation.navigate('About')
+      }
+    ]
+  },
+  {
+    title: '🧪 Testing & Diagnostics',
+    icon: { name: 'flask', type: 'Ionicons' },
+    items: [
+      {
+        type: 'button',
+        title: 'Run Diagnostics',
+        subtitle: 'Test app functionality and performance',
+        icon: { name: 'bug', type: 'Ionicons' },
+        onPress: async () => {
+          const results = await TestingUtils.runDiagnostics();
+          TestingUtils.showDiagnosticResults(results);
+        }
+      },
+      {
+        type: 'button',
+        title: 'Load Test Data',
+        subtitle: 'Generate sample progress for testing',
+        icon: { name: 'flask-outline', type: 'Ionicons' },
+        onPress: TestingUtils.loadTestData
+      },
+      {
+        type: 'button',
+        title: 'Reset All Data',
+        subtitle: 'Delete all progress and restart',
+        icon: { name: 'trash', type: 'Ionicons' },
+        onPress: () => {
+          Alert.alert(
+            'Reset All Data',
+            'This will permanently delete all your memorization progress and restart the onboarding. Are you sure?',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { 
+                text: 'Reset', 
+                style: 'destructive',
+                onPress: async () => {
+                  await StorageService.clearState();
+                  Alert.alert('Data Reset', 'All data has been deleted.', [
+                    { 
+                      text: 'OK', 
+                      onPress: () => navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Onboarding' }],
+                      })
+                    }
+                  ]);
+                }
+              }
+            ]
+          );
+        },
+        dangerous: true
+      }
+    ]
+  }
+];
 
   return (
     <SafeAreaProvider>

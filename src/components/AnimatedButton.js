@@ -1,5 +1,7 @@
 import React, { useRef } from 'react';
 import { Animated, TouchableOpacity, Text, StyleSheet, Vibration } from 'react-native';
+import { Theme } from '../styles/theme';
+import { Icon } from './Icon';
 
 export default function AnimatedButton({ 
   title, 
@@ -8,19 +10,23 @@ export default function AnimatedButton({
   textStyle, 
   disabled = false,
   hapticFeedback = true,
-  variant = 'primary' // primary, secondary, success
+  variant = 'primary', // 'primary', 'secondary', 'success', 'outline'
+  size = 'medium', // 'small', 'medium', 'large'
+  icon = null, // { name: 'play', type: 'Ionicons' }
+  iconPosition = 'left', // 'left', 'right'
+  loading = false,
 }) {
   const scaleValue = useRef(new Animated.Value(1)).current;
   const opacityValue = useRef(new Animated.Value(1)).current;
 
   const animatePress = () => {
-    if (hapticFeedback) {
-      Vibration.vibrate(50); // Light haptic feedback
+    if (hapticFeedback && !disabled) {
+      Vibration.vibrate(50);
     }
 
     Animated.parallel([
       Animated.spring(scaleValue, {
-        toValue: 0.95,
+        toValue: 0.96,
         useNativeDriver: true,
         tension: 300,
         friction: 10,
@@ -48,41 +54,155 @@ export default function AnimatedButton({
   };
 
   const handlePress = () => {
-    if (!disabled) {
+    if (!disabled && !loading) {
       animatePress();
       setTimeout(() => onPress && onPress(), 50);
     }
   };
 
   const getButtonStyle = () => {
+    const baseStyle = {
+      ...styles.button,
+      ...getSizeStyle(),
+    };
+
     switch (variant) {
       case 'secondary':
-        return styles.secondaryButton;
+        return {
+          ...baseStyle,
+          backgroundColor: Theme.colors.secondary,
+        };
       case 'success':
-        return styles.successButton;
+        return {
+          ...baseStyle,
+          backgroundColor: Theme.colors.success,
+        };
+      case 'outline':
+        return {
+          ...baseStyle,
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderColor: Theme.colors.primary,
+        };
       default:
-        return styles.primaryButton;
+        return {
+          ...baseStyle,
+          backgroundColor: Theme.colors.primary,
+        };
+    }
+  };
+
+  const getSizeStyle = () => {
+    switch (size) {
+      case 'small':
+        return {
+          paddingVertical: Theme.spacing.sm,
+          paddingHorizontal: Theme.spacing.lg,
+          borderRadius: Theme.borderRadius.lg,
+        };
+      case 'large':
+        return {
+          paddingVertical: Theme.spacing.xl,
+          paddingHorizontal: Theme.spacing['3xl'],
+          borderRadius: Theme.borderRadius.full,
+        };
+      default:
+        return {
+          paddingVertical: Theme.spacing.md,
+          paddingHorizontal: Theme.spacing.xl,
+          borderRadius: Theme.borderRadius.full,
+        };
     }
   };
 
   const getTextStyle = () => {
-    switch (variant) {
-      case 'secondary':
-        return styles.secondaryText;
+    const baseStyle = {
+      ...styles.text,
+      ...getSizeTextStyle(),
+    };
+
+    const isOutline = variant === 'outline';
+    return {
+      ...baseStyle,
+      color: isOutline ? Theme.colors.primary : Theme.colors.textOnPrimary,
+    };
+  };
+
+  const getSizeTextStyle = () => {
+    switch (size) {
+      case 'small':
+        return {
+          fontSize: Theme.typography.fontSize.sm,
+        };
+      case 'large':
+        return {
+          fontSize: Theme.typography.fontSize.lg,
+        };
       default:
-        return styles.primaryText;
+        return {
+          fontSize: Theme.typography.fontSize.base,
+        };
     }
+  };
+
+  const getIconColor = () => {
+    return variant === 'outline' ? Theme.colors.primary : Theme.colors.textOnPrimary;
+  };
+
+  const getIconSize = () => {
+    switch (size) {
+      case 'small': return 16;
+      case 'large': return 24;
+      default: return 20;
+    }
+  };
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <Animated.View style={styles.loadingContainer}>
+          <Text style={[getTextStyle(), textStyle]}>Loading...</Text>
+        </Animated.View>
+      );
+    }
+
+    return (
+      <Animated.View style={styles.contentContainer}>
+        {icon && iconPosition === 'left' && (
+          <Icon 
+            name={icon.name}
+            type={icon.type}
+            size={getIconSize()}
+            color={getIconColor()}
+            style={styles.iconLeft}
+          />
+        )}
+        
+        <Text style={[getTextStyle(), textStyle]}>
+          {title}
+        </Text>
+        
+        {icon && iconPosition === 'right' && (
+          <Icon 
+            name={icon.name}
+            type={icon.type}
+            size={getIconSize()}
+            color={getIconColor()}
+            style={styles.iconRight}
+          />
+        )}
+      </Animated.View>
+    );
   };
 
   return (
     <TouchableOpacity
       activeOpacity={1}
       onPress={handlePress}
-      disabled={disabled}
+      disabled={disabled || loading}
     >
       <Animated.View
         style={[
-          styles.button,
           getButtonStyle(),
           style,
           {
@@ -91,9 +211,7 @@ export default function AnimatedButton({
           },
         ]}
       >
-        <Text style={[styles.text, getTextStyle(), textStyle]}>
-          {title}
-        </Text>
+        {renderContent()}
       </Animated.View>
     </TouchableOpacity>
   );
@@ -101,36 +219,28 @@ export default function AnimatedButton({
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 25,
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    ...Theme.shadows.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryButton: {
-    backgroundColor: '#d4af37',
-  },
-  secondaryButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-  },
-  successButton: {
-    backgroundColor: '#009c4a',
-  },
   text: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontWeight: Theme.typography.fontWeight.semibold,
+    textAlign: 'center',
   },
-  primaryText: {
-    color: 'white',
+  contentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  secondaryText: {
-    color: 'white',
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconLeft: {
+    marginRight: Theme.spacing.sm,
+  },
+  iconRight: {
+    marginLeft: Theme.spacing.sm,
   },
 });

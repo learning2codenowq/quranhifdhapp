@@ -12,8 +12,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { QuranService } from '../services/QuranService';
 import { StorageService } from '../services/StorageService';
-
-const { width } = Dimensions.get('window');
+import AnimatedCard from '../components/AnimatedCard';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { Icon, AppIcons } from '../components/Icon';
+import { Theme } from '../styles/theme';
 
 export default function SurahListScreen({ navigation }) {
   const [surahs, setSurahs] = useState([]);
@@ -25,11 +27,10 @@ export default function SurahListScreen({ navigation }) {
     loadMemorizedStats();
   }, []);
 
-  // Add focus listener to reload progress when returning from QuranReader
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       console.log('SurahList focused - reloading progress');
-      loadMemorizedStats(); // Reload only the progress stats, not the full surah list
+      loadMemorizedStats();
     });
     
     return unsubscribe;
@@ -82,26 +83,54 @@ export default function SurahListScreen({ navigation }) {
     const hasProgress = progress.memorized > 0;
 
     return (
-      <TouchableOpacity
+      <AnimatedCard
         style={[
           styles.surahCard,
           isCompleted && styles.completedSurah
         ]}
         onPress={() => navigation.navigate('QuranReader', { surahId: item.id })}
+        variant={isCompleted ? "elevated" : "default"}
       >
         <View style={styles.surahHeader}>
-          <View style={styles.surahInfo}>
+          <View style={styles.surahNumberContainer}>
             <Text style={styles.surahNumber}>{item.id}</Text>
-            <View style={styles.surahNames}>
-              <Text style={styles.surahName}>{item.name}</Text>
-              <Text style={styles.surahArabicName}>{item.arabic_name}</Text>
-            </View>
           </View>
           
-          <View style={styles.surahMeta}>
-            <Text style={styles.surahType}>{item.type}</Text>
-            <Text style={styles.ayahCount}>{item.total_ayahs} ayahs</Text>
+          <View style={styles.surahInfo}>
+            <Text style={styles.surahName}>{item.name}</Text>
+            <Text style={styles.surahArabicName}>{item.arabic_name}</Text>
+            <View style={styles.surahMeta}>
+              <View style={styles.metaItem}>
+                <Icon 
+                  name="location" 
+                  type="Ionicons" 
+                  size={12} 
+                  color={Theme.colors.textMuted} 
+                />
+                <Text style={styles.surahType}>{item.type}</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Icon 
+                  name={AppIcons.book.name} 
+                  type={AppIcons.book.type} 
+                  size={12} 
+                  color={Theme.colors.textMuted} 
+                />
+                <Text style={styles.ayahCount}>{item.total_ayahs} ayahs</Text>
+              </View>
+            </View>
           </View>
+
+          {isCompleted && (
+            <View style={styles.completedBadge}>
+              <Icon 
+                name={AppIcons.checkmark.name} 
+                type={AppIcons.checkmark.type} 
+                size={16} 
+                color={Theme.colors.textOnPrimary} 
+              />
+            </View>
+          )}
         </View>
 
         {hasProgress && (
@@ -120,37 +149,23 @@ export default function SurahListScreen({ navigation }) {
                   styles.progressBarFill,
                   { 
                     width: `${progress.percentage}%`,
-                    backgroundColor: isCompleted ? '#009c4a' : '#d4af37'
+                    backgroundColor: isCompleted ? Theme.colors.success : Theme.colors.secondary
                   }
                 ]}
               />
             </View>
           </View>
         )}
-
-        {isCompleted && (
-          <View style={styles.completedBadge}>
-            <Text style={styles.completedText}>✓ Completed</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+      </AnimatedCard>
     );
   };
-
-  const LoadingScreen = () => (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color="#d4af37" />
-      <Text style={styles.loadingText}>Loading Surahs...</Text>
-      <Text style={styles.loadingSubtext}>Please wait while we fetch the Quran chapters</Text>
-    </View>
-  );
 
   if (loading) {
     return (
       <SafeAreaProvider>
-        <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+        <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
           <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-            <LoadingScreen />
+            <LoadingSpinner message="Loading Quran chapters..." />
           </SafeAreaView>
         </LinearGradient>
       </SafeAreaProvider>
@@ -159,18 +174,26 @@ export default function SurahListScreen({ navigation }) {
 
   return (
     <SafeAreaProvider>
-      <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           <View style={styles.header}>
             <TouchableOpacity 
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <Text style={styles.backText}>← Back to Dashboard</Text>
+              <Icon 
+                name={AppIcons.back.name} 
+                type={AppIcons.back.type} 
+                size={24} 
+                color={Theme.colors.textOnDark} 
+              />
+              <Text style={styles.backText}>Dashboard</Text>
             </TouchableOpacity>
             
-            <Text style={styles.title}>Quran Surahs</Text>
-            <Text style={styles.subtitle}>Choose a surah to memorize</Text>
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.title}>Quran Surahs</Text>
+              <Text style={styles.subtitle}>Choose a surah to memorize</Text>
+            </View>
           </View>
 
           <FlatList
@@ -179,6 +202,7 @@ export default function SurahListScreen({ navigation }) {
             renderItem={SurahItem}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            ItemSeparatorComponent={() => <View style={{ height: Theme.spacing.sm }} />}
           />
         </SafeAreaView>
       </LinearGradient>
@@ -193,165 +217,145 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  loadingText: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 20,
-    textAlign: 'center',
-  },
-  loadingSubtext: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 14,
-    marginTop: 10,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 30,
-    alignItems: 'center',
+    paddingHorizontal: Theme.spacing.xl,
+    paddingTop: Theme.spacing.xl,
+    paddingBottom: Theme.spacing['3xl'],
   },
   backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Theme.spacing.xl,
   },
   backText: {
-    color: 'white',
-    fontSize: 16,
+    color: Theme.colors.textOnDark,
+    fontSize: Theme.typography.fontSize.base,
+    marginLeft: Theme.spacing.sm,
+    fontWeight: Theme.typography.fontWeight.medium,
+  },
+  headerTitleContainer: {
+    alignItems: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: 'white',
+    fontSize: Theme.typography.fontSize['4xl'],
+    fontWeight: Theme.typography.fontWeight.bold,
+    color: Theme.colors.textOnDark,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: Theme.spacing.sm,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: Theme.typography.fontSize.base,
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
   },
   listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingHorizontal: Theme.spacing.xl,
+    paddingBottom: Theme.spacing['6xl'],
   },
   surahCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    marginBottom: 15,
-    padding: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    padding: Theme.spacing.xl,
   },
   completedSurah: {
-    backgroundColor: '#f0f8f0',
+    backgroundColor: Theme.colors.successLight,
     borderWidth: 2,
-    borderColor: '#009c4a',
+    borderColor: Theme.colors.success,
   },
   surahHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
+    alignItems: 'flex-start',
+    marginBottom: Theme.spacing.lg,
+    position: 'relative',
   },
-  surahInfo: {
-    flexDirection: 'row',
+  surahNumberContainer: {
+    backgroundColor: Theme.colors.secondary,
+    borderRadius: Theme.borderRadius.full,
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
     alignItems: 'center',
-    flex: 1,
+    marginRight: Theme.spacing.lg,
+    ...Theme.shadows.sm,
   },
   surahNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#d4af37',
-    backgroundColor: 'rgba(212, 175, 55, 0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginRight: 15,
-    minWidth: 50,
-    textAlign: 'center',
+    fontSize: Theme.typography.fontSize.lg,
+    fontWeight: Theme.typography.fontWeight.bold,
+    color: Theme.colors.textOnPrimary,
   },
-  surahNames: {
+  surahInfo: {
     flex: 1,
   },
   surahName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 2,
+    fontSize: Theme.typography.fontSize.xl,
+    fontWeight: Theme.typography.fontWeight.bold,
+    color: Theme.colors.textPrimary,
+    marginBottom: Theme.spacing.xs,
   },
   surahArabicName: {
-  fontFamily: 'UthmanicFont',
-  fontSize: 16,
-  color: '#7f8c8d',
+    fontFamily: Theme.typography.fontFamily.arabic,
+    fontSize: Theme.typography.fontSize.lg,
+    color: Theme.colors.textSecondary,
+    marginBottom: Theme.spacing.sm,
   },
   surahMeta: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    gap: Theme.spacing.lg,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   surahType: {
-    fontSize: 12,
-    color: '#95a5a6',
-    backgroundColor: '#ecf0f1',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginBottom: 4,
+    fontSize: Theme.typography.fontSize.xs,
+    color: Theme.colors.textMuted,
+    fontWeight: Theme.typography.fontWeight.medium,
+    marginLeft: Theme.spacing.xs,
+    textTransform: 'capitalize',
   },
   ayahCount: {
-    fontSize: 14,
-    color: '#7f8c8d',
+    fontSize: Theme.typography.fontSize.xs,
+    color: Theme.colors.textMuted,
+    fontWeight: Theme.typography.fontWeight.medium,
+    marginLeft: Theme.spacing.xs,
+  },
+  completedBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: Theme.colors.success,
+    borderRadius: Theme.borderRadius.full,
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Theme.shadows.sm,
   },
   progressSection: {
-    marginTop: 10,
+    marginTop: Theme.spacing.sm,
   },
   progressInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: Theme.spacing.sm,
   },
   progressText: {
-    fontSize: 14,
-    color: '#5a6c7d',
+    fontSize: Theme.typography.fontSize.sm,
+    color: Theme.colors.textSecondary,
+    fontWeight: Theme.typography.fontWeight.medium,
   },
   progressPercentage: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#d4af37',
+    fontSize: Theme.typography.fontSize.sm,
+    fontWeight: Theme.typography.fontWeight.bold,
+    color: Theme.colors.secondary,
   },
   progressBarContainer: {
     height: 6,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 3,
+    backgroundColor: Theme.colors.gray200,
+    borderRadius: Theme.borderRadius.sm,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: 3,
-  },
-  completedBadge: {
-    position: 'absolute',
-    top: 15,
-    right: 15,
-    backgroundColor: '#009c4a',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 15,
-  },
-  completedText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
+    borderRadius: Theme.borderRadius.sm,
   },
 });

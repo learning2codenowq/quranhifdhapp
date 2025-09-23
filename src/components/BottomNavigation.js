@@ -1,29 +1,30 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppIcons } from './AppIcons';
+import { Theme } from '../styles/theme';
+import { Icon, AppIcons } from './Icon';
 
 export default function BottomNavigation({ currentRoute, onNavigate }) {
   const tabs = [
-  { 
-    key: 'Dashboard', 
-    label: 'Home', 
-    icon: AppIcons.Home,
-    route: 'Dashboard'
-  },
-  { 
-    key: 'Reading', 
-    label: 'Reading', 
-    icon: AppIcons.Book,
-    route: 'Reading'
-  },
-  { 
-    key: 'Settings', 
-    label: 'Settings', 
-    icon: AppIcons.Settings,
-    route: 'Settings'
-  }
-];
+    { 
+      key: 'Dashboard', 
+      label: 'Home', 
+      icon: AppIcons.home,
+      route: 'Dashboard'
+    },
+    { 
+      key: 'Reading', 
+      label: 'Reading', 
+      icon: AppIcons.book,
+      route: 'Reading'
+    },
+    { 
+      key: 'Settings', 
+      label: 'Settings', 
+      icon: AppIcons.settings,
+      route: 'Settings'
+    }
+  ];
 
   const handleTabPress = (tab) => {
     if (currentRoute !== tab.route) {
@@ -44,11 +45,13 @@ export default function BottomNavigation({ currentRoute, onNavigate }) {
               onPress={() => handleTabPress(tab)}
             >
               <View style={[styles.iconContainer, isActive && styles.activeIconContainer]}>
-  <tab.icon 
-    size={20} 
-    color={isActive ? 'white' : '#666'} 
-  />
-</View>
+                <Icon 
+                  name={tab.icon.name}
+                  type={tab.icon.type}
+                  size={22} 
+                  color={isActive ? Theme.colors.textOnPrimary : Theme.colors.textMuted} 
+                />
+              </View>
               <Text style={[styles.label, isActive && styles.activeLabel]}>
                 {tab.label}
               </Text>
@@ -62,53 +65,45 @@ export default function BottomNavigation({ currentRoute, onNavigate }) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
+    backgroundColor: Theme.colors.white,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderTopColor: Theme.colors.gray200,
+    ...Theme.shadows.xl,
   },
   tabContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 10,
-    paddingTop: 8,
-    paddingBottom: 4,
+    paddingHorizontal: Theme.spacing.sm,
+    paddingTop: Theme.spacing.sm,
+    paddingBottom: Theme.spacing.xs,
+    height: Theme.layout.bottomTabHeight,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: Theme.spacing.sm,
   },
   activeTab: {
     // Active tab styling handled by individual elements
   },
   iconContainer: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20,
-    marginBottom: 4,
+    borderRadius: Theme.borderRadius.full,
+    marginBottom: Theme.spacing.xs,
   },
   activeIconContainer: {
-    backgroundColor: '#004d24',
-  },
-  icon: {
-    fontSize: 20,
-  },
-  activeIcon: {
-    fontSize: 20,
+    backgroundColor: Theme.colors.primary,
+    ...Theme.shadows.md,
   },
   label: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
+    fontSize: Theme.typography.fontSize.xs,
+    color: Theme.colors.textMuted,
+    fontWeight: Theme.typography.fontWeight.medium,
   },
   activeLabel: {
-    color: '#004d24',
-    fontWeight: '600',
+    color: Theme.colors.primary,
+    fontWeight: Theme.typography.fontWeight.semibold,
   },
 });
