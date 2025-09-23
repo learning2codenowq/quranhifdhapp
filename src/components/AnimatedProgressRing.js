@@ -1,60 +1,27 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 
 export default function AnimatedProgressRing({ percentage, size = 200 }) {
-  const animatedValue = useRef(new Animated.Value(0)).current;
-  const scaleValue = useRef(new Animated.Value(0.8)).current;
+  const safePercentage = Number(percentage) || 0;
   
-  useEffect(() => {
-    // Animate the progress
-    Animated.timing(animatedValue, {
-      toValue: percentage,
-      duration: 1500,
-      useNativeDriver: false,
-    }).start();
-
-    // Animate the scale for a nice entrance
-    Animated.spring(scaleValue, {
-      toValue: 1,
-      tension: 50,
-      friction: 8,
-      useNativeDriver: true,
-    }).start();
-  }, [percentage]);
-
-  const progressWidth = animatedValue.interpolate({
-    inputRange: [0, 100],
-    outputRange: ['0%', '100%'],
-    extrapolate: 'clamp',
-  });
-
   return (
-    <Animated.View 
-      style={[
-        styles.container, 
-        { 
-          width: size, 
-          height: size / 2,
-          transform: [{ scale: scaleValue }]
-        }
-      ]}
-    >
+    <View style={styles.container}>
       <View style={styles.progressBackground}>
-        <Animated.View 
+        <View 
           style={[
             styles.progressFill,
-            { width: progressWidth }
+            { width: `${Math.min(100, Math.max(0, safePercentage))}%` }
           ]} 
         />
       </View>
       
       <View style={styles.textContainer}>
         <Text style={styles.percentageText}>
-          {percentage.toFixed(1)}%
+          {safePercentage.toFixed(1)}%
         </Text>
         <Text style={styles.labelText}>Complete</Text>
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -63,6 +30,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 15,
+    width: 200,
+    height: 100,
   },
   progressBackground: {
     width: '100%',

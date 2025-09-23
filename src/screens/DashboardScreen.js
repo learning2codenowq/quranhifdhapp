@@ -6,8 +6,6 @@ import { QuranUtils } from '../utils/QuranUtils';
 import TikrarPlan from '../components/TikrarPlan';
 import AchievementModal from '../components/AchievementModal';
 import AnimatedProgressRing from '../components/AnimatedProgressRing';
-import AnimatedCard from '../components/AnimatedCard';
-import AnimatedButton from '../components/AnimatedButton';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Icon, AppIcons } from '../components/Icon';
 import { Theme } from '../styles/theme';
@@ -110,7 +108,14 @@ export default function DashboardScreen({ navigation }) {
     );
   }
 
-  const displayStats = stats || {
+  const displayStats = stats ? {
+    percentComplete: Number(stats.percentComplete) || 0,
+    memorized: Number(stats.memorized) || 0,
+    total: Number(stats.total) || 6236,
+    remaining: Number(stats.remaining) || 6236,
+    daily: Number(stats.daily) || 10,
+    daysLeft: Number(stats.daysLeft) || 624
+  } : {
     percentComplete: 0,
     memorized: 0,
     total: 6236,
@@ -162,26 +167,25 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.title}>Quran Hifdh</Text>
         </View>
 
-        {/* Current Streak */}
-        <AnimatedCard style={styles.streakCard} variant="elevated">
-          <View style={styles.streakContent}>
-            <Icon 
-              name={AppIcons.flame.name} 
-              type={AppIcons.flame.type} 
-              size={32} 
-              color={Theme.colors.warning} 
-            />
-            <View style={styles.streakTextContainer}>
-              <Text style={styles.streakNumber}>{currentStreak}</Text>
-              <Text style={styles.streakLabel}>Day Streak</Text>
-            </View>
-          </View>
-        </AnimatedCard>
+        <View style={styles.modernStreakCard}>
+  <View style={styles.streakIconContainer}>
+    <Icon 
+      name={AppIcons.book.name} 
+      type={AppIcons.book.type} 
+      size={24} 
+      color={Theme.colors.primary} 
+    />
+  </View>
+  <View style={styles.streakInfo}>
+    <Text style={styles.streakNumber}>{currentStreak}</Text>
+    <Text style={styles.streakLabel}>Day Streak</Text>
+  </View>
+</View>
 
         {/* Progress Ring */}
         <View style={styles.progressSection}>
           <AnimatedProgressRing 
-            percentage={displayStats.percentComplete} 
+            percentage={displayStats.percentComplete || 0} 
             size={200} 
           />
           <Text style={styles.progressStats}>
@@ -190,14 +194,12 @@ export default function DashboardScreen({ navigation }) {
         </View>
 
         {/* Main Action Button */}
-        <AnimatedButton
-          title="Memorize the Quran"
-          onPress={() => navigation.navigate('SurahList')}
-          variant="secondary"
-          size="large"
-          icon={AppIcons.book}
+        <TouchableOpacity
           style={styles.memorizeButton}
-        />
+          onPress={() => navigation.navigate('SurahList')}
+        >
+          <Text style={styles.memorizeButtonText}>Memorize the Quran</Text>
+        </TouchableOpacity>
 
         {/* Revision Plan */}
         {revisionPlan && (
@@ -211,7 +213,7 @@ export default function DashboardScreen({ navigation }) {
         {/* Today's Progress */}
         <View style={styles.todaySection}>
           <Text style={styles.sectionTitle}>Today's Progress</Text>
-          <AnimatedCard style={styles.todayCard}>
+          <View style={styles.todayCard}>
             <View style={styles.todayContent}>
               <View style={styles.todayStats}>
                 <View style={styles.todayStatsHeader}>
@@ -238,12 +240,12 @@ export default function DashboardScreen({ navigation }) {
                 <Text style={styles.todayGoal}>Goal: {displayStats.daily}</Text>
               </View>
             </View>
-          </AnimatedCard>
+          </View>
         </View>
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
-          <AnimatedCard style={styles.statCard}>
+          <View style={styles.statCard}>
             <Icon 
               name={AppIcons.trending.name} 
               type={AppIcons.trending.type} 
@@ -254,9 +256,9 @@ export default function DashboardScreen({ navigation }) {
             <Text style={styles.statValue}>{displayStats.remaining.toLocaleString()}</Text>
             <Text style={styles.statTitle}>Remaining</Text>
             <Text style={styles.statSubtitle}>Ayahs left</Text>
-          </AnimatedCard>
+          </View>
 
-          <AnimatedCard style={styles.statCard}>
+          <View style={styles.statCard}>
             <Icon 
               name={AppIcons.calendar.name} 
               type={AppIcons.calendar.type} 
@@ -267,9 +269,9 @@ export default function DashboardScreen({ navigation }) {
             <Text style={styles.statValue}>{displayStats.daily}</Text>
             <Text style={styles.statTitle}>Daily Target</Text>
             <Text style={styles.statSubtitle}>Ayahs/day</Text>
-          </AnimatedCard>
+          </View>
 
-          <AnimatedCard style={styles.statCard}>
+          <View style={styles.statCard}>
             <Icon 
               name={AppIcons.trophy.name} 
               type={AppIcons.trophy.type} 
@@ -280,9 +282,9 @@ export default function DashboardScreen({ navigation }) {
             <Text style={[styles.statValue, styles.hafidhhValue]}>{daysLeftTillHafidh}</Text>
             <Text style={styles.statTitle}>Days to Hafidh</Text>
             <Text style={styles.statSubtitle}>At current pace</Text>
-          </AnimatedCard>
+          </View>
 
-          <AnimatedCard style={styles.statCard}>
+          <View style={styles.statCard}>
             <Icon 
               name={AppIcons.star.name} 
               type={AppIcons.star.type} 
@@ -295,11 +297,11 @@ export default function DashboardScreen({ navigation }) {
             </Text>
             <Text style={styles.statTitle}>Expected Date</Text>
             <Text style={styles.statSubtitle}>{hafidhhETA.getFullYear()}</Text>
-          </AnimatedCard>
+          </View>
         </View>
 
         {/* Analytics Card */}
-        <AnimatedCard 
+        <TouchableOpacity 
           style={styles.analyticsCard}
           onPress={() => navigation.navigate('Analytics')}
         >
@@ -321,11 +323,11 @@ export default function DashboardScreen({ navigation }) {
               color={Theme.colors.secondary} 
             />
           </View>
-        </AnimatedCard>
+        </TouchableOpacity>
 
         {/* Achievements Card */}
         {totalAchievements > 0 && (
-          <AnimatedCard 
+          <TouchableOpacity 
             style={styles.achievementCard}
             onPress={() => navigation.navigate('Achievements')}
           >
@@ -347,7 +349,7 @@ export default function DashboardScreen({ navigation }) {
                 color={Theme.colors.secondary} 
               />
             </View>
-          </AnimatedCard>
+          </TouchableOpacity>
         )}
 
         {/* Achievement Modal */}
@@ -409,18 +411,6 @@ const styles = StyleSheet.create({
     color: Theme.colors.textOnDark,
     textAlign: 'center',
   },
-  streakCard: {
-    marginBottom: Theme.spacing.xl,
-  },
-  streakContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  streakTextContainer: {
-    marginLeft: Theme.spacing.md,
-    alignItems: 'center',
-  },
   streakNumber: {
     fontSize: Theme.typography.fontSize['3xl'],
     fontWeight: Theme.typography.fontWeight.bold,
@@ -442,7 +432,17 @@ const styles = StyleSheet.create({
     marginTop: Theme.spacing.md,
   },
   memorizeButton: {
+    backgroundColor: '#d4af37',
+    borderRadius: 25,
+    paddingVertical: 18,
+    paddingHorizontal: 30,
     marginBottom: Theme.spacing['3xl'],
+    alignItems: 'center',
+  },
+  memorizeButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   todaySection: {
     marginBottom: Theme.spacing['3xl'],
@@ -454,6 +454,8 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.lg,
   },
   todayCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 15,
     padding: Theme.spacing.xl,
   },
   todayContent: {
@@ -511,6 +513,9 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: (Theme.layout.screenWidth - Theme.spacing.xl * 2 - Theme.spacing.md) / 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 15,
+    padding: 20,
     alignItems: 'center',
     marginBottom: Theme.spacing.lg,
   },
@@ -539,9 +544,15 @@ const styles = StyleSheet.create({
     marginTop: Theme.spacing.xs,
   },
   analyticsCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 15,
+    padding: 20,
     marginBottom: Theme.spacing.lg,
   },
   achievementCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 15,
+    padding: 20,
     marginBottom: Theme.spacing.lg,
   },
   cardContent: {
@@ -562,4 +573,45 @@ const styles = StyleSheet.create({
     fontSize: Theme.typography.fontSize.sm,
     color: Theme.colors.textSecondary,
   },
+  modernStreakCard: {
+  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  borderRadius: 16,
+  paddingVertical: 16,
+  paddingHorizontal: 20,
+  marginBottom: Theme.spacing.xl,
+  alignSelf: 'center',
+  minWidth: 180,
+  maxWidth: 240,
+  flexDirection: 'row',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 3,
+  borderLeftWidth: 4,
+  borderLeftColor: Theme.colors.primary,
+},
+streakIconContainer: {
+  backgroundColor: 'rgba(5, 40, 21, 0.1)', // Light green background for book icon
+  borderRadius: 12,
+  padding: 10,
+  marginRight: 16,
+},
+streakInfo: {
+  flex: 1,
+  alignItems: 'flex-start',
+},
+streakNumber: {
+  fontSize: 28,
+  fontWeight: 'bold',
+  color: Theme.colors.primary,
+  lineHeight: 32,
+},
+streakLabel: {
+  fontSize: 13,
+  color: Theme.colors.textSecondary,
+  fontWeight: '500',
+  marginTop: 2,
+},
 });

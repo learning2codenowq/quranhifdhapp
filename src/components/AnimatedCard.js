@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { Animated, TouchableOpacity, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Theme } from '../styles/theme';
 
 export default function AnimatedCard({ 
@@ -10,41 +10,6 @@ export default function AnimatedCard({
   variant = 'default', // 'default', 'elevated', 'outlined'
   padding = 'default', // 'none', 'small', 'default', 'large'
 }) {
-  const scaleValue = useRef(new Animated.Value(1)).current;
-  const shadowValue = useRef(new Animated.Value(1)).current;
-
-  const animateIn = () => {
-    Animated.parallel([
-      Animated.spring(scaleValue, {
-        toValue: 0.98,
-        useNativeDriver: true,
-        tension: 300,
-        friction: 20,
-      }),
-      Animated.timing(shadowValue, {
-        toValue: 0.5,
-        duration: 150,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  };
-
-  const animateOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleValue, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 300,
-        friction: 20,
-      }),
-      Animated.timing(shadowValue, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  };
-
   const getCardStyle = () => {
     const baseStyle = {
       ...styles.card,
@@ -88,45 +53,23 @@ export default function AnimatedCard({
     }
   };
 
-  const shadowOpacity = shadowValue.interpolate({
-    inputRange: [0.5, 1],
-    outputRange: [0.1, 0.25],
-  });
-
-  const elevation = shadowValue.interpolate({
-    inputRange: [0.5, 1],
-    outputRange: [2, 4],
-  });
-
   if (!onPress) {
     return (
-      <Animated.View style={[getCardStyle(), style, { elevation }]}>
+      <View style={[getCardStyle(), style]}>
         {children}
-      </Animated.View>
+      </View>
     );
   }
 
   return (
     <TouchableOpacity
-      activeOpacity={1}
-      onPressIn={animateIn}
-      onPressOut={animateOut}
+      activeOpacity={0.8}
       onPress={onPress}
       disabled={disabled}
     >
-      <Animated.View
-        style={[
-          getCardStyle(),
-          style,
-          {
-            transform: [{ scale: scaleValue }],
-            elevation,
-            shadowOpacity,
-          },
-        ]}
-      >
+      <View style={[getCardStyle(), style]}>
         {children}
-      </Animated.View>
+      </View>
     </TouchableOpacity>
   );
 }

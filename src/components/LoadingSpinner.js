@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Animated, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Theme } from '../styles/theme';
 
@@ -8,33 +8,6 @@ export default function LoadingSpinner({
   visible = true,
   variant = 'overlay' // 'overlay', 'inline', 'minimal'
 }) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 100,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [visible]);
-
   if (!visible) return null;
 
   if (variant === 'minimal') {
@@ -47,36 +20,23 @@ export default function LoadingSpinner({
 
   if (variant === 'inline') {
     return (
-      <Animated.View 
-        style={[
-          styles.inlineContainer,
-          { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }
-        ]}
-      >
+      <View style={styles.inlineContainer}>
         <ActivityIndicator size="large" color={Theme.colors.secondary} />
         <Text style={styles.inlineMessage}>{message}</Text>
-      </Animated.View>
+      </View>
     );
   }
 
   return (
-    <Animated.View 
-      style={[
-        styles.overlay,
-        { opacity: fadeAnim }
-      ]}
-    >
+    <View style={styles.overlay}>
       <LinearGradient 
         colors={Theme.gradients.primary} 
-        style={[
-          styles.container,
-          { transform: [{ scale: scaleAnim }] }
-        ]}
+        style={styles.container}
       >
         <ActivityIndicator size="large" color={Theme.colors.secondary} />
         <Text style={styles.message}>{message}</Text>
       </LinearGradient>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -98,7 +58,6 @@ const styles = StyleSheet.create({
     borderRadius: Theme.borderRadius.xl,
     alignItems: 'center',
     minWidth: 150,
-    ...Theme.shadows.lg,
   },
   message: {
     color: Theme.colors.textOnDark,

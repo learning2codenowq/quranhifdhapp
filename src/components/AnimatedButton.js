@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { Animated, TouchableOpacity, Text, StyleSheet, Vibration } from 'react-native';
+import React from 'react';
+import { TouchableOpacity, Text, StyleSheet, Vibration, View } from 'react-native';
 import { Theme } from '../styles/theme';
 import { Icon } from './Icon';
 
@@ -16,46 +16,11 @@ export default function AnimatedButton({
   iconPosition = 'left', // 'left', 'right'
   loading = false,
 }) {
-  const scaleValue = useRef(new Animated.Value(1)).current;
-  const opacityValue = useRef(new Animated.Value(1)).current;
-
-  const animatePress = () => {
-    if (hapticFeedback && !disabled) {
-      Vibration.vibrate(50);
-    }
-
-    Animated.parallel([
-      Animated.spring(scaleValue, {
-        toValue: 0.96,
-        useNativeDriver: true,
-        tension: 300,
-        friction: 10,
-      }),
-      Animated.timing(opacityValue, {
-        toValue: 0.8,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      Animated.parallel([
-        Animated.spring(scaleValue, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 300,
-          friction: 10,
-        }),
-        Animated.timing(opacityValue, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    });
-  };
-
   const handlePress = () => {
     if (!disabled && !loading) {
-      animatePress();
+      if (hapticFeedback) {
+        Vibration.vibrate(50);
+      }
       setTimeout(() => onPress && onPress(), 50);
     }
   };
@@ -160,14 +125,14 @@ export default function AnimatedButton({
   const renderContent = () => {
     if (loading) {
       return (
-        <Animated.View style={styles.loadingContainer}>
+        <View style={styles.loadingContainer}>
           <Text style={[getTextStyle(), textStyle]}>Loading...</Text>
-        </Animated.View>
+        </View>
       );
     }
 
     return (
-      <Animated.View style={styles.contentContainer}>
+      <View style={styles.contentContainer}>
         {icon && iconPosition === 'left' && (
           <Icon 
             name={icon.name}
@@ -191,28 +156,18 @@ export default function AnimatedButton({
             style={styles.iconRight}
           />
         )}
-      </Animated.View>
+      </View>
     );
   };
 
   return (
     <TouchableOpacity
-      activeOpacity={1}
+      activeOpacity={0.8}
       onPress={handlePress}
       disabled={disabled || loading}
+      style={[getButtonStyle(), style, { opacity: disabled ? 0.5 : 1 }]}
     >
-      <Animated.View
-        style={[
-          getButtonStyle(),
-          style,
-          {
-            transform: [{ scale: scaleValue }],
-            opacity: disabled ? 0.5 : opacityValue,
-          },
-        ]}
-      >
-        {renderContent()}
-      </Animated.View>
+      {renderContent()}
     </TouchableOpacity>
   );
 }
