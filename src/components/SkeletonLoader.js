@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
 
-export const SkeletonLine = ({ width = '100%', height = 20, style }) => {
+export const SkeletonLine = ({ width = '100%', height = 20, style, borderRadius = 8 }) => {
   const opacity = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
@@ -31,6 +31,7 @@ export const SkeletonLine = ({ width = '100%', height = 20, style }) => {
           width,
           height,
           opacity,
+          borderRadius,
         },
         style,
       ]}
@@ -38,112 +39,161 @@ export const SkeletonLine = ({ width = '100%', height = 20, style }) => {
   );
 };
 
-export const SurahCardSkeleton = () => (
-  <View style={styles.surahCardSkeleton}>
-    <View style={styles.surahHeaderSkeleton}>
-      <SkeletonLine width={50} height={24} style={styles.surahNumber} />
-      <View style={styles.surahNamesSkeleton}>
-        <SkeletonLine width="60%" height={18} />
-        <SkeletonLine width="40%" height={16} style={{ marginTop: 5 }} />
-      </View>
-      <View style={styles.surahMetaSkeleton}>
-        <SkeletonLine width={60} height={12} />
-        <SkeletonLine width={80} height={14} style={{ marginTop: 4 }} />
-      </View>
-    </View>
-  </View>
-);
+export const SkeletonCircle = ({ size = 60 }) => {
+  const opacity = useRef(new Animated.Value(0.3)).current;
 
-export const AyahSkeleton = () => (
-  <View style={styles.ayahSkeleton}>
-    <SkeletonLine width={40} height={16} style={styles.ayahNumberSkeleton} />
-    <SkeletonLine width="100%" height={20} style={{ marginTop: 10 }} />
-    <SkeletonLine width="80%" height={20} style={{ marginTop: 5 }} />
-    <SkeletonLine width="60%" height={16} style={{ marginTop: 15 }} />
-    <SkeletonLine width="40%" height={16} style={{ marginTop: 5 }} />
-    <View style={styles.controlsSkeleton}>
-      <SkeletonLine width={60} height={40} style={styles.controlButton} />
-      <SkeletonLine width={120} height={40} style={styles.controlButton} />
-    </View>
-  </View>
-);
+  useEffect(() => {
+    const animate = () => {
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 0.7,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.3,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]).start(() => animate());
+    };
+    
+    animate();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.skeletonCircle,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          opacity,
+        },
+      ]}
+    />
+  );
+};
 
 export const DashboardSkeleton = () => (
   <View style={styles.dashboardSkeleton}>
-    <SkeletonLine width="70%" height={24} style={{ alignSelf: 'center', marginBottom: 20 }} />
-    <SkeletonLine width={200} height={80} style={{ alignSelf: 'center', marginBottom: 30, borderRadius: 40 }} />
-    <View style={styles.statsSkeleton}>
+    {/* Header Skeleton */}
+    <View style={styles.headerSkeleton}>
+      <SkeletonLine width="60%" height={20} style={styles.centerSkeleton} />
+      <SkeletonLine width="40%" height={14} style={[styles.centerSkeleton, { marginTop: 8 }]} />
+      <SkeletonLine width="70%" height={32} style={[styles.centerSkeleton, { marginTop: 16 }]} />
+    </View>
+
+    {/* Streak Card Skeleton */}
+    <View style={styles.streakCardSkeleton}>
+      <SkeletonCircle size={48} />
+      <View style={styles.streakTextSkeleton}>
+        <SkeletonLine width={60} height={24} />
+        <SkeletonLine width={80} height={12} style={{ marginTop: 4 }} />
+      </View>
+    </View>
+
+    {/* Progress Ring Skeleton */}
+    <View style={styles.progressSkeleton}>
+      <SkeletonCircle size={160} />
+      <SkeletonLine width="50%" height={16} style={{ marginTop: 16, alignSelf: 'center' }} />
+    </View>
+
+    {/* Button Skeleton */}
+    <SkeletonLine width="100%" height={56} borderRadius={30} style={{ marginBottom: 32, marginTop: 32 }} />
+
+    {/* Stats Grid Skeleton */}
+    <View style={styles.statsGridSkeleton}>
       {[1, 2, 3, 4].map((i) => (
         <View key={i} style={styles.statCardSkeleton}>
-          <SkeletonLine width="60%" height={20} />
-          <SkeletonLine width="40%" height={14} style={{ marginTop: 5 }} />
+          <SkeletonCircle size={48} />
+          <SkeletonLine width="60%" height={28} style={{ marginTop: 12, alignSelf: 'center' }} />
+          <SkeletonLine width="80%" height={14} style={{ marginTop: 8, alignSelf: 'center' }} />
+          <SkeletonLine width="60%" height={12} style={{ marginTop: 4, alignSelf: 'center' }} />
         </View>
       ))}
     </View>
   </View>
 );
 
+export const SurahListSkeleton = () => (
+  <View style={styles.surahListSkeleton}>
+    {[1, 2, 3, 4, 5, 6].map((i) => (
+      <View key={i} style={styles.surahCardSkeleton}>
+        <SkeletonCircle size={48} />
+        <View style={styles.surahInfoSkeleton}>
+          <SkeletonLine width="70%" height={18} />
+          <SkeletonLine width="50%" height={14} style={{ marginTop: 8 }} />
+          <SkeletonLine width="40%" height={12} style={{ marginTop: 6 }} />
+        </View>
+      </View>
+    ))}
+  </View>
+);
+
 const styles = StyleSheet.create({
   skeletonLine: {
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
-  surahCardSkeleton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 15,
-  },
-  surahHeaderSkeleton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  surahNumber: {
-    borderRadius: 20,
-    marginRight: 15,
-  },
-  surahNamesSkeleton: {
-    flex: 1,
-  },
-  surahMetaSkeleton: {
-    alignItems: 'flex-end',
-  },
-  ayahSkeleton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-    position: 'relative',
-  },
-  ayahNumberSkeleton: {
-    position: 'absolute',
-    top: -8,
-    right: 20,
-    borderRadius: 18,
-  },
-  controlsSkeleton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 15,
-    marginTop: 20,
-  },
-  controlButton: {
-    borderRadius: 25,
+  skeletonCircle: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   dashboardSkeleton: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 50,
   },
-  statsSkeleton: {
+  headerSkeleton: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  centerSkeleton: {
+    alignSelf: 'center',
+  },
+  streakCardSkeleton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    marginBottom: 32,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 200,
+  },
+  streakTextSkeleton: {
+    marginLeft: 16,
+  },
+  progressSkeleton: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  statsGridSkeleton: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: 12,
   },
   statCardSkeleton: {
     width: '48%',
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
+    borderRadius: 20,
     padding: 20,
     alignItems: 'center',
-    marginBottom: 15,
+  },
+  surahListSkeleton: {
+    paddingHorizontal: 20,
+  },
+  surahCardSkeleton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  surahInfoSkeleton: {
+    flex: 1,
+    marginLeft: 16,
   },
 });

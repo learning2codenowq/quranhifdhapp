@@ -8,21 +8,31 @@ export default function SplashScreen({ onComplete }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       onComplete();
-    }, 2500); // Show splash for 2.5 seconds
+    }, 2000); // Show splash for 2 seconds
 
     return () => clearTimeout(timer);
   }, [onComplete]);
 
   return (
-    <LinearGradient colors={['#052815ff', '#058743']} style={styles.container}>
+    <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Text style={styles.arabicLogo}>القرآن</Text>
           <Text style={styles.appName}>Quran Hifdh</Text>
+          <View style={styles.underline} />
         </View>
         
         <View style={styles.taglineContainer}>
-          <Text style={styles.tagline}>Your path to memorizing the Holy Quran</Text>
+          <Text style={styles.tagline}>Your companion for</Text>
+          <Text style={styles.tagline}>memorizing the Holy Quran</Text>
+        </View>
+
+        <View style={styles.footer}>
+          <View style={styles.loadingDots}>
+            <View style={[styles.dot, styles.dot1]} />
+            <View style={[styles.dot, styles.dot2]} />
+            <View style={[styles.dot, styles.dot3]} />
+          </View>
         </View>
       </View>
     </LinearGradient>
@@ -37,51 +47,69 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 80,
     paddingHorizontal: 40,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 60,
+    marginTop: 60,
   },
   arabicLogo: {
-  fontSize: 60,
-  color: '#d4af37',
-  marginBottom: 20,
-  textAlign: 'center',
-  fontFamily: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
+    fontSize: 72,
+    color: '#d4af37',
+    marginBottom: 16,
+    textAlign: 'center',
+    fontFamily: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
+    letterSpacing: 2,
   },
   appName: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: 'white',
     textAlign: 'center',
-    letterSpacing: 2,
+    letterSpacing: 1.5,
+    marginBottom: 12,
+  },
+  underline: {
+    width: 80,
+    height: 3,
+    backgroundColor: '#d4af37',
+    borderRadius: 2,
+    marginTop: 8,
   },
   taglineContainer: {
     alignItems: 'center',
   },
   tagline: {
-    fontSize: 18,
+    fontSize: 16,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 26,
-  },
-  subtitle: {
-  fontSize: 20,
-  color: '#d4af37',
-  textAlign: 'center',
-  fontFamily: 'UthmanicFont',
+    lineHeight: 24,
+    fontWeight: '400',
   },
   footer: {
-    paddingBottom: 40,
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  footerText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
-    textAlign: 'center',
-    fontStyle: 'italic',
+  loadingDots: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(212, 175, 55, 0.6)',
+  },
+  dot1: {
+    opacity: 0.4,
+  },
+  dot2: {
+    opacity: 0.7,
+  },
+  dot3: {
+    opacity: 1,
   },
 });

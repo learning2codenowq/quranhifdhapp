@@ -10,6 +10,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { Icon, AppIcons } from '../components/Icon';
 import { Theme } from '../styles/theme';
 import { Logger } from '../utils/Logger';
+import { DashboardSkeleton } from '../components/SkeletonLoader';
 
 export default function DashboardScreen({ navigation }) {
   const [stats, setStats] = useState(null);
@@ -102,10 +103,10 @@ export default function DashboardScreen({ navigation }) {
 
   if (!stats) {
     return (
-      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
-        <LoadingSpinner message="Loading your progress..." />
-      </LinearGradient>
-    );
+     <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+       <DashboardSkeleton />
+     </LinearGradient>
+   );
   }
 
   const displayStats = stats ? {
@@ -194,12 +195,27 @@ export default function DashboardScreen({ navigation }) {
         </View>
 
         {/* Main Action Button */}
-        <TouchableOpacity
-          style={styles.memorizeButton}
-          onPress={() => navigation.navigate('SurahList')}
-        >
-          <Text style={styles.memorizeButtonText}>Memorize the Quran</Text>
-        </TouchableOpacity>
+<TouchableOpacity
+  style={styles.memorizeButtonContainer}
+  onPress={() => navigation.navigate('SurahList')}
+  activeOpacity={0.9}
+>
+  <LinearGradient
+    colors={['#d4af37', '#f4d03f']}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 0 }}
+    style={styles.memorizeButton}
+  >
+    <Icon 
+      name={AppIcons.book.name} 
+      type={AppIcons.book.type} 
+      size={24} 
+      color="white" 
+      style={styles.buttonIcon}
+    />
+    <Text style={styles.memorizeButtonText}>Memorize the Quran</Text>
+  </LinearGradient>
+</TouchableOpacity>
 
         {/* Revision Plan */}
         {revisionPlan && (
@@ -244,113 +260,133 @@ export default function DashboardScreen({ navigation }) {
         </View>
 
         {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Icon 
-              name={AppIcons.trending.name} 
-              type={AppIcons.trending.type} 
-              size={24} 
-              color={Theme.colors.info} 
-              style={styles.statIcon}
-            />
-            <Text style={styles.statValue}>{displayStats.remaining.toLocaleString()}</Text>
-            <Text style={styles.statTitle}>Remaining</Text>
-            <Text style={styles.statSubtitle}>Ayahs left</Text>
-          </View>
+<View style={styles.statsGrid}>
+  {/* Remaining Ayahs */}
+  <View style={[styles.statCard, styles.statCardBlue]}>
+    <View style={[styles.statIconContainer, styles.statIconBlue]}>
+      <Icon 
+        name={AppIcons.trending.name} 
+        type={AppIcons.trending.type} 
+        size={24} 
+        color={Theme.colors.info} 
+      />
+    </View>
+    <Text style={[styles.statValue, styles.statValueBlue]}>
+      {displayStats.remaining.toLocaleString()}
+    </Text>
+    <Text style={styles.statTitle}>Remaining</Text>
+    <Text style={styles.statSubtitle}>Ayahs left</Text>
+  </View>
 
-          <View style={styles.statCard}>
-            <Icon 
-              name={AppIcons.calendar.name} 
-              type={AppIcons.calendar.type} 
-              size={24} 
-              color={Theme.colors.secondary} 
-              style={styles.statIcon}
-            />
-            <Text style={styles.statValue}>{displayStats.daily}</Text>
-            <Text style={styles.statTitle}>Daily Target</Text>
-            <Text style={styles.statSubtitle}>Ayahs/day</Text>
-          </View>
+  {/* Daily Target */}
+  <View style={[styles.statCard, styles.statCardGold]}>
+    <View style={[styles.statIconContainer, styles.statIconGold]}>
+      <Icon 
+        name={AppIcons.calendar.name} 
+        type={AppIcons.calendar.type} 
+        size={24} 
+        color={Theme.colors.secondary} 
+      />
+    </View>
+    <Text style={[styles.statValue, styles.statValueGold]}>
+      {displayStats.daily}
+    </Text>
+    <Text style={styles.statTitle}>Daily Target</Text>
+    <Text style={styles.statSubtitle}>Ayahs/day</Text>
+  </View>
 
-          <View style={styles.statCard}>
-            <Icon 
-              name={AppIcons.trophy.name} 
-              type={AppIcons.trophy.type} 
-              size={24} 
-              color={Theme.colors.warning} 
-              style={styles.statIcon}
-            />
-            <Text style={[styles.statValue, styles.hafidhhValue]}>{daysLeftTillHafidh}</Text>
-            <Text style={styles.statTitle}>Days to Hafidh</Text>
-            <Text style={styles.statSubtitle}>At current pace</Text>
-          </View>
+  {/* Days to Hafidh */}
+  <View style={[styles.statCard, styles.statCardOrange]}>
+    <View style={[styles.statIconContainer, styles.statIconOrange]}>
+      <Icon 
+        name={AppIcons.trophy.name} 
+        type={AppIcons.trophy.type} 
+        size={24} 
+        color={Theme.colors.warning} 
+      />
+    </View>
+    <Text style={[styles.statValue, styles.statValueOrange]}>
+      {daysLeftTillHafidh}
+    </Text>
+    <Text style={styles.statTitle}>Days to Hafidh</Text>
+    <Text style={styles.statSubtitle}>At current pace</Text>
+  </View>
 
-          <View style={styles.statCard}>
-            <Icon 
-              name={AppIcons.star.name} 
-              type={AppIcons.star.type} 
-              size={24} 
-              color={Theme.colors.success} 
-              style={styles.statIcon}
-            />
-            <Text style={styles.statValue}>
-              {hafidhhETA.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-            </Text>
-            <Text style={styles.statTitle}>Expected Date</Text>
-            <Text style={styles.statSubtitle}>{hafidhhETA.getFullYear()}</Text>
-          </View>
-        </View>
+  {/* Expected Date */}
+  <View style={[styles.statCard, styles.statCardGreen]}>
+    <View style={[styles.statIconContainer, styles.statIconGreen]}>
+      <Icon 
+        name={AppIcons.star.name} 
+        type={AppIcons.star.type} 
+        size={24} 
+        color={Theme.colors.success} 
+      />
+    </View>
+    <Text style={[styles.statValue, styles.statValueGreen]}>
+      {hafidhhETA.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+    </Text>
+    <Text style={styles.statTitle}>Expected Date</Text>
+    <Text style={styles.statSubtitle}>{hafidhhETA.getFullYear()}</Text>
+  </View>
+</View>
 
         {/* Analytics Card */}
-        <TouchableOpacity 
-          style={styles.analyticsCard}
-          onPress={() => navigation.navigate('Analytics')}
-        >
-          <View style={styles.cardContent}>
-            <Icon 
-              name={AppIcons.stats.name} 
-              type={AppIcons.stats.type} 
-              size={32} 
-              color={Theme.colors.info} 
-            />
-            <View style={styles.cardTextContent}>
-              <Text style={styles.cardTitle}>Analytics</Text>
-              <Text style={styles.cardSubtitle}>View detailed progress insights</Text>
-            </View>
-            <Icon 
-              name="chevron-forward" 
-              type="Ionicons" 
-              size={20} 
-              color={Theme.colors.secondary} 
-            />
-          </View>
-        </TouchableOpacity>
+<TouchableOpacity 
+  style={styles.analyticsCard}
+  onPress={() => navigation.navigate('Analytics')}
+  activeOpacity={0.85}
+>
+  <View style={styles.cardContent}>
+    <View style={styles.cardIconContainer}>
+      <Icon 
+        name={AppIcons.stats.name} 
+        type={AppIcons.stats.type} 
+        size={28} 
+        color={Theme.colors.info} 
+      />
+    </View>
+    <View style={styles.cardTextContent}>
+      <Text style={styles.cardTitle}>Analytics</Text>
+      <Text style={styles.cardSubtitle}>View detailed progress insights</Text>
+    </View>
+    <Icon 
+      name="chevron-forward" 
+      type="Ionicons" 
+      size={20} 
+      color={Theme.colors.secondary} 
+    />
+  </View>
+</TouchableOpacity>
 
         {/* Achievements Card */}
-        {totalAchievements > 0 && (
-          <TouchableOpacity 
-            style={styles.achievementCard}
-            onPress={() => navigation.navigate('Achievements')}
-          >
-            <View style={styles.cardContent}>
-              <Icon 
-                name={AppIcons.medal.name} 
-                type={AppIcons.medal.type} 
-                size={32} 
-                color={Theme.colors.warning} 
-              />
-              <View style={styles.cardTextContent}>
-                <Text style={styles.cardTitle}>Achievements</Text>
-                <Text style={styles.cardSubtitle}>{totalAchievements} earned</Text>
-              </View>
-              <Icon 
-                name="chevron-forward" 
-                type="Ionicons" 
-                size={20} 
-                color={Theme.colors.secondary} 
-              />
-            </View>
-          </TouchableOpacity>
-        )}
+{totalAchievements > 0 && (
+  <TouchableOpacity 
+    style={styles.achievementCard}
+    onPress={() => navigation.navigate('Achievements')}
+    activeOpacity={0.85}
+  >
+    <View style={styles.cardContent}>
+      <View style={styles.cardIconContainer}>
+        <Icon 
+          name={AppIcons.medal.name} 
+          type={AppIcons.medal.type} 
+          size={28} 
+          color={Theme.colors.warning} 
+        />
+      </View>
+      <View style={styles.cardTextContent}>
+        <Text style={styles.cardTitle}>Achievements</Text>
+        <Text style={styles.cardSubtitle}>{totalAchievements} earned</Text>
+      </View>
+      <Icon 
+        name="chevron-forward" 
+        type="Ionicons" 
+        size={20} 
+        color={Theme.colors.secondary} 
+      />
+    </View>
+  </TouchableOpacity>
+)}
 
         {/* Achievement Modal */}
         <AchievementModal 
@@ -366,50 +402,56 @@ export default function DashboardScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+  flex: 1,
   },
   scrollContent: {
-    paddingTop: 60,
-    paddingHorizontal: Theme.spacing.xl,
-    paddingBottom: Theme.spacing['6xl'],
+  paddingTop: 50,
+  paddingHorizontal: 20,
+  paddingBottom: 100,
   },
   header: {
-    alignItems: 'center',
-    marginBottom: Theme.spacing['3xl'],
+  alignItems: 'center',
+  marginBottom: 36,
+  paddingHorizontal: 4,
   },
   headerContent: {
-    alignItems: 'center',
-    marginBottom: Theme.spacing.md,
+  alignItems: 'center',
+  marginBottom: 16,
   },
   greetingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Theme.spacing.sm,
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 8,
   },
   greeting: {
-    fontSize: Theme.typography.fontSize.lg,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginRight: Theme.spacing.sm,
+  fontSize: 16,
+  color: 'rgba(255, 255, 255, 0.85)',
+  marginRight: Theme.spacing.xs,
+  fontWeight: '400',
   },
   userName: {
-    fontSize: Theme.typography.fontSize.lg,
-    color: Theme.colors.textOnDark,
-    fontWeight: Theme.typography.fontWeight.semibold,
+  fontSize: 16,
+  color: Theme.colors.textOnDark,
+  fontWeight: Theme.typography.fontWeight.bold,
   },
   currentDate: {
-    fontSize: Theme.typography.fontSize.sm,
-    color: 'rgba(255, 255, 255, 0.7)',
-    textAlign: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingHorizontal: Theme.spacing.md,
-    paddingVertical: Theme.spacing.xs,
-    borderRadius: Theme.borderRadius.lg,
+  fontSize: 13,
+  color: 'rgba(255, 255, 255, 0.75)',
+  textAlign: 'center',
+  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  paddingHorizontal: 16,
+  paddingVertical: 6,
+  borderRadius: Theme.borderRadius.full,
+  overflow: 'hidden',
+  marginTop: 4,
   },
   title: {
-    fontSize: Theme.typography.fontSize['4xl'],
-    fontWeight: Theme.typography.fontWeight.bold,
-    color: Theme.colors.textOnDark,
-    textAlign: 'center',
+  fontSize: 36,
+  fontWeight: Theme.typography.fontWeight.bold,
+  color: Theme.colors.textOnDark,
+  textAlign: 'center',
+  letterSpacing: 0.5,
+  marginTop: 12,
   },
   streakNumber: {
     fontSize: Theme.typography.fontSize['3xl'],
@@ -422,77 +464,108 @@ const styles = StyleSheet.create({
     fontWeight: Theme.typography.fontWeight.medium,
   },
   progressSection: {
-    alignItems: 'center',
-    marginBottom: Theme.spacing['3xl'],
+  alignItems: 'center',
+  marginBottom: 36,
+  marginTop: 8,
+  },
+  cardIconContainer: {
+  borderRadius: 12,
+  padding: 10,
+  marginRight: 16,
   },
   progressStats: {
-    fontSize: Theme.typography.fontSize.base,
-    color: Theme.colors.textOnDark,
-    fontWeight: Theme.typography.fontWeight.medium,
-    marginTop: Theme.spacing.md,
+  fontSize: 17,
+  color: Theme.colors.textOnDark,
+  fontWeight: Theme.typography.fontWeight.semibold,
+  marginTop: 16,
+  letterSpacing: 0.3,
+  },
+  memorizeButtonContainer: {
+  marginBottom: 36,
+  marginTop: 4,
+  shadowColor: '#d4af37',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.3,
+  shadowRadius: 8,
+  elevation: 8,
+  },
+  buttonIcon: {
+  marginRight: 12,
   },
   memorizeButton: {
-    backgroundColor: '#d4af37',
-    borderRadius: 25,
-    paddingVertical: 18,
-    paddingHorizontal: 30,
-    marginBottom: Theme.spacing['3xl'],
-    alignItems: 'center',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 30,
+  paddingVertical: 20,
+  paddingHorizontal: 32,
   },
   memorizeButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+  color: 'white',
+  fontSize: 18,
+  fontWeight: 'bold',
+  letterSpacing: 0.5,
   },
   todaySection: {
-    marginBottom: Theme.spacing['3xl'],
+  marginBottom: 36,
   },
   sectionTitle: {
-    fontSize: Theme.typography.fontSize.xl,
-    fontWeight: Theme.typography.fontWeight.bold,
-    color: Theme.colors.textOnDark,
-    marginBottom: Theme.spacing.lg,
+  fontSize: 22,
+  fontWeight: Theme.typography.fontWeight.bold,
+  color: Theme.colors.textOnDark,
+  marginBottom: 16,
+  letterSpacing: 0.3,
   },
   todayCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: Theme.spacing.xl,
+  backgroundColor: 'rgba(255, 255, 255, 0.98)',
+  borderRadius: 20,
+  padding: 24,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 8,
+  elevation: 6,
+  borderLeftWidth: 4,
+  borderLeftColor: Theme.colors.success,
   },
   todayContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 20,
   },
   todayStats: {
-    alignItems: 'center',
+  alignItems: 'center',
+  minWidth: 100,
   },
   todayStatsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Theme.spacing.xs,
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 4,
   },
   todayNumber: {
-    fontSize: Theme.typography.fontSize['4xl'],
-    fontWeight: Theme.typography.fontWeight.bold,
-    color: Theme.colors.primary,
-    marginLeft: Theme.spacing.sm,
+  fontSize: 40,
+  fontWeight: Theme.typography.fontWeight.bold,
+  color: Theme.colors.primary,
+  marginLeft: Theme.spacing.sm,
+  letterSpacing: -0.5,
   },
   todayLabel: {
-    fontSize: Theme.typography.fontSize.sm,
-    color: Theme.colors.textSecondary,
-    textAlign: 'center',
-    fontWeight: Theme.typography.fontWeight.medium,
+  fontSize: 13,
+  color: Theme.colors.textSecondary,
+  textAlign: 'center',
+  fontWeight: Theme.typography.fontWeight.medium,
+  marginTop: 2,
   },
   todayProgressWrapper: {
-    flex: 1,
-    marginLeft: Theme.spacing.xl,
+  flex: 1,
   },
   todayProgressBarContainer: {
-    height: 8,
-    backgroundColor: Theme.colors.gray200,
-    borderRadius: Theme.borderRadius.sm,
-    overflow: 'hidden',
-    marginBottom: Theme.spacing.sm,
+  height: 8,
+  backgroundColor: Theme.colors.gray200,
+  borderRadius: Theme.borderRadius.sm,
+  overflow: 'hidden',
+  marginBottom: 8,
   },
   todayProgressBarFill: {
     height: '100%',
@@ -500,36 +573,100 @@ const styles = StyleSheet.create({
     borderRadius: Theme.borderRadius.sm,
   },
   todayGoal: {
-    fontSize: Theme.typography.fontSize.sm,
-    color: Theme.colors.textSecondary,
-    textAlign: 'right',
-    fontWeight: Theme.typography.fontWeight.medium,
+  fontSize: 13,
+  color: Theme.colors.textSecondary,
+  textAlign: 'right',
+  fontWeight: Theme.typography.fontWeight.semibold,
   },
   statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: Theme.spacing['3xl'],
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  justifyContent: 'space-between',
+  marginBottom: 36,
+  gap: 12,
   },
   statCard: {
-    width: (Theme.layout.screenWidth - Theme.spacing.xl * 2 - Theme.spacing.md) / 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: Theme.spacing.lg,
+  width: (Theme.layout.screenWidth - 20 * 2 - 12) / 2,
+  backgroundColor: 'rgba(255, 255, 255, 0.98)',
+  borderRadius: 20,
+  padding: 20,
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 8,
+  elevation: 6,
   },
-  statIcon: {
-    marginBottom: Theme.spacing.sm,
+  statCardBlue: {
+  borderTopWidth: 3,
+  borderTopColor: '#3498db',
+  },
+  statCardGold: {
+  borderTopWidth: 3,
+  borderTopColor: '#d4af37',
+  },
+  statCardOrange: {
+  borderTopWidth: 3,
+  borderTopColor: '#ffc107',
+  },
+  statCardGreen: {
+  borderTopWidth: 3,
+  borderTopColor: '#009c4a',
+  },
+  statIconContainer: {
+  borderRadius: 16,
+  padding: 14,
+  marginBottom: 12,
+  },
+  statIconBlue: {
+  backgroundColor: 'rgba(52, 152, 219, 0.1)',
+  },
+  statIconGold: {
+  backgroundColor: 'rgba(212, 175, 55, 0.1)',
+  },
+  statIconOrange: {
+  backgroundColor: 'rgba(255, 193, 7, 0.1)',
+  },
+  statIconGreen: {
+  backgroundColor: 'rgba(0, 156, 74, 0.1)',
+  },
+  statValue: {
+  fontSize: 32,
+  fontWeight: '800',
+  marginBottom: Theme.spacing.xs,
+  letterSpacing: -0.5,
+  },
+  statValueBlue: {
+  color: '#3498db',
+  },
+  statValueGold: {
+  color: '#d4af37',
+  },
+  statValueOrange: {
+  color: '#ffc107',
+  },
+  statValueGreen: {
+  color: '#009c4a',
+  },
+  statTitle: {
+  fontSize: 13,
+  color: Theme.colors.textSecondary,
+  textAlign: 'center',
+  fontWeight: Theme.typography.fontWeight.bold,
+  marginBottom: 4,
+  letterSpacing: 0.3,
+  },
+  statSubtitle: {
+  fontSize: 11,
+  color: Theme.colors.textMuted,
+  textAlign: 'center',
+  fontWeight: '500',
   },
   statValue: {
     fontSize: Theme.typography.fontSize['2xl'],
     fontWeight: Theme.typography.fontWeight.bold,
     color: Theme.colors.primary,
     marginBottom: Theme.spacing.xs,
-  },
-  hafidhhValue: {
-    color: Theme.colors.secondary,
   },
   statTitle: {
     fontSize: Theme.typography.fontSize.sm,
@@ -544,74 +681,92 @@ const styles = StyleSheet.create({
     marginTop: Theme.spacing.xs,
   },
   analyticsCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: Theme.spacing.lg,
+  backgroundColor: 'rgba(255, 255, 255, 0.98)',
+  borderRadius: 20,
+  padding: 22,
+  marginBottom: 16,
+  shadowColor: '#3498db',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.2,
+  shadowRadius: 8,
+  elevation: 6,
+  borderLeftWidth: 4,
+  borderLeftColor: Theme.colors.info,
   },
   achievementCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: Theme.spacing.lg,
+  backgroundColor: 'rgba(255, 255, 255, 0.98)',
+  borderRadius: 20,
+  padding: 22,
+  marginBottom: 16,
+  shadowColor: '#ffc107',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.2,
+  shadowRadius: 8,
+  elevation: 6,
+  borderLeftWidth: 4,
+  borderLeftColor: Theme.colors.warning,
   },
   cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  flexDirection: 'row',
+  alignItems: 'center',
   },
   cardTextContent: {
-    flex: 1,
-    marginLeft: Theme.spacing.lg,
+  flex: 1,
+  marginRight: 8,
   },
   cardTitle: {
-    fontSize: Theme.typography.fontSize.lg,
-    fontWeight: Theme.typography.fontWeight.bold,
-    color: Theme.colors.primary,
-    marginBottom: Theme.spacing.xs,
+  fontSize: 18,
+  fontWeight: Theme.typography.fontWeight.bold,
+  color: Theme.colors.primary,
+  marginBottom: 4,
+  letterSpacing: 0.2,
   },
   cardSubtitle: {
-    fontSize: Theme.typography.fontSize.sm,
-    color: Theme.colors.textSecondary,
+  fontSize: 14,
+  color: Theme.colors.textSecondary,
+  fontWeight: '500',
   },
   modernStreakCard: {
-  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-  borderRadius: 16,
-  paddingVertical: 16,
-  paddingHorizontal: 20,
-  marginBottom: Theme.spacing.xl,
+  backgroundColor: 'rgba(255, 255, 255, 0.98)',
+  borderRadius: 20,
+  paddingVertical: 18,
+  paddingHorizontal: 24,
+  marginBottom: 32,
   alignSelf: 'center',
   minWidth: 180,
   maxWidth: 240,
   flexDirection: 'row',
   alignItems: 'center',
   shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 4,
-  elevation: 3,
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 8,
+  elevation: 6,
   borderLeftWidth: 4,
   borderLeftColor: Theme.colors.primary,
-},
-streakIconContainer: {
-  backgroundColor: 'rgba(5, 40, 21, 0.1)', // Light green background for book icon
+  },
+  streakIconContainer: {
+  backgroundColor: 'rgba(5, 40, 21, 0.1)',
   borderRadius: 12,
-  padding: 10,
+  padding: 12,
   marginRight: 16,
-},
-streakInfo: {
+  },
+  streakInfo: {
   flex: 1,
   alignItems: 'flex-start',
-},
-streakNumber: {
-  fontSize: 28,
+  },
+  streakNumber: {
+  fontSize: 32,
   fontWeight: 'bold',
   color: Theme.colors.primary,
-  lineHeight: 32,
-},
-streakLabel: {
-  fontSize: 13,
+  lineHeight: 36,
+  letterSpacing: -0.5,
+  },
+  streakLabel: {
+  fontSize: 12,
   color: Theme.colors.textSecondary,
-  fontWeight: '500',
+  fontWeight: '600',
   marginTop: 2,
-},
+  letterSpacing: 0.3,
+  },
 });

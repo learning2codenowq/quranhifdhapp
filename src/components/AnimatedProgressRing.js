@@ -1,19 +1,44 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 
-export default function AnimatedProgressRing({ percentage, size = 200 }) {
+export default function AnimatedProgressRing({ percentage, size = 160 }) {
   const safePercentage = Number(percentage) || 0;
+  
+  // Circle calculations
+  const strokeWidth = 12;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const progress = (safePercentage / 100) * circumference;
+  const strokeDashoffset = circumference - progress;
   
   return (
     <View style={styles.container}>
-      <View style={styles.progressBackground}>
-        <View 
-          style={[
-            styles.progressFill,
-            { width: `${Math.min(100, Math.max(0, safePercentage))}%` }
-          ]} 
+      <Svg width={size} height={size} style={styles.svg}>
+        {/* Background Circle */}
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="rgba(255, 255, 255, 0.2)"
+          strokeWidth={strokeWidth}
+          fill="transparent"
         />
-      </View>
+        
+        {/* Progress Circle */}
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#d4af37"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </Svg>
       
       <View style={styles.textContainer}>
         <Text style={styles.percentageText}>
@@ -29,39 +54,25 @@ const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
-    width: 200,
-    height: 100,
+    marginBottom: 20,
   },
-  progressBackground: {
-    width: '100%',
-    height: 80,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 40,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    position: 'relative',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#d4af37',
-    borderRadius: 38,
+  svg: {
+    transform: [{ scaleX: 1 }],
   },
   textContainer: {
     position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
-    width: '100%',
-    height: '100%',
   },
   percentageText: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
     color: 'white',
+    marginBottom: 4,
   },
   labelText: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
   },
 });

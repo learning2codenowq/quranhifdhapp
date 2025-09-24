@@ -16,6 +16,7 @@ import AnimatedCard from '../components/AnimatedCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Icon, AppIcons } from '../components/Icon';
 import { Theme } from '../styles/theme';
+import { SurahListSkeleton } from '../components/SkeletonLoader';
 
 export default function SurahListScreen({ navigation }) {
   const [surahs, setSurahs] = useState([]);
@@ -161,16 +162,35 @@ export default function SurahListScreen({ navigation }) {
   };
 
   if (loading) {
-    return (
-      <SafeAreaProvider>
-        <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
-          <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-            <LoadingSpinner message="Loading Quran chapters..." />
-          </SafeAreaView>
-        </LinearGradient>
-      </SafeAreaProvider>
-    );
-  }
+  return (
+    <SafeAreaProvider>
+      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Icon 
+                name={AppIcons.back.name} 
+                type={AppIcons.back.type} 
+                size={24} 
+                color={Theme.colors.textOnDark} 
+              />
+              <Text style={styles.backText}>Dashboard</Text>
+            </TouchableOpacity>
+            
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.title}>Quran Surahs</Text>
+              <Text style={styles.subtitle}>Choose a surah to memorize</Text>
+            </View>
+          </View>
+          <SurahListSkeleton />
+        </SafeAreaView>
+      </LinearGradient>
+    </SafeAreaProvider>
+  );
+}
 
   return (
     <SafeAreaProvider>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StorageService } from '../services/StorageService';
 import { AnalyticsUtils } from '../utils/AnalyticsUtils';
@@ -67,12 +67,15 @@ export default function AnalyticsScreen({ navigation }) {
   };
 
   if (!weeklyData || !monthlyData) {
-    return (
-      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
-        <LoadingSpinner message="Analyzing your progress..." />
-      </LinearGradient>
-    );
-  }
+  return (
+    <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Theme.colors.secondary} />
+        <Text style={styles.loadingText}>Analyzing your progress...</Text>
+      </View>
+    </LinearGradient>
+  );
+}
 
   return (
     <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
@@ -678,5 +681,16 @@ const styles = StyleSheet.create({
     fontWeight: Theme.typography.fontWeight.bold,
     width: 40,
     textAlign: 'right',
+  },
+  loadingContainer: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  },
+  loadingText: {
+  color: Theme.colors.textOnDark,
+  fontSize: 16,
+  marginTop: 16,
+  fontWeight: '500',
   },
 });

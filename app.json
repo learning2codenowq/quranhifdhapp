@@ -16,31 +16,30 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.quranhifdh.app",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+      "bundleIdentifier": "com.yourname.quranhifdh",
+      "buildNumber": "1.0.0"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#004d24"
       },
-      "package": "com.quranhifdh.app",
+      "package": "com.yourname.quranhifdh",
       "versionCode": 1,
-      "permissions": [
-        "INTERNET",
-        "WRITE_EXTERNAL_STORAGE",
-        "WAKE_LOCK"
-      ]
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "fea4e8e0-f651-4ddf-b910-50034f434b07"
-      }
-    }
+    "plugins": [
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/KFGQPC_Uthmanic_Script_HAFS_Regular.otf"
+          ]
+        }
+      ]
+    ]
   }
 }
