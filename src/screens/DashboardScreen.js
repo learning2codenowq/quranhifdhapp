@@ -28,7 +28,7 @@ export default function DashboardScreen({ navigation }) {
     loadData();
     
     const unsubscribe = navigation.addListener('focus', () => {
-      Logger.log('Dashboard focused - reloading data');
+     // Logger.log('Dashboard focused - reloading data');
       loadData();
     });
     
@@ -37,17 +37,17 @@ export default function DashboardScreen({ navigation }) {
 
   const loadData = async () => {
     try {
-      Logger.log('Loading dashboard data...');
+      // Logger.log('Loading dashboard data...');
       let appState = await StorageService.getState();
       if (!appState) {
         appState = await StorageService.initializeState();
       }
       
-      Logger.log('App state loaded:', {
-        ayahProgressKeys: Object.keys(appState?.ayahProgress || {}),
-        progressKeys: Object.keys(appState?.progress || {}),
-        userName: appState?.settings?.userName
-      });
+      // Logger.log('App state loaded:', {
+      //  ayahProgressKeys: Object.keys(appState?.ayahProgress || {}),
+      //  progressKeys: Object.keys(appState?.progress || {}),
+      //  userName: appState?.settings?.userName
+      // });
       
       const name = appState?.settings?.userName || 'Student';
       setUserName(name);
@@ -58,8 +58,8 @@ export default function DashboardScreen({ navigation }) {
       const computedStats = QuranUtils.computeStats(updatedState);
       const todaysRevision = QuranUtils.getRevisionPlan(updatedState);
       
-      Logger.log('Computed stats:', computedStats);
-      Logger.log('Revision plan exists:', !!todaysRevision);
+      // Logger.log('Computed stats:', computedStats);
+      // Logger.log('Revision plan exists:', !!todaysRevision);
       
       setStats(computedStats);
       setRevisionPlan(todaysRevision);
@@ -74,7 +74,7 @@ export default function DashboardScreen({ navigation }) {
         });
       }
     } catch (error) {
-      Logger.error('Error loading dashboard data:', error);
+      // Logger.error('Error loading dashboard data:', error);
     }
   };
 

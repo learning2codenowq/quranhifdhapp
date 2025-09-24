@@ -59,7 +59,7 @@ export default function AboutScreen({ navigation }) {
               <Text style={styles.featureText}>🔄 Smart revision system based on proven methods</Text>
               <Text style={styles.featureText}>🏆 Motivational achievement system</Text>
               <Text style={styles.featureText}>📈 Detailed statistics and insights</Text>
-              <Text style={styles.featureText}>🎵 Beautiful audio recitations with repeat functionality</Text>
+              <Text style={styles.featureText}>🔊 Beautiful audio recitations with repeat functionality</Text>
               <Text style={styles.featureText}>💚 Clean, distraction-free interface designed for focus</Text>
             </View>
 

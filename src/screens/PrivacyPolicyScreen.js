@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,6 +16,17 @@ export default function PrivacyPolicyScreen({ navigation }) {
           </View>
 
           <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+            <TouchableOpacity 
+    style={styles.viewOnlineButton}
+    onPress={() => {
+      const url = 'https://learning2codenowq.github.io/quran-hifdh-privacy/';
+      Linking.openURL(url).catch(err => {
+        Alert.alert('Error', 'Could not open privacy policy link');
+      });
+    }}
+  >
+    <Text style={styles.viewOnlineButtonText}>📄 View Online Version</Text>
+  </TouchableOpacity>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Privacy Policy for Quran Hifdh</Text>
               <Text style={styles.lastUpdated}>Last updated: {new Date().toLocaleDateString()}</Text>
@@ -257,5 +268,18 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  viewOnlineButton: {
+  backgroundColor: '#d4af37',
+  borderRadius: 15,
+  paddingVertical: 12,
+  paddingHorizontal: 20,
+  marginBottom: 20,
+  alignItems: 'center',
+  },
+  viewOnlineButtonText: {
+  color: 'white',
+  fontSize: 16,
+  fontWeight: 'bold',
   },
 });

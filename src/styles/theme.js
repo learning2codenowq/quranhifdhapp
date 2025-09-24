@@ -157,7 +157,7 @@ export const Theme = {
   
   // Gradients
   gradients: {
-    primary: ['#004d24', '#058743'],
+    primary: ['#052815ff', '#058743'],
     secondary: ['#d4af37', '#f4d03f'],
     success: ['#009c4a', '#4ade80'],
     overlay: ['rgba(0, 0, 0, 0.8)', 'rgba(0, 0, 0, 0.4)'],

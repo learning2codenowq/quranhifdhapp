@@ -68,14 +68,12 @@ export class StorageService {
         dailyGoal: userSettings.dailyGoal || 10,
         userName: userSettings.userName || 'Student',
         progressUnit: 'ayahs',
-        autoPlayNext: true, // Add this line - default ON
+        autoPlayNext: true,
         showTranslations: true,
         arabicFontSize: 'Medium',
         translationFontSize: 'Medium'
       }
     };
-    
-    console.log('Initializing state with:', initialState.settings);
     
     await this.saveState(initialState);
     return initialState;
