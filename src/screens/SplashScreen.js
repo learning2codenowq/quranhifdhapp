@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Theme } from '../styles/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -14,7 +15,7 @@ export default function SplashScreen({ onComplete }) {
   }, [onComplete]);
 
   return (
-    <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+    <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Text style={styles.arabicLogo}>القرآن</Text>
@@ -58,7 +59,7 @@ const styles = StyleSheet.create({
   },
   arabicLogo: {
     fontSize: 72,
-    color: '#d4af37',
+    color: 'white',
     marginBottom: 16,
     textAlign: 'center',
     fontFamily: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
@@ -101,7 +102,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(212, 175, 55, 0.6)',
+    backgroundColor: `rgba(184, 148, 125, 0.6)`,
   },
   dot1: {
     opacity: 0.4,

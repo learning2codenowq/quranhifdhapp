@@ -5,6 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../services/StorageService';
 import { TestingUtils } from '../utils/TestingUtils';
 import { Logger } from '../utils/Logger'
+import { Theme } from '../styles/theme';
 
 export default function SettingsScreen({ navigation }) {
   const [settings, setSettings] = useState({
@@ -163,8 +164,8 @@ export default function SettingsScreen({ navigation }) {
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: '#ccc', true: '#d4af37' }}
-        thumbColor={value ? '#004d24' : '#f4f3f4'}
+        trackColor={{ false: '#ccc', true: Theme.colors.secondary }}
+        thumbColor={value ? Theme.colors.primary : '#f4f3f4'}
       />
     </View>
   );
@@ -394,7 +395,7 @@ export default function SettingsScreen({ navigation }) {
 
   return (
     <SafeAreaProvider>
-      <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -499,7 +500,7 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#004d24',
+    color: Theme.colors.primary,
     marginBottom: 2,
   },
   dangerousText: {
@@ -511,7 +512,7 @@ const styles = StyleSheet.create({
   },
   settingArrow: {
     fontSize: 18,
-    color: '#d4af37',
+    color: Theme.colors.secondary,
     fontWeight: 'bold',
   },
   modalOverlay: {
@@ -531,7 +532,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#004d24',
+    color: Theme.colors.primary,
     textAlign: 'center',
     marginBottom: 25,
   },
@@ -546,7 +547,7 @@ const styles = StyleSheet.create({
   },
   arabicPreview: {
     textAlign: 'center',
-    color: '#004d24',
+    color: Theme.colors.primary,
     marginBottom: 10,
     paddingVertical: 10,
     backgroundColor: '#f5f5f5',

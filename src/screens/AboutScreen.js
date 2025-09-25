@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { Theme } from '../styles/theme';
 
 export default function AboutScreen({ navigation }) {
   
@@ -25,7 +26,7 @@ export default function AboutScreen({ navigation }) {
 
   return (
     <SafeAreaProvider>
-      <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -165,14 +166,14 @@ const styles = StyleSheet.create({
   },
   arabicLogo: {
     fontSize: 48,
-    color: '#d4af37',
+    color: Theme.colors.secondary,
     marginBottom: 10,
     fontFamily: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
   },
   appName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#004d24',
+    color: Theme.colors.primary,
     marginBottom: 8,
   },
   tagline: {
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
   versionText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#004d24',
+    color: Theme.colors.primary,
   },
   buildText: {
     fontSize: 14,
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#004d24',
+    color: Theme.colors.primary,
     marginBottom: 12,
   },
   personalMessage: {
@@ -212,16 +213,16 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontWeight: '600',
-    color: '#004d24',
+    color: Theme.colors.primary,
     fontSize: 15,
   },
   developerName: {
     fontWeight: 'bold',
-    color: '#d4af37',
+    color: Theme.colors.secondary,
   },
   emphasis: {
     fontWeight: '600',
-    color: '#004d24',
+    color: Theme.colors.primary,
     fontStyle: 'italic',
   },
   dua: {
@@ -253,7 +254,7 @@ const styles = StyleSheet.create({
   },
   contactValue: {
     fontSize: 16,
-    color: '#004d24',
+    color: Theme.colors.primary,
     fontWeight: '500',
     marginBottom: 4,
   },
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginTop: 10,
     borderLeftWidth: 4,
-    borderLeftColor: '#d4af37',
+    borderColor: Theme.colors.secondary,
   },
   feedbackText: {
     fontSize: 13,
@@ -286,12 +287,12 @@ const styles = StyleSheet.create({
   },
   legalText: {
     fontSize: 16,
-    color: '#004d24',
+    color: Theme.colors.primary,
     fontWeight: '500',
   },
   arrow: {
     fontSize: 16,
-    color: '#d4af37',
+    color: Theme.colors.secondary,
     fontWeight: 'bold',
   },
   copyrightSection: {
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
     padding: 25,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#d4af37',
+    borderColor: Theme.colors.secondary,
   },
   copyrightText: {
     fontSize: 14,
@@ -310,7 +311,7 @@ const styles = StyleSheet.create({
   },
   islamicText: {
     fontSize: 16,
-    color: '#004d24',
+    color: Theme.colors.primary,
     textAlign: 'center',
     fontFamily: 'UthmanicFont',
     lineHeight: 26,

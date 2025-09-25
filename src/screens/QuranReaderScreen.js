@@ -18,6 +18,7 @@ import { StorageService } from '../services/StorageService';
 import { AudioService } from '../services/AudioService';
 import { cleanArabicText } from '../utils/TextCleaner';
 import { Logger } from '../utils/Logger';
+import { Theme } from '../styles/theme';
 
 export default function QuranReaderScreen({ route, navigation }) {
   const surahId = route?.params?.surahId || 1;
@@ -657,7 +658,7 @@ const scrollToAyah = (ayahNumber) => {
 
   return (
     <SafeAreaProvider>
-      <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           <View style={styles.header}>
             <TouchableOpacity 
@@ -819,7 +820,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#004d24',
+    backgroundColor: Theme.colors.primary,
   },
   loadingText: {
     color: 'white',
@@ -871,7 +872,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   replayButton: {
-    backgroundColor: '#d4af37',
+    backgroundColor: Theme.colors.secondary,
     borderRadius: 15,
     paddingHorizontal: 15,
     paddingVertical: 8,
@@ -901,7 +902,7 @@ const styles = StyleSheet.create({
   basmalaText: {
     fontFamily: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
     fontSize: 22,
-    color: '#004d24',
+    color: Theme.colors.primary,
     textAlign: 'center',
     lineHeight: 40,
     paddingVertical: 10,
@@ -931,7 +932,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -15,
     right: 20,
-    backgroundColor: '#d4af37',
+    backgroundColor: Theme.colors.secondary,
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
@@ -972,7 +973,7 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   audioButton: {
-    backgroundColor: '#058743',
+    backgroundColor: Theme.colors.primaryLight,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 25,
@@ -980,14 +981,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeAudioButton: {
-    backgroundColor: '#009c4a',
+    backgroundColor: Theme.colors.success,
   },
   audioIcon: {
     fontSize: 18,
     color: 'white',
   },
   memorizeButton: {
-    backgroundColor: '#d4af37',
+    backgroundColor: Theme.colors.secondary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 25,
@@ -995,7 +996,7 @@ const styles = StyleSheet.create({
     maxWidth: 200,
   },
   memorizedButton: {
-    backgroundColor: '#009c4a',
+    backgroundColor: Theme.colors.success,
   },
   memorizeButtonText: {
     color: 'white',
@@ -1023,7 +1024,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#004d24',
+    color: Theme.colors.primary,
     textAlign: 'center',
     marginBottom: 25,
   },
@@ -1068,7 +1069,7 @@ const styles = StyleSheet.create({
   },
   startButton: {
     flex: 1,
-    backgroundColor: '#d4af37',
+    backgroundColor: Theme.colors.secondary,
     borderRadius: 10,
     paddingVertical: 12,
   },
@@ -1100,7 +1101,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   stopButton: {
-    backgroundColor: '#e74c3c',
+    backgroundColor: Theme.colors.error,
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 15,
@@ -1118,7 +1119,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#d4af37',
+    backgroundColor: Theme.colors.secondary,
     borderRadius: 2,
   },
 });

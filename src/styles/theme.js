@@ -4,47 +4,49 @@ const { width, height } = Dimensions.get('window');
 
 export const Theme = {
   // Colors
-  colors: {
-    // Primary Brand Colors
-    primary: '#052815ff',
-    primaryLight: '#058743',
-    secondary: '#d4af37',
-    secondaryLight: '#f4d03f',
-    
-    // Success & Achievement Colors
-    success: '#009c4a',
-    successLight: '#e8f5e8',
-    
-    // Background Colors
-    background: '#f8f9fa',
-    cardBackground: 'rgba(255, 255, 255, 0.95)',
-    overlay: 'rgba(0, 0, 0, 0.6)',
-    
-    // Text Colors
-    textPrimary: '#2c3e50',
-    textSecondary: '#5a6c7d',
-    textMuted: '#95a5a6',
-    textOnDark: '#ffffff',
-    textOnPrimary: '#ffffff',
-    
-    // Status Colors
-    warning: '#ffc107',
-    error: '#e74c3c',
-    info: '#3498db',
-    
-    // Neutral Colors
-    white: '#ffffff',
-    light: '#f8f9fa',
-    gray100: '#f8f9fa',
-    gray200: '#e9ecef',
-    gray300: '#dee2e6',
-    gray400: '#ced4da',
-    gray500: '#adb5bd',
-    gray600: '#6c757d',
-    gray700: '#495057',
-    gray800: '#343a40',
-    gray900: '#212529',
-  },
+  // In src/styles/theme.js - Replace the entire "colors" section with this:
+
+colors: {
+  // Primary Brand Colors (Your Peaceful Teal)
+  primary: '#22575D',           // Dark teal - your main color
+  primaryLight: '#55BAC6',      // Light teal - your accent color
+  secondary: '#d4af37',         // Warm beige - complements teal beautifully
+  secondaryLight: '#f1cd57ff',    // Lighter beige
+  
+  // Success & Achievement Colors (Soft & Peaceful)
+  success: '#6B9B7C',          // Soft sage green
+  successLight: '#E8F4EA',     // Very light sage
+  
+  // Background Colors (Clean & Peaceful)
+  background: '#FFFFFF',        // Your white
+  cardBackground: 'rgba(255, 255, 255, 0.95)',
+  overlay: 'rgba(34, 87, 93, 0.6)',  // Teal overlay instead of black
+  
+  // Text Colors (Softer & More Peaceful)
+  textPrimary: '#2C3E3F',      // Soft dark teal-gray
+  textSecondary: '#556B6D',    // Medium teal-gray
+  textMuted: '#7A8E90',        // Light teal-gray
+  textOnDark: '#FFFFFF',       // White on dark
+  textOnPrimary: '#FFFFFF',    // White on primary
+  
+  // Status Colors (Peaceful Versions)
+  warning: '#D4A574',          // Soft gold warning
+  error: '#C87B7B',            // Soft coral error
+  info: '#55BAC6',             // Your light teal for info
+  
+  // Neutral Colors
+  white: '#FFFFFF',
+  light: '#F8FAFA',            // Very light teal tint
+  gray100: '#F5F7F7',         // Subtle teal tint
+  gray200: '#E8ECEC',         // Light teal-gray
+  gray300: '#D1D9DA',         // Medium teal-gray
+  gray400: '#A8B5B6',         // 
+  gray500: '#7A8E90',         // 
+  gray600: '#556B6D',         // 
+  gray700: '#3E5052',         // 
+  gray800: '#2C3E3F',         // 
+  gray900: '#1A2829',         // Darkest teal-gray
+},
   
   // Typography
   typography: {
@@ -154,14 +156,13 @@ export const Theme = {
     headerHeight: 60,
     bottomTabHeight: 80,
   },
-  
-  // Gradients
-  gradients: {
-    primary: ['#052815ff', '#058743'],
-    secondary: ['#d4af37', '#f4d03f'],
-    success: ['#009c4a', '#4ade80'],
-    overlay: ['rgba(0, 0, 0, 0.8)', 'rgba(0, 0, 0, 0.4)'],
-  },
+
+gradients: {
+  primary: ['#22575D', '#55BAC6'],        // Dark teal to light teal
+  secondary: ['#B8947D', '#D4C4B0'],      // Warm beige gradient
+  success: ['#6B9B7C', '#8FBC9F'],        // Soft sage gradient
+  overlay: ['rgba(34, 87, 93, 0.8)', 'rgba(85, 186, 198, 0.4)'], // Peaceful teal overlay
+},
 };
 
 // Helper functions

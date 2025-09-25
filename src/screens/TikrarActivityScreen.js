@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'rea
 import { LinearGradient } from 'expo-linear-gradient';
 import { StorageService } from '../services/StorageService';
 import { QuranUtils } from '../utils/QuranUtils';
+import { Theme } from '../styles/theme';
 
 export default function TikrarActivityScreen({ route, navigation }) {
   const { categoryType, categoryData } = route.params;
@@ -102,7 +103,7 @@ export default function TikrarActivityScreen({ route, navigation }) {
   const isActive = getTarget() > 0;
 
   return (
-    <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+    <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>← Back</Text>
@@ -217,13 +218,13 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#004d24',
+    color: Theme.colors.primary,
     marginBottom: 10,
   },
   progressStats: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#004d24',
+    color: Theme.colors.primary,
     marginBottom: 15,
   },
   progressBar: {
@@ -236,7 +237,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#009c4a',
+    backgroundColor: Theme.colors.success,
     borderRadius: 6,
   },
   progressPercent: {
@@ -244,14 +245,14 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   actionButton: {
-    backgroundColor: '#d4af37',
+    backgroundColor: Theme.colors.secondary,
     borderRadius: 25,
     paddingVertical: 15,
     marginBottom: 20,
     elevation: 3,
   },
   completedButton: {
-    backgroundColor: '#009c4a',
+    backgroundColor: Theme.colors.success,
   },
   inactiveButton: {
     backgroundColor: '#999',
@@ -270,13 +271,13 @@ const styles = StyleSheet.create({
   ayahListTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#004d24',
+    color: Theme.colors.primary,
     marginBottom: 15,
     textAlign: 'center',
   },
   revisionText: {
     fontSize: 16,
-    color: '#004d24',
+    color: Theme.colors.primary,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 15,
@@ -305,7 +306,7 @@ const styles = StyleSheet.create({
   noRevisionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#004d24',
+    color: Theme.colors.primary,
     marginBottom: 10,
     textAlign: 'center',
   },

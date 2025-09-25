@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { Theme } from '../styles/theme';
 
 export default function AnimatedProgressRing({ percentage, size = 160 }) {
   const safePercentage = Number(percentage) || 0;

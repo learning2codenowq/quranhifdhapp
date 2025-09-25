@@ -14,6 +14,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { QuranService } from '../services/QuranService';
 import { cleanArabicText } from '../utils/TextCleaner';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Theme } from '../styles/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -212,7 +213,7 @@ export default function ReadingScreen() {
   if (!isReading) {
   return (
     <SafeAreaProvider>
-      <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.welcomeContainer}>
             <Text style={styles.welcomeTitle}>Quran Reading</Text>
@@ -243,7 +244,7 @@ export default function ReadingScreen() {
 
   return (
     <SafeAreaProvider>
-      <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           
           <View style={styles.header}>
@@ -340,7 +341,7 @@ const styles = StyleSheet.create({
   textAlign: 'center',
   },
   startButton: {
-    backgroundColor: '#d4af37',
+    backgroundColor: Theme.colors.secondary,
     borderRadius: 25,
     paddingVertical: 18,
     paddingHorizontal: 50,
@@ -435,7 +436,7 @@ const styles = StyleSheet.create({
   },
   verseNumber: {
     fontSize: 16,
-    color: '#d4af37',
+    color: Theme.colors.secondary,
     fontWeight: 'bold',
   },
   navigationContainer: {
@@ -467,7 +468,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.5)',
   },
   pageIndicator: {
-    backgroundColor: '#d4af37',
+    backgroundColor: Theme.colors.secondary,
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 15,

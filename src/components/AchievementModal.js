@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Theme } from '../styles/theme';
 
 export default function AchievementModal({ visible, achievements, onClose }) {
   if (!achievements || achievements.length === 0) return null;
 
   const AchievementCard = ({ achievement }) => (
-    <LinearGradient colors={['#d4af37', '#f4d03f']} style={styles.achievementCard}>
+    <LinearGradient colors={Theme.gradients.secondary} style={styles.achievementCard}>
       <View style={styles.achievementIcon}>
         <Text style={styles.achievementEmoji}>🏆</Text>
       </View>
@@ -21,7 +22,7 @@ export default function AchievementModal({ visible, achievements, onClose }) {
     <Modal visible={visible} animationType="fade" transparent={true}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          <LinearGradient colors={['#004d24', '#058743']} style={styles.modalHeader}>
+          <LinearGradient colors={Theme.gradients.primary} style={styles.modalHeader}>
             <Text style={styles.modalTitle}>🎉 Achievement Unlocked!</Text>
             <Text style={styles.modalSubtitle}>
               {achievements.length === 1 
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   closeButton: {
-    backgroundColor: '#009c4a',
+    backgroundColor: Theme.colors.success,
     margin: 20,
     paddingVertical: 15,
     borderRadius: 25,

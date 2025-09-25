@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { QuranUtils } from '../utils/QuranUtils';
+import { Theme } from '../styles/theme';
 
 const CategoryCard = memo(({ title, data, type, color = '#004d24', currentProgress, target, isCompleted, onPress, isActive = true, displayText }) => {
   const progressPercent = target > 0 ? (currentProgress / target) * 100 : 0;
@@ -128,7 +129,7 @@ const TikrarPlan = memo(({ revisionPlan, state, onCategoryPress }) => {
         title="New Memorization"
         data={revisionPlan.newMemorization}
         type="newMemorization"
-        color="#009c4a"
+        color={Theme.colors.success}
         currentProgress={todayProgress.newMemorization || 0}
         target={revisionPlan.newMemorization.target}
         isCompleted={newMemCompleted}
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#004d24',
+    color: Theme.colors.primary
   },
   helpButton: {
     marginLeft: 10,
@@ -192,11 +193,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#d4af37',
+    borderColor: Theme.colors.secondary,
   },
   helpIcon: {
     fontSize: 14,
-    color: '#d4af37',
+    color: Theme.colors.secondary,
     fontWeight: 'bold',
   },
   overallProgress: {
@@ -218,7 +219,7 @@ const styles = StyleSheet.create({
   },
   overallProgressFill: {
     height: '100%',
-    backgroundColor: '#009c4a',
+    backgroundColor: Theme.colors.success,
     borderRadius: 4,
   },
   categoryCard: {
@@ -282,7 +283,7 @@ const styles = StyleSheet.create({
   },
   revisionDetails: {
     fontSize: 14,
-    color: '#004d24',
+    color: Theme.colors.primary,
     fontWeight: '600',
     marginTop: 8,
     marginBottom: 5,
@@ -321,12 +322,12 @@ const styles = StyleSheet.create({
   congratsText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2d5a2d',
+    color: Theme.colors.primary,
     marginBottom: 5,
   },
   congratsSubtext: {
     fontSize: 14,
-    color: '#5a8a5a',
+    color: Theme.colors.textSecondary,
   },
   encouragementText: {
   fontSize: 14,

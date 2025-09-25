@@ -2,11 +2,12 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { Theme } from '../styles/theme';
 
 export default function PrivacyPolicyScreen({ navigation }) {
   return (
     <SafeAreaProvider>
-      <LinearGradient colors={['#004d24', '#058743']} style={styles.container}>
+      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -226,7 +227,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#004d24',
+    color: Theme.colors.primary,
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -239,13 +240,13 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#004d24',
+    color: Theme.colors.primary,
     marginBottom: 12,
   },
   subHeader: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#004d24',
+    color: Theme.colors.primary,
     marginBottom: 8,
     marginTop: 10,
   },
@@ -261,7 +262,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#d4af37',
+    borderColor: Theme.colors.secondary,
   },
   disclaimerText: {
     fontSize: 12,
@@ -270,7 +271,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   viewOnlineButton: {
-  backgroundColor: '#d4af37',
+  backgroundColor: Theme.colors.secondary,
   borderRadius: 15,
   paddingVertical: 12,
   paddingHorizontal: 20,

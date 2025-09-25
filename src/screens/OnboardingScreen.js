@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../services/StorageService';
+import { Theme } from '../styles/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -108,7 +109,7 @@ export default function OnboardingScreen({ navigation }) {
 
   return (
     <SafeAreaProvider>
-      <LinearGradient colors={['#052815ff', '#058743']} style={styles.container}>
+      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           
           <View style={styles.content}>
@@ -295,7 +296,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#d4af37',
+    color: 'white',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -360,7 +361,7 @@ const styles = StyleSheet.create({
   },
   recommendedText: {
     fontSize: 12,
-    color: '#d4af37',
+    color: Theme.colors.secondary,
     fontWeight: '600',
     marginTop: 5,
   },
@@ -388,7 +389,7 @@ const styles = StyleSheet.create({
   estimateTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#d4af37',
+    color: 'white',
     marginBottom: 8,
   },
   estimateDetails: {
@@ -481,7 +482,7 @@ questionMark: {
   position: 'absolute',
   top: -5,
   right: -5,
-  backgroundColor: '#d4af37',
+  backgroundColor: '#ffffffff',
   borderRadius: 10,
   width: 20,
   height: 20,
@@ -495,17 +496,17 @@ questionMark: {
 },
 questionMarkText: {
   fontSize: 12,
-  color: 'white',
+  color: 'black',
   fontWeight: 'bold',
 },
 recommendedText: {
   fontSize: 12,
-  color: '#004d24', // Dark green by default
+  color: '#ffffff', 
   fontWeight: '600',
   marginTop: 5,
 },
 recommendedTextGolden: {
-  color: '#d4af37', // Golden when hovering other options
+  color: Theme.colors.secondary,
 },
 modalOverlay: {
   flex: 1,
@@ -550,7 +551,7 @@ hadithSource: {
   color: '#666',
 },
 hadithCloseButton: {
-  backgroundColor: '#d4af37',
+  color: Theme.colors.secondary,
   borderRadius: 25,
   paddingVertical: 12,
   paddingHorizontal: 30,
