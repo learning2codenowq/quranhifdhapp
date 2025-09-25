@@ -2,11 +2,10 @@ export class Logger {
   static isDevelopment = __DEV__;
 
   static log(message, ...args) {
-    if (this.isDevelopment) {
-      // Only log in development
-      // console.log(message, ...args);
-    }
+  if (this.isDevelopment) {
+    console.log(message, ...args);
   }
+}
 
   static warn(message, ...args) {
     if (this.isDevelopment) {

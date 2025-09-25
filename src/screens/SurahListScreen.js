@@ -6,7 +6,8 @@ import {
   FlatList, 
   TouchableOpacity, 
   ActivityIndicator,
-  Dimensions 
+  Dimensions,
+  Alert
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -30,7 +31,6 @@ export default function SurahListScreen({ navigation }) {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      console.log('SurahList focused - reloading progress');
       loadMemorizedStats();
     });
     
@@ -38,16 +38,25 @@ export default function SurahListScreen({ navigation }) {
   }, [navigation]);
 
   const loadSurahs = async () => {
-    try {
-      setLoading(true);
-      const surahList = await QuranService.getAllSurahs();
-      setSurahs(surahList);
-    } catch (error) {
-      console.error('Error loading surahs:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    const surahList = await QuranService.getAllSurahs();
+    setSurahs(surahList);
+  } catch (error) {
+    console.error('Error loading surahs:', error);
+    // Show error to user
+    Alert.alert(
+      'Connection Error',
+      error.message || 'Unable to load Surahs. Please check your internet connection and try again.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Retry', onPress: () => loadSurahs() }
+      ]
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   const loadMemorizedStats = async () => {
     try {
@@ -64,10 +73,8 @@ export default function SurahListScreen({ navigation }) {
         });
       }
       
-      console.log('Updated memorized stats:', stats);
       setMemorizedStats(stats);
     } catch (error) {
-      console.error('Error loading memorized stats:', error);
     }
   };
 

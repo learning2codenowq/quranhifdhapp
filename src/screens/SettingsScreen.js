@@ -336,7 +336,7 @@ export default function SettingsScreen({ navigation }) {
       }
     ]
   },
-  {
+  ...(__DEV__ ? [{
     title: '🧪 Testing & Diagnostics',
     icon: { name: 'flask', type: 'Ionicons' },
     items: [
@@ -390,7 +390,7 @@ export default function SettingsScreen({ navigation }) {
         dangerous: true
       }
     ]
-  }
+  }] : [])
 ];
 
   return (

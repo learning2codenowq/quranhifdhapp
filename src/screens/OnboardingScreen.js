@@ -84,7 +84,6 @@ export default function OnboardingScreen({ navigation }) {
     } else {
       // Complete onboarding - make sure name is properly saved
       const finalUserName = userName.trim();
-      console.log('Saving user name:', finalUserName); // Debug log
       
       await StorageService.initializeState({
         dailyGoal: selectedTarget,

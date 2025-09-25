@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 
 export const UthmaniFont = {
-  family: Platform.OS === 'ios' ? 'KFGQPC_Uthmanic_Script_HAFS' : 'KFGQPC_Uthmanic_Script_HAFS',
+  family: 'UthmanicFont',
 };
 
 export const ArabicTextStyles = {

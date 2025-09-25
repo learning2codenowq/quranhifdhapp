@@ -9,6 +9,6 @@ export const loadFonts = async () => {
     return true;
   } catch (error) {
     console.error('❌ Error loading Uthmani font:', error);
-    return false;
+    return true;
   }
 };

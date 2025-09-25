@@ -17,7 +17,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourname.quranhifdh",
+      "bundleIdentifier": "com.shayan.quranhifdh",
       "buildNumber": "1.0.0"
     },
     "android": {
@@ -25,7 +25,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#004d24"
       },
-      "package": "com.yourname.quranhifdh",
+      "package": "com.shayan.quranhifdh",
       "versionCode": 1,
       "permissions": []
     },

@@ -55,7 +55,7 @@ colors: {
       regular: 'System',
       bold: 'System',
       arabic: 'UthmanicFont',
-      arabicTitle: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
+      arabicTitle: 'UthmanicFont',
     },
     
     // Font Sizes

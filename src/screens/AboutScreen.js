@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     fontSize: 48,
     color: Theme.colors.secondary,
     marginBottom: 10,
-    fontFamily: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
+    fontFamily: 'UthmanicFont',
   },
   appName: {
     fontSize: 24,
