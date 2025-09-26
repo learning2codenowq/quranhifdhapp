@@ -6,11 +6,14 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "description": "Your companion for memorizing the Holy Quran with structured learning and revision methods.",
+    "keywords": ["quran", "islam", "memorization", "hifdh", "islamic", "muslim"],
+    "privacy": "public",
     "privacyPolicy": "https://learning2codenowq.github.io/quran-hifdh-privacy/",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#004d24"
+      "backgroundColor": "#22575D"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -18,16 +21,32 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.shayan.quranhifdh",
-      "buildNumber": "1.0.0"
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#004d24"
+        "backgroundColor": "#22575D"
       },
       "package": "com.shayan.quranhifdh",
       "versionCode": 1,
-      "permissions": []
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "MODIFY_AUDIO_SETTINGS",
+        "WAKE_LOCK"
+      ],
+      "blockedPermissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -41,6 +60,11 @@
           ]
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
+    }
   }
 }

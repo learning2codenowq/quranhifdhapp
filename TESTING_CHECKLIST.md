@@ -1,54 +1,47 @@
-# Manual Testing Checklist
+# Pre-Launch Checklist for Quran Hifdh
 
-## Core Functionality
-- [ ] Onboarding flow completes successfully
-- [ ] Settings save and persist after app restart
-- [ ] Quran reader loads surahs and ayahs
-- [ ] Ayahs can be marked as memorized
-- [ ] Memorized ayahs show green background and checkmark
-- [ ] Dashboard shows correct statistics
+## ✅ Phase 1 Completed
+- [x] App icon & branding configured
+- [x] Error handling & network improvements
+- [x] Performance optimization & logging
+- [x] Privacy policy updated & compliant
+- [x] Data collection documented
 
-## Tikrar System
-- [ ] New memorization tracks daily progress
-- [ ] Repetition of yesterday shows correct ayahs
-- [ ] Connection calculates last 30 days correctly
-- [ ] Revision rotates through 6-day cycle
-- [ ] Tikrar activities track completion progress
-- [ ] Progress persists between app sessions
+## 🧪 Testing Checklist
 
-## Achievement System
-- [ ] Achievements unlock at correct milestones
-- [ ] Achievement modal appears for new achievements
-- [ ] Achievement screen shows earned vs locked
-- [ ] Achievement categories display correctly
+### Core Functionality
+- [ ] App starts without crashes
+- [ ] Onboarding flow works completely
+- [ ] Surah list loads properly
+- [ ] Quran reader displays Arabic text correctly
+- [ ] Audio playback works on multiple ayahs
+- [ ] Memorization marking/unmarking works
+- [ ] Daily progress tracking accurate
+- [ ] Revision system calculates correctly
+- [ ] Settings save and apply properly
 
-## Analytics
-- [ ] Weekly analytics show correct data
-- [ ] Monthly analytics calculate properly
-- [ ] Charts render without errors
-- [ ] Tab navigation works in analytics
+### Error Scenarios
+- [ ] No internet connection handled gracefully
+- [ ] Slow internet connection doesn't crash app
+- [ ] API timeout scenarios work
+- [ ] Large surah loading (Al-Baqarah)
+- [ ] Background/foreground app switching
+- [ ] Device rotation (if applicable)
 
-## Audio System
-- [ ] Audio plays when ayah play button pressed
-- [ ] Audio stops/pauses correctly
-- [ ] Audio buttons show correct play/pause states
-- [ ] No crashes when audio fails to load
-
-## Error Handling
-- [ ] Network errors show appropriate messages
-- [ ] Storage errors don't crash the app
-- [ ] Invalid data doesn't break calculations
-- [ ] Error boundary catches unexpected crashes
-
-## Performance
-- [ ] App launches quickly (< 3 seconds)
-- [ ] Scrolling is smooth in all screens
-- [ ] Navigation transitions are fluid
+### Performance
+- [ ] App loads in under 3 seconds
+- [ ] Smooth scrolling in surah list
 - [ ] No memory leaks during extended use
+- [ ] Audio doesn't cut out unexpectedly
 
-## Edge Cases
-- [ ] Works with no internet connection
-- [ ] Handles empty state (no memorization)
-- [ ] Works after fresh install
-- [ ] Survives app backgrounding/foregrounding
-- [ ] Settings persist through updates
+### Store Compliance
+- [ ] No development logs in production
+- [ ] Privacy policy accessible from app
+- [ ] No inappropriate content
+- [ ] Works on different screen sizes
+- [ ] Meets Android API level requirements
+
+## 🔧 Final Fixes Needed
+- [ ] Issue 1: _______________
+- [ ] Issue 2: _______________
+- [ ] Issue 3: _______________

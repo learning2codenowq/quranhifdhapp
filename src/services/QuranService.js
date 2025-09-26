@@ -1,34 +1,60 @@
+import { NetworkUtils } from '../utils/NetworkUtils';
+import { Logger } from '../utils/Logger';
+
 export class QuranService {
   static BASE_URL = 'https://quran.shayanshehzadqureshi.workers.dev/';
 
   static async getSurahWithTranslation(surahId) {
   try {
-    console.log(`🚀 Starting API call for surah ${surahId}...`);
-    
-    // Add 20 second timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000);
-    
-    const apiUrl = `${this.BASE_URL}/api/qf/verses?chapter=${surahId}&perPage=300`;
-    console.log(`📡 API URL: ${apiUrl}`);
-    
-    const response = await fetch(apiUrl, { signal: controller.signal });
-    
-    clearTimeout(timeoutId);
-    console.log(`📈 API response status: ${response.status}`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    console.log(`📊 API returned ${data.verses?.length || 0} verses`);
-    console.log(`📋 Surah info: ${data.chapter?.name_simple} (${data.chapter?.verses_count} total ayahs)`);
-    
-    if (!data.verses || !data.chapter) {
-      throw new Error('Invalid API response structure');
+    // console.log(`🚀 Starting API call for surah ${surahId}...`);
+    Logger.log(`🚀 Starting API call for surah ${surahId}...`);
+    // Check internet connection first
+    const hasInternet = await NetworkUtils.checkInternetConnection();
+    if (!hasInternet) {
+      throw new Error('No internet connection. Please check your network and try again.');
     }
 
+    const apiCall = async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      
+      const apiUrl = `${this.BASE_URL}/api/qf/verses?chapter=${surahId}&perPage=300`;
+      // console.log(`📡 API URL: ${apiUrl}`);
+      Logger.log(`📡 API URL: ${apiUrl}`);
+      const response = await fetch(apiUrl, { 
+        signal: controller.signal,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Accept': 'application/json',
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      // console.log(`📈 API response status: ${response.status}`);
+      Logger.log(`📈 API response status: ${response.status}`);
+      if (!response.ok) {
+        if (response.status >= 500) {
+          throw new Error('Server error. Please try again in a moment.');
+        }
+        if (response.status === 404) {
+          throw new Error('Surah not found. Please try a different surah.');
+        }
+        throw new Error(`Connection error (${response.status}). Please try again.`);
+      }
+      
+      const data = await response.json();
+      // console.log(`📊 API returned ${data.verses?.length || 0} verses`);
+      Logger.log(`📊 API returned ${data.verses?.length || 0} verses`);
+      if (!data.verses || !data.chapter) {
+        throw new Error('Invalid response from server. Please try again.');
+      }
+
+      return data;
+    };
+
+    // Retry with exponential backoff
+    const data = await NetworkUtils.retryWithExponentialBackoff(apiCall, 2);
+    
     const combinedAyahs = data.verses.map(verse => ({
       verse_number: verse.number,
       text: verse.text,
@@ -37,8 +63,8 @@ export class QuranService {
       audioUrl: verse.audioUrl
     }));
 
-    console.log(`✅ Final result: ${combinedAyahs.length} ayahs processed`);
-
+    // console.log(`✅ Final result: ${combinedAyahs.length} ayahs processed`);
+    Logger.log(`✅ Final result: ${combinedAyahs.length} ayahs processed`);
     return {
       surah: {
         id: data.chapter.id,
@@ -51,12 +77,9 @@ export class QuranService {
       bismillah: data.bismillah
     };
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error('API request timed out');
-      throw new Error('Request timed out. Please check your connection and try again.');
-    }
-    console.error('Error fetching surah from worker API:', error);
-    throw error;
+    // console.error('Error fetching surah:', error);
+    Logger.error('Error fetching surah:', error);
+    throw new Error(NetworkUtils.getErrorMessage(error));
   }
 }
 

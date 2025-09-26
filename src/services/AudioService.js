@@ -30,25 +30,36 @@ export class AudioService {
 
     console.log('Playing audio from URL:', audioUrl);
     
+    // Check if URL is reachable first
+    try {
+      const testResponse = await fetch(audioUrl, { method: 'HEAD', timeout: 5000 });
+      if (!testResponse.ok) {
+        throw new Error(`Audio file not available (${testResponse.status})`);
+      }
+    } catch (fetchError) {
+      console.log('Audio URL test failed:', fetchError.message);
+      throw new Error('Audio file not available or network issue');
+    }
+    
     await this.stopAudio();
     
     const audioPromise = Audio.Sound.createAsync(
-  { uri: audioUrl },
-  { 
-    shouldPlay: true, 
-    volume: 1.0,
-    isLooping: false,
-    isMuted: false,
-    rate: 1.0,
-    shouldCorrectPitch: true
-  }
-);
+      { uri: audioUrl },
+      { 
+        shouldPlay: true, 
+        volume: 1.0,
+        isLooping: false,
+        isMuted: false,
+        rate: 1.0,
+        shouldCorrectPitch: true
+      }
+    );
 
-const timeoutPromise = new Promise((_, reject) =>
-  setTimeout(() => reject(new Error('Audio loading timeout')), 15000)
-);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Audio loading timeout')), 10000)
+    );
 
-const { sound } = await Promise.race([audioPromise, timeoutPromise]);
+    const { sound } = await Promise.race([audioPromise, timeoutPromise]);
     
     this.sound = sound;
     this.isPlaying = true;
@@ -62,13 +73,11 @@ const { sound } = await Promise.race([audioPromise, timeoutPromise]);
           console.log('🎵 Audio finished playing naturally');
           this.isPlaying = false;
           
-          // Call the completion callback if provided
           if (onComplete) {
             console.log('🎵 Calling completion callback');
-            setTimeout(() => onComplete(), 100); // Small delay to ensure state is updated
+            setTimeout(() => onComplete(), 100);
           }
           
-          // Clear sound after callback
           setTimeout(() => {
             if (this.sound === sound) {
               this.sound = null;
@@ -93,6 +102,11 @@ const { sound } = await Promise.race([audioPromise, timeoutPromise]);
   } catch (error) {
     console.error('Audio playback failed:', error);
     this.isPlaying = false;
+    
+    // Return more specific error info
+    if (error.message.includes('not available')) {
+      console.log('Specific error: Audio file not available');
+    }
     return false;
   }
 }
