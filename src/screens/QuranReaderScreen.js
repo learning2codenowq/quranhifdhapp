@@ -547,14 +547,14 @@ export default function QuranReaderScreen({ route, navigation }) {
   };
 
   const getFontSize = (sizeCategory) => {
-    const sizes = {
-      'Small': 20,
-      'Medium': 24,
-      'Large': 28,
-      'Extra Large': 32
-    };
-    return sizes[sizeCategory] || 24;
+  const sizes = {
+    'Small': 18,
+    'Medium': 22,
+    'Large': 26,
+    'Extra Large': 30
   };
+  return sizes[sizeCategory] || 22;
+};
 
   const getTranslationFontSize = (sizeCategory) => {
     const sizes = {
@@ -602,13 +602,18 @@ export default function QuranReaderScreen({ route, navigation }) {
 
         {/* Arabic Text Card */}
         <View style={[styles.arabicTextCard, isMemorized && styles.memorizedCard]}>
-          <Text style={[
-            styles.modernArabicText, 
-            { fontSize: getFontSize(settings.arabicFontSize) }
-          ]}>
-            {cleanArabicText(item.text)}
-          </Text>
-        </View>
+  <View style={styles.arabicTextWrapper}>
+    <Text style={[
+      styles.modernArabicText, 
+      { 
+        fontSize: getFontSize(settings.arabicFontSize),
+        lineHeight: getFontSize(settings.arabicFontSize) * 1.8,
+      }
+    ]}>
+      {cleanArabicText(item.text)}
+    </Text>
+  </View>
+</View>
         
         {/* Translation Card */}
         {settings.showTranslations && (
@@ -1022,8 +1027,8 @@ const styles = StyleSheet.create({
   arabicTextCard: {
   backgroundColor: Theme.colors.cardBackground,
   borderRadius: 24,
-  paddingVertical: 40,   
-  paddingHorizontal: 28,      
+  paddingVertical: 25,
+  paddingHorizontal: 20,
   marginBottom: 16,
   ...Theme.shadows.lg,
   },
@@ -1034,14 +1039,12 @@ const styles = StyleSheet.create({
   },
   modernArabicText: {
   fontFamily: Theme.typography.fontFamily.arabic,
-  lineHeight: 60,              // Increased from 50
   textAlign: 'right',
   color: Theme.colors.primary,
-  letterSpacing: 1,            // Increased from 0.5
-  writingDirection: 'rtl',     // Add this
-  textAlignVertical: 'center', // Add this
+  writingDirection: 'rtl',
+  includeFontPadding: false,
+  textAlignVertical: 'top',
   },
-
   // Translation Card
   translationCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -1230,5 +1233,9 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: Theme.colors.secondary,
     borderRadius: 3,
+  },
+  arabicTextWrapper: {
+  width: '100%',
+  alignItems: 'flex-end',
   },
 });

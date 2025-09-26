@@ -5,9 +5,9 @@ export class QuranService {
   try {
     console.log(`🚀 Starting API call for surah ${surahId}...`);
     
-    // Add 10 second timeout
+    // Add 20 second timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
     
     const apiUrl = `${this.BASE_URL}/api/qf/verses?chapter=${surahId}&perPage=300`;
     console.log(`📡 API URL: ${apiUrl}`);
@@ -53,7 +53,7 @@ export class QuranService {
   } catch (error) {
     if (error.name === 'AbortError') {
       console.error('API request timed out');
-      throw new Error('Request timed out. Please check your connection.');
+      throw new Error('Request timed out. Please check your connection and try again.');
     }
     console.error('Error fetching surah from worker API:', error);
     throw error;
