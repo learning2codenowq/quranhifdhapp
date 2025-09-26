@@ -2,6 +2,8 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, Vibration, View } from 'react-native';
 import { Theme } from '../styles/theme';
 import { Icon } from './Icon';
+import { TouchableOpacity, Text, StyleSheet, Vibration, View, ActivityIndicator } from 'react-native';
+
 
 export default function AnimatedButton({ 
   title, 
@@ -124,12 +126,16 @@ export default function AnimatedButton({
 
   const renderContent = () => {
     if (loading) {
-      return (
-        <View style={styles.loadingContainer}>
-          <Text style={[getTextStyle(), textStyle]}>Loading...</Text>
-        </View>
-      );
-    }
+  return (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator 
+        size="small" 
+        color={variant === 'outline' ? Theme.colors.primary : Theme.colors.textOnPrimary} 
+      />
+      <Text style={[getTextStyle(), textStyle, { marginLeft: 8 }]}>Loading...</Text>
+    </View>
+  );
+}
 
     return (
       <View style={styles.contentContainer}>

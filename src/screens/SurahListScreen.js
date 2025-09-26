@@ -92,13 +92,17 @@ export default function SurahListScreen({ navigation }) {
 
     return (
       <AnimatedCard
-        style={[
-          styles.surahCard,
-          isCompleted && styles.completedSurah
-        ]}
-        onPress={() => navigation.navigate('QuranReader', { surahId: item.id })}
-        variant={isCompleted ? "elevated" : "default"}
-      >
+  style={[
+    styles.surahCard,
+    isCompleted && styles.completedSurah
+  ]}
+  onPress={() => navigation.navigate('QuranReader', { surahId: item.id })}
+  variant={isCompleted ? "elevated" : "default"}
+  accessible={true}
+  accessibilityLabel={`${item.name}, ${item.arabic_name}`}
+  accessibilityHint={`Open surah ${item.name} for memorization. ${isCompleted ? 'Completed' : hasProgress ? `${progress.memorized} of ${progress.total} ayahs memorized` : 'Not started yet'}`}
+  accessibilityRole="button"
+>
         <View style={styles.surahHeader}>
           <View style={styles.surahNumberContainer}>
             <Text style={styles.surahNumber}>{item.id}</Text>
@@ -224,13 +228,23 @@ export default function SurahListScreen({ navigation }) {
           </View>
 
           <FlatList
-            data={surahs}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={SurahItem}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            ItemSeparatorComponent={() => <View style={{ height: Theme.spacing.sm }} />}
-          />
+  data={surahs}
+  keyExtractor={(item) => item.id.toString()}
+  renderItem={SurahItem}
+  contentContainerStyle={styles.listContent}
+  showsVerticalScrollIndicator={false}
+  ItemSeparatorComponent={() => <View style={{ height: Theme.spacing.sm }} />}
+  removeClippedSubviews={true}
+  maxToRenderPerBatch={10}
+  updateCellsBatchingPeriod={50}
+  initialNumToRender={10}
+  windowSize={10}
+  getItemLayout={(data, index) => ({
+    length: 120, // Estimated height of each surah card
+    offset: 128 * index, // 120 + 8 for separator
+    index,
+  })}
+/>
         </SafeAreaView>
       </LinearGradient>
     </SafeAreaProvider>

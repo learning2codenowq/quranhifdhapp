@@ -138,11 +138,15 @@ export default function SettingsScreen({ navigation }) {
   );
 
   const SettingItem = ({ title, subtitle, onPress, rightComponent, dangerous = false }) => (
-    <TouchableOpacity
-      style={[styles.settingItem, dangerous && styles.dangerousItem]}
-      onPress={onPress}
-      disabled={!onPress}
-    >
+  <TouchableOpacity
+    style={[styles.settingItem, dangerous && styles.dangerousItem]}
+    onPress={onPress}
+    disabled={!onPress}
+    accessible={true}
+    accessibilityLabel={title}
+    accessibilityHint={subtitle}
+    accessibilityRole="button"
+  >
       <View style={styles.settingContent}>
         <Text style={[styles.settingTitle, dangerous && styles.dangerousText]}>
           {title}
@@ -171,6 +175,59 @@ export default function SettingsScreen({ navigation }) {
   );
 
   const settingSections = [
+  {
+    title: '👤 Account Settings',
+    icon: { name: 'person', type: 'Ionicons' },
+    items: [
+      {
+  type: 'button',
+  title: 'Your Name',
+  subtitle: `Current: ${settings.userName}`,
+  icon: { name: 'person-outline', type: 'Ionicons' },
+  onPress: () => {
+    Alert.prompt(
+      'Change Name',
+      'Enter your new name:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Save',
+          onPress: (newName) => {
+            if (newName && newName.trim().length > 0) {
+              updateSetting('userName', newName.trim());
+              Alert.alert('Success', 'Your name has been updated!');
+            } else {
+              Alert.alert('Invalid Name', 'Please enter a valid name.');
+            }
+          }
+        }
+      ],
+      'plain-text',
+      settings.userName
+    );
+  }
+},
+      {
+        type: 'button',
+        title: 'Daily Target',
+        subtitle: `${settings.dailyGoal} ayahs per day`,
+        icon: { name: 'target', type: 'Ionicons' },
+        onPress: () => {
+          Alert.alert(
+            'Daily Target',
+            'Choose your daily memorization goal:',
+            [
+              { text: '5 ayahs', onPress: () => updateSetting('dailyGoal', 5) },
+              { text: '10 ayahs', onPress: () => updateSetting('dailyGoal', 10) },
+              { text: '15 ayahs', onPress: () => updateSetting('dailyGoal', 15) },
+              { text: '20 ayahs', onPress: () => updateSetting('dailyGoal', 20) },
+              { text: 'Cancel', style: 'cancel' }
+            ]
+          );
+        }
+      }
+    ]
+  },
   {
     title: '🔊 Audio Settings',
     icon: { name: 'volume-high', type: 'Ionicons' },

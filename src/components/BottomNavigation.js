@@ -40,10 +40,15 @@ export default function BottomNavigation({ currentRoute, onNavigate }) {
           
           return (
             <TouchableOpacity
-              key={tab.key}
-              style={[styles.tab, isActive && styles.activeTab]}
-              onPress={() => handleTabPress(tab)}
-            >
+  key={tab.key}
+  style={[styles.tab, isActive && styles.activeTab]}
+  onPress={() => handleTabPress(tab)}
+  accessible={true}
+  accessibilityLabel={`${tab.label} tab`}
+  accessibilityHint={`Navigate to ${tab.label} screen`}
+  accessibilityRole="tab"
+  accessibilityState={{ selected: isActive }}
+>
               <View style={[styles.iconContainer, isActive && styles.activeIconContainer]}>
                 <Icon 
                   name={tab.icon.name}
@@ -78,12 +83,12 @@ const styles = StyleSheet.create({
     height: Theme.layout.bottomTabHeight,
   },
   tab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: Theme.spacing.sm,
+  flex: 1,
+  alignItems: 'center',
+  paddingVertical: Theme.spacing.sm,
+  minHeight: 44,
   },
   activeTab: {
-    // Active tab styling handled by individual elements
   },
   iconContainer: {
     width: 44,

@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: `rgba(184, 148, 125, 0.6)`,
+    backgroundColor: `#d4af37`,
   },
   dot1: {
     opacity: 0.4,

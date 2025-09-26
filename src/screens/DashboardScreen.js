@@ -124,6 +124,8 @@ export default function DashboardScreen({ navigation }) {
     daily: 10,
     daysLeft: 624
   };
+  const isNewUser = displayStats.memorized === 0 && !state?.progress;
+  const hasAnyProgress = displayStats.memorized > 0;
 
   const today = QuranUtils.localISO();
   const todayProgress = state?.progress?.[today] || 0;
@@ -190,8 +192,11 @@ export default function DashboardScreen({ navigation }) {
             size={200} 
           />
           <Text style={styles.progressStats}>
-            {displayStats.memorized.toLocaleString()} / {displayStats.total.toLocaleString()} ayahs
-          </Text>
+  {displayStats.memorized.toLocaleString()} / {displayStats.total.toLocaleString()} ayahs
+  {isNewUser && (
+    <Text style={styles.newUserHint}>{'\n'}Start your journey below!</Text>
+  )}
+</Text>
         </View>
 
         {/* Main Action Button */}
@@ -199,6 +204,10 @@ export default function DashboardScreen({ navigation }) {
   style={styles.memorizeButtonContainer}
   onPress={() => navigation.navigate('SurahList')}
   activeOpacity={0.9}
+  accessible={true}
+  accessibilityLabel="Start memorizing the Quran"
+  accessibilityHint="Navigate to surah list to begin memorization"
+  accessibilityRole="button"
 >
   <LinearGradient
     colors={['#d4af37', '#f4d03f']}
@@ -768,5 +777,11 @@ const styles = StyleSheet.create({
   fontWeight: '600',
   marginTop: 2,
   letterSpacing: 0.3,
+  },
+  newUserHint: {
+  fontSize: 14,
+  color: 'rgba(255, 255, 255, 0.8)',
+  fontWeight: 'normal',
+  fontStyle: 'italic',
   },
 });

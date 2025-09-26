@@ -32,17 +32,23 @@ export class AudioService {
     
     await this.stopAudio();
     
-    const { sound } = await Audio.Sound.createAsync(
-      { uri: audioUrl },
-      { 
-        shouldPlay: true, 
-        volume: 1.0,
-        isLooping: false,
-        isMuted: false,
-        rate: 1.0,
-        shouldCorrectPitch: true
-      }
-    );
+    const audioPromise = Audio.Sound.createAsync(
+  { uri: audioUrl },
+  { 
+    shouldPlay: true, 
+    volume: 1.0,
+    isLooping: false,
+    isMuted: false,
+    rate: 1.0,
+    shouldCorrectPitch: true
+  }
+);
+
+const timeoutPromise = new Promise((_, reject) =>
+  setTimeout(() => reject(new Error('Audio loading timeout')), 15000)
+);
+
+const { sound } = await Promise.race([audioPromise, timeoutPromise]);
     
     this.sound = sound;
     this.isPlaying = true;
@@ -99,31 +105,33 @@ export class AudioService {
   }
 
   static async stopAudio() {
-    try {
-      if (this.sound) {
-        console.log('🛑 Stopping audio...');
-        this.isStoppingIntentionally = true; // Set flag to prevent callback
-        this.isPlaying = false;
-        
-        await this.sound.stopAsync();
-        await this.sound.unloadAsync();
-        this.sound = null;
-        console.log('🛑 Audio stopped successfully');
-      }
-    } catch (error) {
-      // Don't log "Seeking interrupted" as error - it's expected when stopping
-      if (error.message && error.message.includes('Seeking interrupted')) {
-        console.log('🛑 Audio stop interrupted (expected when stopping quickly)');
-      } else {
-        console.warn('Audio stop had minor issue:', error.message);
-      }
-      // Always reset state even if stop failed
+  try {
+    if (this.sound) {
+      console.log('🛑 Stopping audio...');
+      this.isStoppingIntentionally = true;
       this.isPlaying = false;
+      
+      await this.sound.stopAsync();
+      await this.sound.unloadAsync();
       this.sound = null;
-    } finally {
-      this.isStoppingIntentionally = false; // Reset flag
+      console.log('🛑 Audio stopped successfully');
+    }
+  } catch (error) {
+    if (error.message && error.message.includes('Seeking interrupted')) {
+      console.log('🛑 Audio stop interrupted (expected when stopping quickly)');
+    } else {
+      console.warn('Audio stop had minor issue:', error.message);
+    }
+    this.isPlaying = false;
+    this.sound = null;
+  } finally {
+    this.isStoppingIntentionally = false;
+    
+    if (global.gc && __DEV__) {
+      global.gc(); 
     }
   }
+}
 
    static async pauseAudio() {
     try {

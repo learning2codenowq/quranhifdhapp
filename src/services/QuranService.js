@@ -3,19 +3,27 @@ export class QuranService {
 
   static async getSurahWithTranslation(surahId) {
   try {
-    const response = await fetch(`${this.BASE_URL}/api/qf/verses?chapter=${surahId}&perPage=50`);
+    console.log(`🚀 Starting API call for surah ${surahId}...`);
+    
+    // Add 10 second timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    const apiUrl = `${this.BASE_URL}/api/qf/verses?chapter=${surahId}&perPage=300`;
+    console.log(`📡 API URL: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl, { signal: controller.signal });
+    
+    clearTimeout(timeoutId);
+    console.log(`📈 API response status: ${response.status}`);
     
     if (!response.ok) {
-      if (response.status === 429) {
-        throw new Error('Too many requests. Please wait a moment and try again.');
-      } else if (response.status >= 500) {
-        throw new Error('Server is temporarily unavailable. Please try again later.');
-      } else {
-        throw new Error(`Unable to load content. Please check your internet connection.`);
-      }
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
     
     const data = await response.json();
+    console.log(`📊 API returned ${data.verses?.length || 0} verses`);
+    console.log(`📋 Surah info: ${data.chapter?.name_simple} (${data.chapter?.verses_count} total ayahs)`);
     
     if (!data.verses || !data.chapter) {
       throw new Error('Invalid API response structure');
@@ -29,6 +37,8 @@ export class QuranService {
       audioUrl: verse.audioUrl
     }));
 
+    console.log(`✅ Final result: ${combinedAyahs.length} ayahs processed`);
+
     return {
       surah: {
         id: data.chapter.id,
@@ -41,13 +51,10 @@ export class QuranService {
       bismillah: data.bismillah
     };
   } catch (error) {
-    // Handle network connectivity issues
-    if (error.message === 'Network request failed' || error.name === 'TypeError') {
-      throw new Error('No internet connection. Please check your network and try again.');
-    } else if (error.message.includes('fetch')) {
-      throw new Error('Unable to connect to server. Please check your internet connection.');
+    if (error.name === 'AbortError') {
+      console.error('API request timed out');
+      throw new Error('Request timed out. Please check your connection.');
     }
-    
     console.error('Error fetching surah from worker API:', error);
     throw error;
   }

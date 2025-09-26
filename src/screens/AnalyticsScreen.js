@@ -208,17 +208,6 @@ export default function AnalyticsScreen({ navigation }) {
                   />
                 ))}
               </View>
-              
-              <View style={styles.legend}>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendColor, { backgroundColor: Theme.colors.success }]} />
-                  <Text style={styles.legendText}>Full Revision</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendColor, { backgroundColor: Theme.colors.warning }]} />
-                  <Text style={styles.legendText}>Partial Revision</Text>
-                </View>
-              </View>
             </AnimatedCard>
           </>
         )}

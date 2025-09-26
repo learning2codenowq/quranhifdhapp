@@ -30,6 +30,10 @@ export default function QuranReaderScreen({ route, navigation }) {
   const [audioStatus, setAudioStatus] = useState({ isPlaying: false, hasSound: false });
   const [playingAyah, setPlayingAyah] = useState(null);
   const [ayahAudioUrls, setAyahAudioUrls] = useState({});
+
+  console.log('🎯 QuranReaderScreen mounted');
+  console.log('🔢 surahId from params:', surahId);
+  console.log('📦 route.params:', route?.params);
   
   // Settings state
   const [settings, setSettings] = useState({
@@ -59,26 +63,45 @@ export default function QuranReaderScreen({ route, navigation }) {
   const flatListRef = React.useRef(null);
 
   useEffect(() => {
-    if (surahId) {
-      loadSettings();
-      loadSurahData();
-      loadMemorizedAyahs();
-      AudioService.setupAudio();
-    }
+  if (ayahs.length > 0 && memorizedAyahs.length > 0) {
+    console.log('Checking auto-scroll...', {
+      ayahsCount: ayahs.length,
+      memorizedCount: memorizedAyahs.length,
+      surahId: surahId
+    });
     
-    return () => {
-      AudioService.stopAudio();
-    };
-  }, [surahId]);
+    const lastMemorizedAyah = findLastMemorizedAyah(memorizedAyahs, surahId);
+    console.log('Last memorized ayah:', lastMemorizedAyah);
+    
+    if (lastMemorizedAyah > 1) {
+      console.log(`Auto-scrolling to ayah ${lastMemorizedAyah}`);
+      // Longer delay to ensure everything is rendered
+      setTimeout(() => {
+        scrollToAyah(lastMemorizedAyah);
+      }, 2000);
+    }
+  }
+}, [ayahs, memorizedAyahs, surahId]);
 
 // Cleanup on component unmount
 useEffect(() => {
+  console.log('🔥 useEffect triggered with surahId:', surahId);
+  
+  if (surahId) {
+    console.log('✅ surahId exists, calling functions...');
+    loadSettings();
+    console.log('📞 About to call loadSurahData...');
+    loadSurahData();
+    loadMemorizedAyahs();
+    AudioService.setupAudio();
+  } else {
+    console.log('❌ No surahId found!');
+  }
+  
   return () => {
-    console.log('🧹 Component unmounting - stopping any ongoing replay');
-    isReplayingRef.current = false;
     AudioService.stopAudio();
   };
-}, []);
+}, [surahId]);
 
   const loadSettings = async () => {
   try {
@@ -99,34 +122,47 @@ useEffect(() => {
 };
 
   const loadSurahData = async () => {
-    try {
-      setLoading(true);
-      const data = await QuranService.getSurahWithTranslation(surahId);
-      setSurahData(data.surah);
-      setAyahs(data.ayahs || []);
-      
-      // Store audio URLs for each ayah
-      const audioMap = {};
-      (data.ayahs || []).forEach(ayah => {
-        if (ayah.audioUrl) {
-          audioMap[ayah.verse_number] = ayah.audioUrl;
-          Logger.log(`Audio URL for ayah ${ayah.verse_number}:`, ayah.audioUrl);
-        } else {
-          Logger.warn(`No audio URL for ayah ${ayah.verse_number}`);
-        }
-      });
-      setAyahAudioUrls(audioMap);
-      
-    } catch (error) {
-      Logger.error('Error loading surah:', error);
-      Alert.alert('Error', 'Failed to load surah data. Please check your internet connection.', [
-        { text: 'Go Back', onPress: () => navigation.goBack() },
-        { text: 'Retry', onPress: () => loadSurahData() }
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    console.log('🚀 Starting loadSurahData for surah:', surahId);
+    setLoading(true);
+    
+    // Force timeout after 15 seconds
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout')), 15000)
+    );
+    
+    const apiPromise = QuranService.getSurahWithTranslation(surahId);
+    
+    console.log('🔄 Making API call...');
+    const data = await Promise.race([apiPromise, timeoutPromise]);
+    console.log('✅ API call succeeded, got data:', data);
+    
+    setSurahData(data.surah);
+    setAyahs(data.ayahs || []);
+    
+    // Store audio URLs for each ayah
+    const audioMap = {};
+    (data.ayahs || []).forEach(ayah => {
+      if (ayah.audioUrl) {
+        audioMap[ayah.verse_number] = ayah.audioUrl;
+      }
+    });
+    setAyahAudioUrls(audioMap);
+    
+    console.log('✅ Successfully loaded surah data');
+    
+  } catch (error) {
+    console.error('❌ Error in loadSurahData:', error);
+    Logger.error('Error loading surah:', error);
+    Alert.alert('Error', 'Failed to load surah data. Please check your internet connection.', [
+      { text: 'Go Back', onPress: () => navigation.goBack() },
+      { text: 'Retry', onPress: () => loadSurahData() }
+    ]);
+  } finally {
+    console.log('🏁 Setting loading to false');
+    setLoading(false);
+  }
+};
 
   const loadMemorizedAyahs = async () => {
     try {
@@ -150,6 +186,15 @@ useEffect(() => {
       Logger.error('Error loading memorized ayahs:', error);
     }
   };
+  const findLastMemorizedAyah = (memorizedAyahs, currentSurahId) => {
+  const surahMemorized = memorizedAyahs
+    .filter(ayah => ayah.surahId === currentSurahId)
+    .map(ayah => ayah.ayahNumber)
+    .sort((a, b) => b - a); // Sort descending to get highest number first
+  
+  console.log(`Surah ${currentSurahId} memorized ayahs:`, surahMemorized);
+  return surahMemorized[0] || 1; // Return last memorized ayah or 1 if none
+  };
 
   const isAyahMemorized = (currentSurahId, ayahNumber) => {
     return memorizedAyahs.some(ayah => 
@@ -158,19 +203,21 @@ useEffect(() => {
   };
 
   const toggleAyahMemorization = async (currentSurahId, ayahNumber, isCurrentlyMemorized) => {
-    try {
-      if (isCurrentlyMemorized) {
-        await QuranUtils.unmarkAyahMemorized(currentSurahId, ayahNumber);
-      } else {
-        await QuranUtils.markAyahMemorized(currentSurahId, ayahNumber, 2);
-      }
-      
-      await loadMemorizedAyahs();
-    } catch (error) {
-      Logger.error('Error toggling memorization:', error);
-      Alert.alert('Error', 'Failed to update memorization status');
+  try {
+    if (isCurrentlyMemorized) {
+      await QuranUtils.unmarkAyahMemorized(currentSurahId, ayahNumber);
+      // Brief success feedback
+      Alert.alert('✓ Removed', 'Ayah unmarked from memorization', [{ text: 'OK' }]);
+    } else {
+      await QuranUtils.markAyahMemorized(currentSurahId, ayahNumber, 2);
     }
-  };
+    
+    await loadMemorizedAyahs();
+  } catch (error) {
+    Logger.error('Error toggling memorization:', error);
+    Alert.alert('Error', 'Failed to update memorization status');
+  }
+};
 
   const handleAudioPlay = async (currentSurahId, ayahNumber) => {
   try {
@@ -256,14 +303,26 @@ const scrollToAyah = (ayahNumber) => {
         flatListRef.current.scrollToIndex({
           index: ayahIndex,
           animated: true,
-          viewPosition: 0.2 // Show ayah at 20% from top
+          viewPosition: 0.2
         });
       } else {
-        console.log(`📱 Ayah ${ayahNumber} not found in list`);
+        console.log(`📱 Ayah ${ayahNumber} not found in list. Looking for closest ayah...`);
+        
+        // Find the highest ayah number that exists
+        const highestAyah = Math.max(...ayahs.map(ayah => ayah.verse_number));
+        console.log(`📱 Scrolling to highest available ayah: ${highestAyah}`);
+        
+        const highestIndex = ayahs.findIndex(ayah => ayah.verse_number === highestAyah);
+        if (highestIndex !== -1) {
+          flatListRef.current.scrollToIndex({
+            index: highestIndex,
+            animated: true,
+            viewPosition: 0.2
+          });
+        }
       }
     } catch (error) {
       console.log('📱 Scroll error, using fallback');
-      // Fallback: estimate scroll position
       const estimatedOffset = (ayahNumber - 1) * 250;
       flatListRef.current.scrollToOffset({
         offset: estimatedOffset,
@@ -613,25 +672,33 @@ const scrollToAyah = (ayahNumber) => {
           
           <View style={styles.controlsContainer}>
             <TouchableOpacity
-              style={[styles.audioButton, isCurrentlyPlaying && styles.activeAudioButton]}
-              onPress={() => handleAudioPlay(currentSurahId, item.verse_number)}
-            >
+  style={[styles.audioButton, isCurrentlyPlaying && styles.activeAudioButton]}
+  onPress={() => handleAudioPlay(currentSurahId, item.verse_number)}
+  accessible={true}
+  accessibilityLabel={isCurrentlyPlaying && audioStatus.isPlaying ? "Pause ayah recitation" : "Play ayah recitation"}
+  accessibilityHint={`${isCurrentlyPlaying && audioStatus.isPlaying ? "Stop" : "Start"} audio for verse ${item.verse_number}`}
+  accessibilityRole="button"
+>
               <Text style={styles.audioIcon}>
                 {isCurrentlyPlaying && audioStatus.isPlaying ? '⏸' : '▶'}
               </Text>
             </TouchableOpacity>
             
             <TouchableOpacity
-              style={[
-                styles.memorizeButton,
-                isMemorized && styles.memorizedButton
-              ]}
-              onPress={() => toggleAyahMemorization(
-                currentSurahId, 
-                item.verse_number, 
-                isMemorized
-              )}
-            >
+  style={[
+    styles.memorizeButton,
+    isMemorized && styles.memorizedButton
+  ]}
+  onPress={() => toggleAyahMemorization(
+    currentSurahId, 
+    item.verse_number, 
+    isMemorized
+  )}
+  accessible={true}
+  accessibilityLabel={isMemorized ? "Mark ayah as not memorized" : "Mark ayah as memorized"}
+  accessibilityHint={`${isMemorized ? "Remove" : "Add"} verse ${item.verse_number} from your memorized ayahs`}
+  accessibilityRole="button"
+>
               <Text style={[
                 styles.memorizeButtonText,
                 isMemorized && styles.memorizedButtonText
@@ -646,15 +713,16 @@ const scrollToAyah = (ayahNumber) => {
   };
 
   if (loading) {
-    return (
-      <SafeAreaProvider>
-        <SafeAreaView style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#d4af37" />
-          <Text style={styles.loadingText}>Loading Surah...</Text>
-        </SafeAreaView>
-      </SafeAreaProvider>
-    );
-  }
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#d4af37" />
+        <Text style={styles.loadingText}>Loading Surah...</Text>
+        <Text style={styles.loadingSubtext}>Preparing ayahs and audio</Text>
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
+}
 
   return (
     <SafeAreaProvider>
@@ -689,7 +757,7 @@ const scrollToAyah = (ayahNumber) => {
           </View>
 
           <FlatList
-  ref={flatListRef} // Add this line
+  ref={flatListRef}
   data={ayahs}
   keyExtractor={(item, index) => `${surahId}-${item.verse_number || index}`}
   renderItem={AyahItem}
@@ -699,6 +767,11 @@ const scrollToAyah = (ayahNumber) => {
     { paddingBottom: isReplaying ? 100 : 30 }
   ]}
   showsVerticalScrollIndicator={false}
+  removeClippedSubviews={true}
+  maxToRenderPerBatch={5}
+  updateCellsBatchingPeriod={100}
+  initialNumToRender={5}
+  windowSize={8}
   onScrollToIndexFailed={(info) => {
     // Handle scroll failures gracefully
     console.log('📱 Scroll to index failed, using fallback');
@@ -1121,5 +1194,11 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: Theme.colors.secondary,
     borderRadius: 2,
+  },
+  loadingSubtext: {
+  color: 'rgba(255, 255, 255, 0.7)',
+  fontSize: 14,
+  marginTop: 8,
+  textAlign: 'center',
   },
 });
