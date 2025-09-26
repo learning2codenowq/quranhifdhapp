@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -8,7 +8,8 @@ import {
   ActivityIndicator, 
   Alert,
   Modal,
-  TextInput
+  TextInput,
+  Animated
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +20,7 @@ import { AudioService } from '../services/AudioService';
 import { cleanArabicText } from '../utils/TextCleaner';
 import { Logger } from '../utils/Logger';
 import { Theme } from '../styles/theme';
+import { Icon, AppIcons } from '../components/Icon';
 
 export default function QuranReaderScreen({ route, navigation }) {
   const surahId = route?.params?.surahId || 1;
@@ -31,17 +33,13 @@ export default function QuranReaderScreen({ route, navigation }) {
   const [playingAyah, setPlayingAyah] = useState(null);
   const [ayahAudioUrls, setAyahAudioUrls] = useState({});
 
-  console.log('🎯 QuranReaderScreen mounted');
-  console.log('🔢 surahId from params:', surahId);
-  console.log('📦 route.params:', route?.params);
-  
   // Settings state
   const [settings, setSettings] = useState({
-  showTranslations: true,
-  arabicFontSize: 'Medium',
-  translationFontSize: 'Medium',
-  autoPlayNext: true 
-});
+    showTranslations: true,
+    arabicFontSize: 'Medium',
+    translationFontSize: 'Medium',
+    autoPlayNext: true 
+  });
   
   // Replay segment states
   const [showReplayModal, setShowReplayModal] = useState(false);
@@ -61,108 +59,92 @@ export default function QuranReaderScreen({ route, navigation }) {
   // Ref for immediate stop checking
   const isReplayingRef = React.useRef(false);
   const flatListRef = React.useRef(null);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
+  console.log('🎯 QuranReaderScreen mounted');
+  console.log('🔢 surahId from params:', surahId);
+  console.log('📦 route.params:', route?.params);
+
+  // Cleanup on component unmount
   useEffect(() => {
-  if (ayahs.length > 0 && memorizedAyahs.length > 0) {
-    console.log('Checking auto-scroll...', {
-      ayahsCount: ayahs.length,
-      memorizedCount: memorizedAyahs.length,
-      surahId: surahId
-    });
+    console.log('🔥 useEffect triggered with surahId:', surahId);
     
-    const lastMemorizedAyah = findLastMemorizedAyah(memorizedAyahs, surahId);
-    console.log('Last memorized ayah:', lastMemorizedAyah);
-    
-    if (lastMemorizedAyah > 1) {
-      console.log(`Auto-scrolling to ayah ${lastMemorizedAyah}`);
-      // Longer delay to ensure everything is rendered
-      setTimeout(() => {
-        scrollToAyah(lastMemorizedAyah);
-      }, 2000);
+    if (surahId) {
+      console.log('✅ surahId exists, calling functions...');
+      loadSettings();
+      console.log('📞 About to call loadSurahData...');
+      loadSurahData();
+      loadMemorizedAyahs();
+      AudioService.setupAudio();
+    } else {
+      console.log('❌ No surahId found!');
     }
-  }
-}, [ayahs, memorizedAyahs, surahId]);
-
-// Cleanup on component unmount
-useEffect(() => {
-  console.log('🔥 useEffect triggered with surahId:', surahId);
-  
-  if (surahId) {
-    console.log('✅ surahId exists, calling functions...');
-    loadSettings();
-    console.log('📞 About to call loadSurahData...');
-    loadSurahData();
-    loadMemorizedAyahs();
-    AudioService.setupAudio();
-  } else {
-    console.log('❌ No surahId found!');
-  }
-  
-  return () => {
-    AudioService.stopAudio();
-  };
-}, [surahId]);
+    
+    return () => {
+      AudioService.stopAudio();
+    };
+  }, [surahId]);
 
   const loadSettings = async () => {
-  try {
-    const state = await StorageService.getState();
-    if (state?.settings) {
-      const newSettings = {
-        showTranslations: state.settings.showTranslations !== false,
-        arabicFontSize: state.settings.arabicFontSize || 'Medium',
-        translationFontSize: state.settings.translationFontSize || 'Medium',
-        autoPlayNext: state.settings.autoPlayNext !== false // Changed: default true if not explicitly false
-      };
-      Logger.log('🎵 Loaded settings:', newSettings);
-      setSettings(newSettings);
+    try {
+      const state = await StorageService.getState();
+      if (state?.settings) {
+        const newSettings = {
+          showTranslations: state.settings.showTranslations !== false,
+          arabicFontSize: state.settings.arabicFontSize || 'Medium',
+          translationFontSize: state.settings.translationFontSize || 'Medium',
+          autoPlayNext: state.settings.autoPlayNext !== false
+        };
+        Logger.log('🎵 Loaded settings:', newSettings);
+        setSettings(newSettings);
+      }
+    } catch (error) {
+      Logger.error('Error loading settings:', error);
     }
-  } catch (error) {
-    Logger.error('Error loading settings:', error);
-  }
-};
+  };
 
   const loadSurahData = async () => {
-  try {
-    console.log('🚀 Starting loadSurahData for surah:', surahId);
-    setLoading(true);
-    
-    // Force timeout after 15 seconds
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Request timeout')), 15000)
-    );
-    
-    const apiPromise = QuranService.getSurahWithTranslation(surahId);
-    
-    console.log('🔄 Making API call...');
-    const data = await Promise.race([apiPromise, timeoutPromise]);
-    console.log('✅ API call succeeded, got data:', data);
-    
-    setSurahData(data.surah);
-    setAyahs(data.ayahs || []);
-    
-    // Store audio URLs for each ayah
-    const audioMap = {};
-    (data.ayahs || []).forEach(ayah => {
-      if (ayah.audioUrl) {
-        audioMap[ayah.verse_number] = ayah.audioUrl;
-      }
-    });
-    setAyahAudioUrls(audioMap);
-    
-    console.log('✅ Successfully loaded surah data');
-    
-  } catch (error) {
-    console.error('❌ Error in loadSurahData:', error);
-    Logger.error('Error loading surah:', error);
-    Alert.alert('Error', 'Failed to load surah data. Please check your internet connection.', [
-      { text: 'Go Back', onPress: () => navigation.goBack() },
-      { text: 'Retry', onPress: () => loadSurahData() }
-    ]);
-  } finally {
-    console.log('🏁 Setting loading to false');
-    setLoading(false);
-  }
-};
+    try {
+      console.log('🚀 Starting loadSurahData for surah:', surahId);
+      setLoading(true);
+      
+      // Force timeout after 15 seconds
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 15000)
+      );
+      
+      const apiPromise = QuranService.getSurahWithTranslation(surahId);
+      
+      console.log('🔄 Making API call...');
+      const data = await Promise.race([apiPromise, timeoutPromise]);
+      console.log('✅ API call succeeded, got data:', data);
+      
+      setSurahData(data.surah);
+      setAyahs(data.ayahs || []);
+      
+      // Store audio URLs for each ayah
+      const audioMap = {};
+      (data.ayahs || []).forEach(ayah => {
+        if (ayah.audioUrl) {
+          audioMap[ayah.verse_number] = ayah.audioUrl;
+        }
+      });
+      setAyahAudioUrls(audioMap);
+      
+      console.log('✅ Successfully loaded surah data');
+      
+    } catch (error) {
+      console.error('❌ Error in loadSurahData:', error);
+      Logger.error('Error loading surah:', error);
+      Alert.alert('Error', 'Failed to load surah data. Please check your internet connection.', [
+        { text: 'Go Back', onPress: () => navigation.goBack() },
+        { text: 'Retry', onPress: () => loadSurahData() }
+      ]);
+    } finally {
+      console.log('🏁 Setting loading to false');
+      setLoading(false);
+    }
+  };
 
   const loadMemorizedAyahs = async () => {
     try {
@@ -186,15 +168,6 @@ useEffect(() => {
       Logger.error('Error loading memorized ayahs:', error);
     }
   };
-  const findLastMemorizedAyah = (memorizedAyahs, currentSurahId) => {
-  const surahMemorized = memorizedAyahs
-    .filter(ayah => ayah.surahId === currentSurahId)
-    .map(ayah => ayah.ayahNumber)
-    .sort((a, b) => b - a); // Sort descending to get highest number first
-  
-  console.log(`Surah ${currentSurahId} memorized ayahs:`, surahMemorized);
-  return surahMemorized[0] || 1; // Return last memorized ayah or 1 if none
-  };
 
   const isAyahMemorized = (currentSurahId, ayahNumber) => {
     return memorizedAyahs.some(ayah => 
@@ -203,132 +176,124 @@ useEffect(() => {
   };
 
   const toggleAyahMemorization = async (currentSurahId, ayahNumber, isCurrentlyMemorized) => {
-  try {
-    if (isCurrentlyMemorized) {
-      await QuranUtils.unmarkAyahMemorized(currentSurahId, ayahNumber);
-      // Brief success feedback
-      Alert.alert('✓ Removed', 'Ayah unmarked from memorization', [{ text: 'OK' }]);
-    } else {
-      await QuranUtils.markAyahMemorized(currentSurahId, ayahNumber, 2);
+    try {
+      // Scale animation
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      if (isCurrentlyMemorized) {
+        await QuranUtils.unmarkAyahMemorized(currentSurahId, ayahNumber);
+        Alert.alert('✓ Removed', 'Ayah unmarked from memorization', [{ text: 'OK' }]);
+      } else {
+        await QuranUtils.markAyahMemorized(currentSurahId, ayahNumber, 2);
+      }
+      
+      await loadMemorizedAyahs();
+    } catch (error) {
+      Logger.error('Error toggling memorization:', error);
+      Alert.alert('Error', 'Failed to update memorization status');
     }
-    
-    await loadMemorizedAyahs();
-  } catch (error) {
-    Logger.error('Error toggling memorization:', error);
-    Alert.alert('Error', 'Failed to update memorization status');
-  }
-};
+  };
 
   const handleAudioPlay = async (currentSurahId, ayahNumber) => {
-  try {
-    const audioUrl = ayahAudioUrls[ayahNumber];
-    
-    if (!audioUrl) {
-      Alert.alert('Audio Error', 'Audio not available for this ayah');
-      return;
-    }
-
-    console.log(`Attempting to play audio for ayah ${ayahNumber}:`, audioUrl);
-
-    if (playingAyah && playingAyah.surahId === currentSurahId && playingAyah.ayahNumber === ayahNumber) {
-  if (audioStatus.isPlaying) {
-    console.log('🛑 User clicked pause - stopping audio');
-    await AudioService.stopAudio(); // Use stopAudio instead of pauseAudio for cleaner stop
-    setPlayingAyah(null);
-  } else {
-    await AudioService.resumeAudio();
-  }
-    } else {
-      setPlayingAyah({ surahId: currentSurahId, ayahNumber });
+    try {
+      const audioUrl = ayahAudioUrls[ayahNumber];
       
-      // Scroll to current ayah
-      scrollToAyah(ayahNumber);
-      
-      // Define what happens when this ayah finishes
-      const onAyahComplete = () => {
-        if (settings.autoPlayNext) {
-          console.log('🎵 Auto-play enabled, looking for next ayah...');
-          const nextAyahNumber = ayahNumber + 1;
-          const nextAyahExists = ayahs.find(ayah => ayah.verse_number === nextAyahNumber);
-          
-          if (nextAyahExists && ayahAudioUrls[nextAyahNumber]) {
-            console.log(`🎵 Playing next ayah: ${nextAyahNumber}`);
-            setTimeout(() => {
-              handleAudioPlay(currentSurahId, nextAyahNumber);
-            }, 500); // Small delay for smooth transition
+      if (!audioUrl) {
+        Alert.alert('Audio Error', 'Audio not available for this ayah');
+        return;
+      }
+
+      console.log(`Attempting to play audio for ayah ${ayahNumber}:`, audioUrl);
+
+      if (playingAyah && playingAyah.surahId === currentSurahId && playingAyah.ayahNumber === ayahNumber) {
+        if (audioStatus.isPlaying) {
+          console.log('🛑 User clicked pause - stopping audio');
+          await AudioService.stopAudio();
+          setPlayingAyah(null);
+        } else {
+          await AudioService.resumeAudio();
+        }
+      } else {
+        setPlayingAyah({ surahId: currentSurahId, ayahNumber });
+        
+        // Scroll to current ayah
+        scrollToAyah(ayahNumber);
+        
+        // Define what happens when this ayah finishes
+        const onAyahComplete = () => {
+          if (settings.autoPlayNext) {
+            console.log('🎵 Auto-play enabled, looking for next ayah...');
+            const nextAyahNumber = ayahNumber + 1;
+            const nextAyahExists = ayahs.find(ayah => ayah.verse_number === nextAyahNumber);
+            
+            if (nextAyahExists && ayahAudioUrls[nextAyahNumber]) {
+              console.log(`🎵 Playing next ayah: ${nextAyahNumber}`);
+              setTimeout(() => {
+                handleAudioPlay(currentSurahId, nextAyahNumber);
+              }, 500);
+            } else {
+              console.log('🎵 Reached end of surah');
+              setPlayingAyah(null);
+            }
           } else {
-            console.log('🎵 Reached end of surah');
+            console.log('🎵 Auto-play disabled, stopping');
             setPlayingAyah(null);
           }
-        } else {
-          console.log('🎵 Auto-play disabled, stopping');
-          setPlayingAyah(null);
-        }
-      };
-      
-      const success = await AudioService.playAyahFromUrl(audioUrl, onAyahComplete);
-      
-      if (!success) {
-        Alert.alert(
-          'Audio Error', 
-          'Could not play audio for this ayah. Please check your internet connection and try again.',
-          [
-            { text: 'OK', onPress: () => setPlayingAyah(null) }
-          ]
-        );
-      }
-    }
-    
-    const status = AudioService.getPlaybackStatus();
-    setAudioStatus(status);
-  } catch (error) {
-    console.error('Audio error:', error);
-    setPlayingAyah(null);
-    Alert.alert(
-      'Audio Error', 
-      'Failed to play audio. The audio file may not be available or there may be a network issue.',
-      [{ text: 'OK' }]
-    );
-  }
-};
-
-const scrollToAyah = (ayahNumber) => {
-  if (flatListRef.current && ayahs.length > 0) {
-    try {
-      const ayahIndex = ayahs.findIndex(ayah => ayah.verse_number === ayahNumber);
-      
-      if (ayahIndex !== -1) {
-        console.log(`📱 Scrolling to ayah ${ayahNumber} at index ${ayahIndex}`);
+        };
         
-        flatListRef.current.scrollToIndex({
-          index: ayahIndex,
-          animated: true,
-          viewPosition: 0.2
-        });
-      } else {
-        console.log(`📱 Ayah ${ayahNumber} not found in list. Looking for closest ayah...`);
+        const success = await AudioService.playAyahFromUrl(audioUrl, onAyahComplete);
         
-        // Find the highest ayah number that exists
-        const highestAyah = Math.max(...ayahs.map(ayah => ayah.verse_number));
-        console.log(`📱 Scrolling to highest available ayah: ${highestAyah}`);
-        
-        const highestIndex = ayahs.findIndex(ayah => ayah.verse_number === highestAyah);
-        if (highestIndex !== -1) {
-          flatListRef.current.scrollToIndex({
-            index: highestIndex,
-            animated: true,
-            viewPosition: 0.2
-          });
+        if (!success) {
+          Alert.alert(
+            'Audio Error', 
+            'Could not play audio for this ayah. Please check your internet connection and try again.',
+            [
+              { text: 'OK', onPress: () => setPlayingAyah(null) }
+            ]
+          );
         }
       }
+      
+      const status = AudioService.getPlaybackStatus();
+      setAudioStatus(status);
     } catch (error) {
-      console.log('📱 Scroll error, using fallback');
-      const estimatedOffset = (ayahNumber - 1) * 250;
-      flatListRef.current.scrollToOffset({
-        offset: estimatedOffset,
-        animated: true
-      });
+      console.error('Audio error:', error);
+      setPlayingAyah(null);
+      Alert.alert(
+        'Audio Error', 
+        'Failed to play audio. The audio file may not be available or there may be a network issue.',
+        [{ text: 'OK' }]
+      );
     }
+  };
+
+  const scrollToAyah = (ayahNumber) => {
+  if (!flatListRef.current || ayahs.length === 0) return;
+
+  const ayahIndex = ayahs.findIndex(ayah => ayah.verse_number === ayahNumber);
+  
+  if (ayahIndex !== -1) {
+    console.log(`📱 Scrolling to ayah ${ayahNumber} at index ${ayahIndex}`);
+    
+    // Scroll to exact index instead of offset
+    flatListRef.current.scrollToIndex({
+      index: ayahIndex,
+      animated: true,
+      viewPosition: 0.2
+    });
+  } else {
+    console.log(`📱 Ayah ${ayahNumber} not found in list`);
   }
 };
 
@@ -349,7 +314,6 @@ const scrollToAyah = (ayahNumber) => {
 
     Logger.log('🚀 Starting replay:', { start, end, reps, totalAyahs: ayahs.length });
 
-    // Basic validation
     if (isNaN(start) || isNaN(end) || isNaN(reps) || start < 1 || end < 1 || reps < 1) {
       Alert.alert('Invalid Input', 'Please enter valid numbers greater than 0');
       return;
@@ -365,10 +329,7 @@ const scrollToAyah = (ayahNumber) => {
       return;
     }
 
-    // Close modal first
     setShowReplayModal(false);
-    
-    // Set both state and ref
     setIsReplaying(true);
     isReplayingRef.current = true;
     
@@ -380,8 +341,6 @@ const scrollToAyah = (ayahNumber) => {
     });
     
     Logger.log('📱 State set, calling playSegmentSequence...');
-    
-    // Start the sequence
     playSegmentSequence(start, end, reps);
   };
 
@@ -390,7 +349,6 @@ const scrollToAyah = (ayahNumber) => {
     
     try {
       for (let rep = 1; rep <= repetitions; rep++) {
-        // Check if stopped
         if (!isReplayingRef.current) {
           Logger.log('🛑 Replay stopped by user - exiting repetition loop');
           break;
@@ -405,7 +363,6 @@ const scrollToAyah = (ayahNumber) => {
         }));
 
         for (let ayahNum = startAyah; ayahNum <= endAyah; ayahNum++) {
-          // Check if stopped before each ayah
           if (!isReplayingRef.current) {
             Logger.log('🛑 Replay stopped by user - exiting ayah loop');
             break;
@@ -427,7 +384,6 @@ const scrollToAyah = (ayahNumber) => {
             continue;
           }
 
-          // Stop any current audio
           Logger.log('🛑 Stopping previous audio...');
           try {
             await AudioService.stopAudio();
@@ -435,20 +391,19 @@ const scrollToAyah = (ayahNumber) => {
             Logger.warn('⚠️ Error stopping audio:', e);
           }
 
-          // Small delay with stop check
           await delayWithStopCheck(100);
           
-          // Check again before playing
           if (!isReplayingRef.current) {
             Logger.log('🛑 Replay stopped - not starting new audio');
             break;
           }
 
-          // Update UI
           setPlayingAyah({ surahId: surahData?.id || surahId, ayahNumber: ayahNum });
+          const targetAyah = ayahs.find(ayah => ayah.verse_number === ayahNum);
+          if (targetAyah) {
           scrollToAyah(ayahNum);
+          }
           
-          // Play the ayah
           Logger.log(`▶️ Calling AudioService.playAyahFromUrl for ayah ${ayahNum}...`);
           const success = await AudioService.playAyahFromUrl(audioUrl);
           Logger.log(`🎵 AudioService.playAyahFromUrl returned:`, success);
@@ -462,17 +417,15 @@ const scrollToAyah = (ayahNumber) => {
             await delayWithStopCheck(3000);
           }
           
-          // Pause between ayahs (with stop check)
           if (ayahNum < endAyah && isReplayingRef.current) {
             Logger.log(`💤 Brief pause between ayahs...`);
-            await delayWithStopCheck(300); // Reduced from 1000ms to 300ms
+            await delayWithStopCheck(300);
           }
         }
         
-        // Pause between repetitions (with stop check)
         if (rep < repetitions && isReplayingRef.current) {
           Logger.log(`🔄 Brief pause between repetitions...`);
-          await delayWithStopCheck(800); // Reduced from 2000ms to 800ms
+          await delayWithStopCheck(800);
         }
       }
 
@@ -481,7 +434,6 @@ const scrollToAyah = (ayahNumber) => {
     } catch (error) {
       Logger.error('💥 Error in playSegmentSequence:', error);
     } finally {
-      // Always cleanup
       Logger.log('🧹 Cleaning up...');
       const wasStoppedByUser = !isReplayingRef.current;
       
@@ -490,7 +442,6 @@ const scrollToAyah = (ayahNumber) => {
       setPlayingAyah(null);
       setReplayProgress({ current: 0, total: 0, currentAyah: 0, totalAyahs: 0 });
       
-      // Stop audio
       try {
         await AudioService.stopAudio();
       } catch (e) {
@@ -506,28 +457,23 @@ const scrollToAyah = (ayahNumber) => {
   };
 
   const stopReplaySegment = async () => {
-  console.log('🛑 STOP BUTTON CLICKED');
-  
-  // Immediately set ref to false to stop all loops
-  isReplayingRef.current = false;
-  
-  // Update state
-  setIsReplaying(false);
-  setPlayingAyah(null);
-  setReplayProgress({ current: 0, total: 0, currentAyah: 0, totalAyahs: 0 });
-  
-  // Force stop audio
-  try {
-    await AudioService.stopAudio();
-    console.log('🛑 Audio force stopped');
-  } catch (error) {
-    console.warn('⚠️ Error force stopping audio:', error);
-  }
-  
-  Alert.alert('🛑 Stopped', 'Replay has been stopped');
-};
+    console.log('🛑 STOP BUTTON CLICKED');
+    
+    isReplayingRef.current = false;
+    setIsReplaying(false);
+    setPlayingAyah(null);
+    setReplayProgress({ current: 0, total: 0, currentAyah: 0, totalAyahs: 0 });
+    
+    try {
+      await AudioService.stopAudio();
+      console.log('🛑 Audio force stopped');
+    } catch (error) {
+      console.warn('⚠️ Error force stopping audio:', error);
+    }
+    
+    Alert.alert('🛑 Stopped', 'Replay has been stopped');
+  };
 
-  // Helper function to wait with stop checking
   const delayWithStopCheck = (ms) => {
     return new Promise((resolve) => {
       const checkInterval = 100;
@@ -544,14 +490,12 @@ const scrollToAyah = (ayahNumber) => {
     });
   };
 
-  // Helper function to wait for audio with stop checking
   const waitForAudioCompletion = () => {
     return new Promise((resolve) => {
-      const checkInterval = 100; // Check more frequently
+      const checkInterval = 100;
       let noAudioCount = 0;
       
       const intervalId = setInterval(() => {
-        // Check if stopped by user
         if (!isReplayingRef.current) {
           Logger.log('🛑 Audio wait interrupted by stop');
           clearInterval(intervalId);
@@ -559,23 +503,20 @@ const scrollToAyah = (ayahNumber) => {
           return;
         }
         
-        // Check audio status
         const status = AudioService.getPlaybackStatus();
         
         if (!status.isPlaying) {
           noAudioCount++;
-          // Shorter wait to ensure audio finished
-          if (noAudioCount >= 5) { // 0.5 seconds of no audio = finished
+          if (noAudioCount >= 5) {
             Logger.log('🎵 Audio playback completed');
             clearInterval(intervalId);
             resolve();
           }
         } else {
-          noAudioCount = 0; // Reset counter if audio is still playing
+          noAudioCount = 0;
         }
       }, checkInterval);
       
-      // Safety timeout - maximum 30 seconds per ayah
       setTimeout(() => {
         Logger.log('⏰ Audio timeout reached (30s safety limit)');
         clearInterval(intervalId);
@@ -605,7 +546,6 @@ const scrollToAyah = (ayahNumber) => {
     return { memorized: memorizedCount, total: totalAyahs };
   };
 
-  // Font size helper functions
   const getFontSize = (sizeCategory) => {
     const sizes = {
       'Small': 20,
@@ -626,7 +566,8 @@ const scrollToAyah = (ayahNumber) => {
     return sizes[sizeCategory] || 16;
   };
 
-  const BasmalaComponent = () => {
+  // Modern Basmala Component
+  const BasmalaModern = () => {
     const currentSurahId = surahData?.id || surahId;
     
     if (!shouldShowBasmala(currentSurahId)) {
@@ -634,15 +575,18 @@ const scrollToAyah = (ayahNumber) => {
     }
 
     return (
-      <View style={styles.basmalaContainer}>
-        <Text style={styles.basmalaText}>
-          بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
-        </Text>
+      <View style={styles.modernBasmalaContainer}>
+        <View style={styles.basmalaCard}>
+          <Text style={styles.modernBasmalaText}>
+            بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
+          </Text>
+        </View>
       </View>
     );
   };
 
-  const AyahItem = ({ item }) => {
+  // Modern Ayah Item Component
+  const AyahItemModern = ({ item }) => {
     const currentSurahId = surahData?.id || surahId;
     const isMemorized = isAyahMemorized(currentSurahId, item.verse_number);
     const isCurrentlyPlaying = playingAyah && 
@@ -650,155 +594,178 @@ const scrollToAyah = (ayahNumber) => {
       playingAyah.ayahNumber === item.verse_number;
     
     return (
-      <View style={[styles.ayahContainer, isMemorized && styles.memorizedAyahContainer]}>
-        <View style={styles.ayahContent}>
-          <Text style={styles.ayahNumber}>{item.verse_number}</Text>
-          
+      <View style={styles.modernAyahContainer}>
+        {/* Ayah Number Badge */}
+        <View style={styles.ayahNumberBadge}>
+          <Text style={styles.ayahNumberText}>{item.verse_number}</Text>
+        </View>
+
+        {/* Arabic Text Card */}
+        <View style={[styles.arabicTextCard, isMemorized && styles.memorizedCard]}>
           <Text style={[
-            styles.arabicText, 
+            styles.modernArabicText, 
             { fontSize: getFontSize(settings.arabicFontSize) }
           ]}>
             {cleanArabicText(item.text)}
           </Text>
-          
-          {settings.showTranslations && (
+        </View>
+        
+        {/* Translation Card */}
+        {settings.showTranslations && (
+          <View style={styles.translationCard}>
             <Text style={[
-              styles.translationText,
+              styles.modernTranslationText,
               { fontSize: getTranslationFontSize(settings.translationFontSize) }
             ]}>
               {cleanTranslation(item.translation)}
             </Text>
-          )}
-          
-          <View style={styles.controlsContainer}>
-            <TouchableOpacity
-  style={[styles.audioButton, isCurrentlyPlaying && styles.activeAudioButton]}
-  onPress={() => handleAudioPlay(currentSurahId, item.verse_number)}
-  accessible={true}
-  accessibilityLabel={isCurrentlyPlaying && audioStatus.isPlaying ? "Pause ayah recitation" : "Play ayah recitation"}
-  accessibilityHint={`${isCurrentlyPlaying && audioStatus.isPlaying ? "Stop" : "Start"} audio for verse ${item.verse_number}`}
-  accessibilityRole="button"
->
-              <Text style={styles.audioIcon}>
-                {isCurrentlyPlaying && audioStatus.isPlaying ? '⏸' : '▶'}
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-  style={[
-    styles.memorizeButton,
-    isMemorized && styles.memorizedButton
-  ]}
-  onPress={() => toggleAyahMemorization(
-    currentSurahId, 
-    item.verse_number, 
-    isMemorized
-  )}
-  accessible={true}
-  accessibilityLabel={isMemorized ? "Mark ayah as not memorized" : "Mark ayah as memorized"}
-  accessibilityHint={`${isMemorized ? "Remove" : "Add"} verse ${item.verse_number} from your memorized ayahs`}
-  accessibilityRole="button"
->
-              <Text style={[
-                styles.memorizeButtonText,
-                isMemorized && styles.memorizedButtonText
-              ]}>
-                {isMemorized ? 'Memorized ✓' : 'Mark as Memorized'}
-              </Text>
-            </TouchableOpacity>
           </View>
+        )}
+        
+        {/* Modern Controls */}
+        <View style={styles.modernControls}>
+          <TouchableOpacity
+            style={[styles.modernAudioButton, isCurrentlyPlaying && styles.activeAudioButton]}
+            onPress={() => handleAudioPlay(currentSurahId, item.verse_number)}
+            accessible={true}
+            accessibilityLabel={isCurrentlyPlaying && audioStatus.isPlaying ? "Pause ayah recitation" : "Play ayah recitation"}
+            accessibilityRole="button"
+          >
+            <Icon 
+              name={isCurrentlyPlaying && audioStatus.isPlaying ? 'pause' : 'play'} 
+              type="Ionicons" 
+              size={20} 
+              color="white" 
+            />
+          </TouchableOpacity>
+          
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <TouchableOpacity
+              style={[
+                styles.modernMemorizeButton,
+                isMemorized && styles.modernMemorizedButton
+              ]}
+              onPress={() => toggleAyahMemorization(
+                currentSurahId, 
+                item.verse_number, 
+                isMemorized
+              )}
+              accessible={true}
+              accessibilityLabel={isMemorized ? "Mark ayah as not memorized" : "Mark ayah as memorized"}
+              accessibilityRole="button"
+            >
+              <Icon 
+                name={isMemorized ? 'checkmark-circle' : 'radio-button-off'} 
+                type="Ionicons" 
+                size={20} 
+                color={isMemorized ? Theme.colors.success : Theme.colors.textMuted} 
+              />
+              <Text style={[
+                styles.modernMemorizeText,
+                isMemorized && styles.modernMemorizedText
+              ]}>
+                {isMemorized ? 'Memorized' : 'Mark as Memorized'}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
       </View>
     );
   };
 
   if (loading) {
-  return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#d4af37" />
-        <Text style={styles.loadingText}>Loading Surah...</Text>
-        <Text style={styles.loadingSubtext}>Preparing ayahs and audio</Text>
-      </SafeAreaView>
-    </SafeAreaProvider>
-  );
-}
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Theme.colors.secondary} />
+          <Text style={styles.loadingText}>Loading Surah...</Text>
+          <Text style={styles.loadingSubtext}>Preparing ayahs and audio</Text>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
       <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-          <View style={styles.header}>
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Text style={styles.backText}>← Back to Surahs</Text>
-            </TouchableOpacity>
-            
-            <Text style={styles.surahTitle}>
-              {surahData?.name || `Surah ${surahId}`}
-            </Text>
-            {surahData?.arabic_name && (
-              <Text style={styles.surahArabicName}>{surahData.arabic_name}</Text>
-            )}
-            
-            <View style={styles.headerControls}>
-              <View style={styles.progressStats}>
-                <Text style={styles.progressStatsText}>
-                  {getSurahProgress().memorized}/{getSurahProgress().total} memorized
-                </Text>
-              </View>
-              
-              <TouchableOpacity style={styles.replayButton} onPress={openReplayModal}>
-                <Text style={styles.replayButtonText}>🔄 Replay Segment</Text>
-              </TouchableOpacity>
+          
+          {/* Modern Header */}
+<View style={styles.modernHeader}>
+  <TouchableOpacity 
+    style={styles.backButtonModern}
+    onPress={() => navigation.goBack()}
+  >
+    <Icon name="chevron-back" type="Ionicons" size={24} color="white" />
+  </TouchableOpacity>
+  
+  <View style={styles.headerCenter}>
+    <Text style={styles.surahTitleModern}>
+      {surahData?.name || `Surah ${surahId}`}
+    </Text>
+    {surahData?.arabic_name && (
+      <Text style={styles.surahArabicModern}>{surahData.arabic_name}</Text>
+    )}
+  </View>
+
+  <View style={styles.headerSpacer} />
+</View>
+
+          {/* Progress Indicator */}
+          <View style={styles.progressIndicator}>
+            <View style={styles.progressBar}>
+              <View 
+                style={[
+                  styles.progressFill, 
+                  { width: `${(getSurahProgress().memorized / getSurahProgress().total) * 100}%` }
+                ]} 
+              />
             </View>
+            <Text style={styles.progressText}>
+              {getSurahProgress().memorized} of {getSurahProgress().total} memorized
+            </Text>
+          </View>
+          {/* Main Content */}
+          <FlatList
+            ref={flatListRef}
+            data={ayahs}
+            keyExtractor={(item, index) => `${surahId}-${item.verse_number || index}`}
+            renderItem={AyahItemModern}
+            ListHeaderComponent={BasmalaModern}
+            contentContainerStyle={styles.modernListContent}
+            showsVerticalScrollIndicator={false}
+            removeClippedSubviews={false}
+            maxToRenderPerBatch={5}
+            updateCellsBatchingPeriod={100}
+            initialNumToRender={8}
+            windowSize={10}
+            scrollEventThrottle={16}
+            ItemSeparatorComponent={() => <View style={styles.ayahSeparator} />}
+          />
+
+          {/* Floating Action Buttons */}
+          <View style={styles.floatingActions}>
+            <TouchableOpacity style={styles.fab} onPress={openReplayModal}>
+              <Icon name="repeat" type="Ionicons" size={24} color="white" />
+            </TouchableOpacity>
           </View>
 
-          <FlatList
-  ref={flatListRef}
-  data={ayahs}
-  keyExtractor={(item, index) => `${surahId}-${item.verse_number || index}`}
-  renderItem={AyahItem}
-  ListHeaderComponent={BasmalaComponent}
-  contentContainerStyle={[
-    styles.listContent,
-    { paddingBottom: isReplaying ? 100 : 30 }
-  ]}
-  showsVerticalScrollIndicator={false}
-  removeClippedSubviews={true}
-  maxToRenderPerBatch={5}
-  updateCellsBatchingPeriod={100}
-  initialNumToRender={5}
-  windowSize={8}
-  onScrollToIndexFailed={(info) => {
-    // Handle scroll failures gracefully
-    console.log('📱 Scroll to index failed, using fallback');
-    setTimeout(() => {
-      flatListRef.current?.scrollToOffset({
-        offset: info.averageItemLength * info.index,
-        animated: true,
-      });
-    }, 100);
-  }}
-/>
-
-          {/* Replay Segment Modal */}
-          <Modal
-            visible={showReplayModal}
-            transparent={true}
-            animationType="slide"
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.replayModal}>
-                <Text style={styles.modalTitle}>Replay Segment</Text>
+          {/* Replay Modal */}
+          <Modal visible={showReplayModal} transparent={true} animationType="slide">
+            <View style={styles.modernModalOverlay}>
+              <View style={styles.modernReplayModal}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modernModalTitle}>Replay Segment</Text>
+                  <TouchableOpacity onPress={() => setShowReplayModal(false)}>
+                    <Icon name="close" type="Ionicons" size={24} color={Theme.colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
                 
-                <View style={styles.inputRow}>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Start Ayah</Text>
+                <View style={styles.modernInputRow}>
+                  <View style={styles.modernInputGroup}>
+                    <Text style={styles.modernInputLabel}>Start</Text>
                     <TextInput
-                      style={styles.input}
+                      style={styles.modernInput}
                       value={replaySegment.startAyah}
                       onChangeText={(text) => setReplaySegment(prev => ({ ...prev, startAyah: text }))}
                       keyboardType="numeric"
@@ -806,10 +773,10 @@ const scrollToAyah = (ayahNumber) => {
                     />
                   </View>
                   
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>End Ayah</Text>
+                  <View style={styles.modernInputGroup}>
+                    <Text style={styles.modernInputLabel}>End</Text>
                     <TextInput
-                      style={styles.input}
+                      style={styles.modernInput}
                       value={replaySegment.endAyah}
                       onChangeText={(text) => setReplaySegment(prev => ({ ...prev, endAyah: text }))}
                       keyboardType="numeric"
@@ -817,10 +784,10 @@ const scrollToAyah = (ayahNumber) => {
                     />
                   </View>
                   
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Repeat</Text>
+                  <View style={styles.modernInputGroup}>
+                    <Text style={styles.modernInputLabel}>Times</Text>
                     <TextInput
-                      style={styles.input}
+                      style={styles.modernInput}
                       value={replaySegment.repetitions}
                       onChangeText={(text) => setReplaySegment(prev => ({ ...prev, repetitions: text }))}
                       keyboardType="numeric"
@@ -829,45 +796,29 @@ const scrollToAyah = (ayahNumber) => {
                   </View>
                 </View>
                 
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity 
-                    style={styles.cancelButton}
-                    onPress={() => setShowReplayModal(false)}
-                  >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={styles.startButton}
-                    onPress={startReplaySegment}
-                  >
-                    <Text style={styles.startButtonText}>Start Replay</Text>
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity style={styles.modernStartButton} onPress={startReplaySegment}>
+                  <Text style={styles.modernStartButtonText}>Start Replay</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </Modal>
 
           {/* Replay Progress Bottom Bar */}
           {isReplaying && (
-            <View style={styles.replayProgressBar}>
+            <View style={styles.modernReplayBar}>
               <View style={styles.replayInfo}>
-                <Text style={styles.replayProgressText}>
+                <Text style={styles.replayText}>
                   Playing {replayProgress.current}/{replayProgress.total} • 
                   Ayah {replayProgress.currentAyah}/{replayProgress.totalAyahs}
                 </Text>
-                <TouchableOpacity 
-                  style={styles.stopButton}
-                  onPress={stopReplaySegment}
-                >
-                  <Text style={styles.stopButtonText}>■ Stop</Text>
+                <TouchableOpacity style={styles.modernStopButton} onPress={stopReplaySegment}>
+                  <Icon name="stop" type="Ionicons" size={16} color="white" />
                 </TouchableOpacity>
               </View>
-              
-              <View style={styles.progressBarContainer}>
+              <View style={styles.modernProgressBar}>
                 <View 
                   style={[
-                    styles.progressBar,
+                    styles.modernProgressFill,
                     { 
                       width: `${((replayProgress.current - 1) * replayProgress.totalAyahs + replayProgress.currentAyah) / (replayProgress.total * replayProgress.totalAyahs) * 100}%`
                     }
@@ -889,6 +840,10 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  headerSpacer: {
+  width: 44,
+  height: 44,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -896,309 +851,384 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.primary,
   },
   loadingText: {
-    color: 'white',
-    fontSize: 16,
-    marginTop: 10,
+    color: Theme.colors.textOnDark,
+    fontSize: 18,
+    marginTop: 16,
+    fontWeight: '600',
   },
-  header: {
+  loadingSubtext: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+
+  // Modern Header
+  modernHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
+    paddingVertical: 16,
     paddingTop: 20,
-    paddingBottom: 30,
+  },
+  backButtonModern: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 20,
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  backText: {
-    color: 'white',
-    fontSize: 16,
+  surahTitleModern: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Theme.colors.textOnDark,
+    letterSpacing: 0.5,
   },
-  surahTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: 'white',
-    textAlign: 'center',
+  surahArabicModern: {
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 4,
+    fontFamily: Theme.typography.fontFamily.arabic,
+  },
+  jumpToAyahFAB: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Theme.colors.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Theme.shadows.lg,
+  },
+
+  // Progress Indicator
+  progressIndicator: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 2,
+    overflow: 'hidden',
     marginBottom: 8,
   },
-  surahArabicName: {
-    fontSize: 22,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-    marginBottom: 15,
+  progressFill: {
+    height: '100%',
+    backgroundColor: Theme.colors.secondary,
+    borderRadius: 2,
   },
-  headerControls: {
+  progressText: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+
+  // Jump to Ayah
+  modernJumpContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  jumpInputRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    padding: 4,
+    alignItems: 'center',
+  },
+  modernJumpInput: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
+    marginRight: 8,
+  },
+  jumpButton: {
+    backgroundColor: Theme.colors.secondary,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  jumpButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // List Content
+  modernListContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+  },
+
+  // Basmala Modern
+  modernBasmalaContainer: {
+    marginBottom: 24,
+  },
+  basmalaCard: {
+    backgroundColor: Theme.colors.cardBackground,
+    borderRadius: 20,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    ...Theme.shadows.md,
+    borderLeftWidth: 4,
+    borderLeftColor: Theme.colors.secondary,
+  },
+  modernBasmalaText: {
+  fontFamily: Theme.typography.fontFamily.arabic,
+  fontSize: 28,
+  color: Theme.colors.primary,
+  textAlign: 'center',
+  lineHeight: 50,     
+  letterSpacing: 2,  
+  },
+
+  // Ayah Container Modern
+  modernAyahContainer: {
+    position: 'relative',
+  },
+  ayahSeparator: {
+    height: 20,
+  },
+
+  // Ayah Number Badge
+  ayahNumberBadge: {
+    alignSelf: 'center',
+    backgroundColor: Theme.colors.secondary,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 16,
+    ...Theme.shadows.sm,
+  },
+  ayahNumberText: {
+    color: Theme.colors.textOnPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  // Arabic Text Card
+  arabicTextCard: {
+  backgroundColor: Theme.colors.cardBackground,
+  borderRadius: 24,
+  paddingVertical: 40,   
+  paddingHorizontal: 28,      
+  marginBottom: 16,
+  ...Theme.shadows.lg,
+  },
+  memorizedCard: {
+    backgroundColor: Theme.colors.successLight,
+    borderLeftWidth: 6,
+    borderLeftColor: Theme.colors.success,
+  },
+  modernArabicText: {
+  fontFamily: Theme.typography.fontFamily.arabic,
+  lineHeight: 60,              // Increased from 50
+  textAlign: 'right',
+  color: Theme.colors.primary,
+  letterSpacing: 1,            // Increased from 0.5
+  writingDirection: 'rtl',     // Add this
+  textAlignVertical: 'center', // Add this
+  },
+
+  // Translation Card
+  translationCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    marginBottom: 20,
+    ...Theme.shadows.sm,
+  },
+  modernTranslationText: {
+    lineHeight: 28,
+    color: Theme.colors.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'left',
+    fontWeight: '400',
+  },
+
+  // Modern Controls
+  modernControls: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '100%',
+    paddingHorizontal: 8,
+    marginBottom: 8,
   },
-  progressStats: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 15,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-  },
-  progressStatsText: {
-    fontSize: 14,
-    color: 'white',
-    fontWeight: '600',
-  },
-  replayButton: {
-    backgroundColor: Theme.colors.secondary,
-    borderRadius: 15,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-  },
-  replayButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  listContent: {
-    paddingHorizontal: 20,
-  },
-  basmalaContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 25,
-    marginBottom: 20,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#d4af37',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-  basmalaText: {
-    fontFamily: 'KFGQPC_Uthmanic_Script_HAFS_Regular',
-    fontSize: 22,
-    color: Theme.colors.primary,
-    textAlign: 'center',
-    lineHeight: 40,
-    paddingVertical: 10,
-  },
-  ayahContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    marginBottom: 20,
-    marginTop: 15,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    position: 'relative',
-  },
-  memorizedAyahContainer: {
-    backgroundColor: '#f0f8f0',
-    borderWidth: 2,
-    borderColor: '#009c4a',
-  },
-  ayahContent: {
-    padding: 20,
-    paddingTop: 25,
-  },
-  ayahNumber: {
-    position: 'absolute',
-    top: -15,
-    right: 20,
-    backgroundColor: Theme.colors.secondary,
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 18,
-    minWidth: 36,
-    minHeight: 36,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  arabicText: {
-    fontFamily: 'UthmanicFont',
-    lineHeight: 45,
-    textAlign: 'right',
-    color: '#2c3e50',
-    marginBottom: 25,
-    marginTop: 15,
-    paddingTop: 15,
-    paddingBottom: 15,
-    paddingHorizontal: 10,
-    textAlignVertical: 'center',
-  },
-  translationText: {
-    lineHeight: 26,
-    color: '#5a6c7d',
-    marginBottom: 20,
-    fontStyle: 'italic',
-  },
-  controlsContainer: {
-    flexDirection: 'row',
+  modernAudioButton: {
+    backgroundColor: Theme.colors.primary,
+    borderRadius: 28,
+    width: 56,
+    height: 56,
     justifyContent: 'center',
-    gap: 15,
-  },
-  audioButton: {
-    backgroundColor: Theme.colors.primaryLight,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
-    minWidth: 60,
     alignItems: 'center',
+    ...Theme.shadows.md,
   },
   activeAudioButton: {
     backgroundColor: Theme.colors.success,
+    transform: [{ scale: 1.05 }],
   },
-  audioIcon: {
-    fontSize: 18,
-    color: 'white',
-  },
-  memorizeButton: {
-    backgroundColor: Theme.colors.secondary,
+  modernMemorizeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 28,
+    paddingVertical: 16,
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
-    flex: 1,
-    maxWidth: 200,
+    marginLeft: 16,
+    ...Theme.shadows.sm,
   },
-  memorizedButton: {
-    backgroundColor: Theme.colors.success,
+  modernMemorizedButton: {
+    backgroundColor: Theme.colors.successLight,
+    borderWidth: 2,
+    borderColor: Theme.colors.success,
   },
-  memorizeButtonText: {
-    color: 'white',
+  modernMemorizeText: {
     fontSize: 16,
+    color: Theme.colors.textMuted,
     fontWeight: '600',
-    textAlign: 'center',
+    marginLeft: 12,
   },
-  memorizedButtonText: {
-    color: 'white',
+  modernMemorizedText: {
+    color: Theme.colors.success,
   },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+
+  // Floating Actions
+  floatingActions: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+  },
+  fab: {
+    backgroundColor: Theme.colors.secondary,
+    borderRadius: 28,
+    width: 56,
+    height: 56,
     justifyContent: 'center',
     alignItems: 'center',
+    ...Theme.shadows.xl,
   },
-  replayModal: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 25,
-    width: '90%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Theme.colors.primary,
-    textAlign: 'center',
-    marginBottom: 25,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    gap: 15,
-    marginBottom: 25,
-  },
-  inputGroup: {
+
+  // Modern Modal
+  modernModalOverlay: {
     flex: 1,
+    backgroundColor: Theme.colors.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  inputLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-    fontWeight: '500',
+  modernReplayModal: {
+    backgroundColor: Theme.colors.white,
+    borderRadius: 24,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    ...Theme.shadows.xl,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    textAlign: 'center',
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
   },
-  modalButtons: {
+  modernModalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Theme.colors.primary,
+  },
+  modernInputRow: {
     flexDirection: 'row',
     gap: 12,
+    marginBottom: 24,
   },
-  cancelButton: {
+  modernInputGroup: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 10,
-    paddingVertical: 12,
+    alignItems: 'center',
   },
-  cancelButtonText: {
-    color: '#666',
-    fontSize: 16,
+  modernInputLabel: {
+    fontSize: 14,
+    color: Theme.colors.textMuted,
+    marginBottom: 8,
     fontWeight: '600',
-    textAlign: 'center',
   },
-  startButton: {
-    flex: 1,
+  modernInput: {
+    borderWidth: 2,
+    borderColor: Theme.colors.gray200,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 18,
+    textAlign: 'center',
+    fontWeight: '600',
+    color: Theme.colors.primary,
+    backgroundColor: Theme.colors.gray100,
+    minWidth: 60,
+  },
+  modernStartButton: {
     backgroundColor: Theme.colors.secondary,
-    borderRadius: 10,
-    paddingVertical: 12,
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    ...Theme.shadows.md,
   },
-  startButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
+  modernStartButtonText: {
+    color: Theme.colors.textOnPrimary,
+    fontSize: 18,
+    fontWeight: '700',
   },
-  // Replay Progress Bar
-  replayProgressBar: {
+
+  // Modern Replay Bar
+  modernReplayBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingVertical: 16,
+    paddingBottom: 32,
   },
   replayInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  replayProgressText: {
-    color: 'white',
+  replayText: {
+    color: Theme.colors.textOnDark,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  stopButton: {
+  modernStopButton: {
     backgroundColor: Theme.colors.error,
-    paddingHorizontal: 15,
+    borderRadius: 20,
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  stopButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  progressBarContainer: {
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 2,
+  modernProgressBar: {
+    height: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 3,
     overflow: 'hidden',
   },
-  progressBar: {
+  modernProgressFill: {
     height: '100%',
     backgroundColor: Theme.colors.secondary,
-    borderRadius: 2,
-  },
-  loadingSubtext: {
-  color: 'rgba(255, 255, 255, 0.7)',
-  fontSize: 14,
-  marginTop: 8,
-  textAlign: 'center',
+    borderRadius: 3,
   },
 });
