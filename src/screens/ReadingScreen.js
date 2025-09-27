@@ -216,8 +216,8 @@ export default function ReadingScreen() {
       <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.welcomeContainer}>
-            <Text style={styles.welcomeTitle}>Quran Reading</Text>
-            <Text style={styles.welcomeSubtitle}>Classic Mushaf-style reading experience</Text>
+            <Text style={styles.welcomeTitle}>Quran</Text>
+            <Text style={styles.welcomeSubtitle}>Classic Mushaf-style reading</Text>
             
             <TouchableOpacity 
               style={[styles.startButton, styles.disabledButton]} 
