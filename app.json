@@ -7,7 +7,14 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "description": "Your companion for memorizing the Holy Quran with structured learning and revision methods.",
-    "keywords": ["quran", "islam", "memorization", "hifdh", "islamic", "muslim"],
+    "keywords": [
+      "quran",
+      "islam",
+      "memorization",
+      "hifdh",
+      "islamic",
+      "muslim"
+    ],
     "privacy": "public",
     "privacyPolicy": "https://learning2codenowq.github.io/quran-hifdh-privacy/",
     "splash": {
@@ -25,7 +32,8 @@
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
+        },
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -63,8 +71,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "fea4e8e0-f651-4ddf-b910-50034f434b07"
       }
-    }
+    },
+    "owner": "shayanqureshi"
   }
 }

@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { StorageService } from './StorageService';
+import Constants from 'expo-constants';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -14,6 +15,14 @@ Notifications.setNotificationHandler({
 export class NotificationService {
   static async requestPermissions() {
     try {
+      // Check if we're in Expo Go
+      const isExpoGo = Constants.executionEnvironment === 'storeClient';
+      
+      if (isExpoGo) {
+        console.warn('Notifications have limitations in Expo Go. For full functionality, use a development build.');
+        // Still attempt to set up local notifications which work in Expo Go
+      }
+
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('default', {
           name: 'Quran Reminders',
@@ -24,6 +33,11 @@ export class NotificationService {
       }
 
       const { status } = await Notifications.requestPermissionsAsync();
+      
+      if (status !== 'granted' && !isExpoGo) {
+        console.warn('Notification permission not granted');
+      }
+      
       return status === 'granted';
     } catch (error) {
       console.error('Error requesting notification permissions:', error);
@@ -33,6 +47,13 @@ export class NotificationService {
 
   static async scheduleNotifications(morningTime, eveningTime, dailyGoal) {
     try {
+      // Check if we're in Expo Go
+      const isExpoGo = Constants.executionEnvironment === 'storeClient';
+      
+      if (isExpoGo) {
+        console.log('Scheduling local notifications (Expo Go has limitations for push notifications)');
+      }
+
       // Cancel existing notifications
       await Notifications.cancelAllScheduledNotificationsAsync();
 
@@ -64,9 +85,11 @@ export class NotificationService {
         },
       });
 
+      console.log('Notifications scheduled successfully');
       return true;
     } catch (error) {
       console.error('Error scheduling notifications:', error);
+      // Don't throw error, just log it since notifications are not critical
       return false;
     }
   }

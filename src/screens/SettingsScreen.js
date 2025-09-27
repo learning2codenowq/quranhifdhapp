@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../services/StorageService';
@@ -8,6 +8,7 @@ import { TestingUtils } from '../utils/TestingUtils';
 import { Logger } from '../utils/Logger'
 import { Theme } from '../styles/theme';
 import DateTimePicker from '@react-native-community/datetimepicker';
+
 
 export default function SettingsScreen({ navigation }) {
   const [settings, setSettings] = useState({
@@ -23,7 +24,9 @@ export default function SettingsScreen({ navigation }) {
   dailyGoal: 10,
   userName: 'Student',
 });
-
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [tempUserName, setTempUserName] = useState('');
+  const [showDailyTargetModal, setShowDailyTargetModal] = useState(false);
   const [fontPreviewModal, setFontPreviewModal] = useState(false);
   const [previewFontSize, setPreviewFontSize] = useState('Medium');
   const [notificationSettings, setNotificationSettings] = useState({
@@ -39,6 +42,11 @@ const [eveningTimeDate, setEveningTimeDate] = useState(new Date(2024, 0, 1, 18, 
   useEffect(() => {
     loadSettings();
   }, []);
+  useEffect(() => {
+  if (showNameModal) {
+    setTempUserName(settings.userName);
+  }
+}, [showNameModal, settings.userName]);
 
   const loadSettings = async () => {
   try {
@@ -84,15 +92,15 @@ const [eveningTimeDate, setEveningTimeDate] = useState(new Date(2024, 0, 1, 18, 
     setNotificationSettings(newSettings);
     
     await NotificationService.saveNotificationSettings(
-      newSettings.morningTime,
-      newSettings.eveningTime,
+      key === 'morningTime' ? value : newSettings.morningTime,
+      key === 'eveningTime' ? value : newSettings.eveningTime,
       newSettings.enabled
     );
     
     if (newSettings.enabled) {
       await NotificationService.scheduleNotifications(
-        newSettings.morningTime,
-        newSettings.eveningTime,
+        key === 'morningTime' ? value : newSettings.morningTime,
+        key === 'eveningTime' ? value : newSettings.eveningTime,
         settings.dailyGoal
       );
     }
@@ -113,20 +121,11 @@ const handleTimeChange = (event, selectedTime, isEvening = false) => {
     
     if (isEvening) {
       setEveningTimeDate(selectedTime);
-      setNotificationSettings(prev => ({
-        ...prev,
-        eveningTime: timeObj
-      }));
+      updateNotificationSetting('eveningTime', timeObj);
     } else {
       setMorningTimeDate(selectedTime);
-      setNotificationSettings(prev => ({
-        ...prev,
-        morningTime: timeObj
-      }));
+      updateNotificationSetting('morningTime', timeObj);
     }
-    
-    // Save and reschedule notifications
-    updateNotificationSetting('enabled', notificationSettings.enabled);
   }
 };
 
@@ -258,51 +257,20 @@ const formatTime = (timeObj) => {
     items: [
       {
         type: 'button',
-        title: 'Your Name',
-        subtitle: `Current: ${settings.userName}`,
-        icon: { name: 'person-outline', type: 'Ionicons' },
-        onPress: () => {
-          Alert.prompt(
-            'Change Name',
-            'Enter your new name:',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Save',
-                onPress: (newName) => {
-                  if (newName && newName.trim().length > 0) {
-                    updateSetting('userName', newName.trim());
-                    Alert.alert('Success', 'Your name has been updated!');
-                  } else {
-                    Alert.alert('Invalid Name', 'Please enter a valid name.');
-                  }
-                }
-              }
-            ],
-            'plain-text',
-            settings.userName
-          );
-        }
+  title: 'Your Name',
+  subtitle: `Current: ${settings.userName}`,
+  icon: { name: 'person-outline', type: 'Ionicons' },
+  onPress: () => {
+    setShowNameModal(true);
+  }
       },
       {
-        type: 'button',
-        title: 'Daily Target',
-        subtitle: `${settings.dailyGoal} ayahs per day`,
-        icon: { name: 'target', type: 'Ionicons' },
-        onPress: () => {
-          Alert.alert(
-            'Daily Target',
-            'Choose your daily memorization goal:',
-            [
-              { text: '5 ayahs', onPress: () => updateSetting('dailyGoal', 5) },
-              { text: '10 ayahs', onPress: () => updateSetting('dailyGoal', 10) },
-              { text: '15 ayahs', onPress: () => updateSetting('dailyGoal', 15) },
-              { text: '20 ayahs', onPress: () => updateSetting('dailyGoal', 20) },
-              { text: 'Cancel', style: 'cancel' }
-            ]
-          );
-        }
-      }
+  type: 'button',
+  title: 'Daily Target',
+  subtitle: `${settings.dailyGoal} ayahs per day`,
+  icon: { name: 'target', type: 'Ionicons' },
+  onPress: () => setShowDailyTargetModal(true)
+}
     ]
   },
   {
@@ -670,6 +638,97 @@ const formatTime = (timeObj) => {
     </View>
   </Modal>
 )}
+{/* Name Change Modal */}
+<Modal visible={showNameModal} transparent={true} animationType="slide">
+  <View style={styles.modalOverlay}>
+    <View style={styles.nameModal}>
+      <Text style={styles.nameModalTitle}>Change Your Name</Text>
+      <TextInput
+        style={styles.nameInput}
+        placeholder="Enter your name"
+        value={tempUserName}
+        onChangeText={setTempUserName}
+        autoFocus={true}
+        onSubmitEditing={() => {
+          if (tempUserName && tempUserName.trim().length > 0) {
+            updateSetting('userName', tempUserName.trim());
+            setShowNameModal(false);
+            setTempUserName('');
+            Alert.alert('Success', 'Your name has been updated!');
+          }
+        }}
+      />
+      <View style={styles.nameModalButtons}>
+        <TouchableOpacity 
+          style={styles.nameModalCancelButton}
+          onPress={() => {
+            setShowNameModal(false);
+            setTempUserName('');
+          }}
+        >
+          <Text style={styles.nameModalCancelText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.nameModalSaveButton}
+          onPress={() => {
+            if (tempUserName && tempUserName.trim().length > 0) {
+              updateSetting('userName', tempUserName.trim());
+              setShowNameModal(false);
+              setTempUserName('');
+              Alert.alert('Success', 'Your name has been updated!');
+            } else {
+              Alert.alert('Invalid Name', 'Please enter a valid name.');
+            }
+          }}
+        >
+          <Text style={styles.nameModalSaveText}>Save</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+{/* Daily Target Modal */}
+<Modal visible={showDailyTargetModal} transparent={true} animationType="slide">
+  <View style={styles.modalOverlay}>
+    <View style={styles.dailyTargetModal}>
+      <Text style={styles.dailyTargetModalTitle}>Daily Target</Text>
+      <Text style={styles.dailyTargetModalSubtitle}>Choose your daily memorization goal:</Text>
+      
+      <View style={styles.targetOptions}>
+        {[5, 10, 15, 20].map((target) => (
+          <TouchableOpacity
+            key={target}
+            style={[
+              styles.targetOption,
+              settings.dailyGoal === target && styles.selectedTargetOption
+            ]}
+            onPress={() => {
+              updateSetting('dailyGoal', target);
+              setShowDailyTargetModal(false);
+            }}
+          >
+            <Text style={[
+              styles.targetOptionText,
+              settings.dailyGoal === target && styles.selectedTargetOptionText
+            ]}>
+              {target} ayahs
+            </Text>
+            {target === 10 && (
+              <Text style={styles.recommendedText}>Recommended</Text>
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+      
+      <TouchableOpacity 
+        style={styles.dailyTargetModalCancelButton}
+        onPress={() => setShowDailyTargetModal(false)}
+      >
+        <Text style={styles.dailyTargetModalCancelText}>Cancel</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
         </SafeAreaView>
       </LinearGradient>
     </SafeAreaProvider>
@@ -884,6 +943,125 @@ settingsTimePickerCancelText: {
 },
 settingsTimePickerConfirmText: {
   color: 'white',
+  fontSize: 16,
+  fontWeight: '600',
+},
+nameModal: {
+  backgroundColor: 'white',
+  borderRadius: 20,
+  padding: 25,
+  width: '90%',
+  maxWidth: 350,
+  alignItems: 'center',
+},
+nameModalTitle: {
+  fontSize: 20,
+  fontWeight: 'bold',
+  color: Theme.colors.primary,
+  marginBottom: 20,
+  textAlign: 'center',
+},
+nameInput: {
+  borderWidth: 2,
+  borderColor: Theme.colors.gray200,
+  borderRadius: 12,
+  paddingHorizontal: 16,
+  paddingVertical: 12,
+  fontSize: 16,
+  width: '100%',
+  marginBottom: 20,
+  color: Theme.colors.primary,
+},
+nameModalButtons: {
+  flexDirection: 'row',
+  gap: 12,
+  width: '100%',
+},
+nameModalCancelButton: {
+  flex: 1,
+  backgroundColor: '#f5f5f5',
+  borderRadius: 12,
+  paddingVertical: 12,
+  alignItems: 'center',
+},
+nameModalSaveButton: {
+  flex: 1,
+  backgroundColor: Theme.colors.secondary,
+  borderRadius: 12,
+  paddingVertical: 12,
+  alignItems: 'center',
+},
+nameModalCancelText: {
+  color: '#666',
+  fontSize: 16,
+  fontWeight: '600',
+},
+nameModalSaveText: {
+  color: 'white',
+  fontSize: 16,
+  fontWeight: '600',
+},
+dailyTargetModal: {
+  backgroundColor: 'white',
+  borderRadius: 20,
+  padding: 25,
+  width: '90%',
+  maxWidth: 350,
+  alignItems: 'center',
+},
+dailyTargetModalTitle: {
+  fontSize: 20,
+  fontWeight: 'bold',
+  color: Theme.colors.primary,
+  marginBottom: 10,
+  textAlign: 'center',
+},
+dailyTargetModalSubtitle: {
+  fontSize: 14,
+  color: '#666',
+  marginBottom: 20,
+  textAlign: 'center',
+},
+targetOptions: {
+  width: '100%',
+  marginBottom: 20,
+},
+targetOption: {
+  borderWidth: 2,
+  borderColor: Theme.colors.gray200,
+  borderRadius: 12,
+  paddingVertical: 15,
+  paddingHorizontal: 20,
+  marginBottom: 10,
+  alignItems: 'center',
+},
+selectedTargetOption: {
+  borderColor: Theme.colors.secondary,
+  backgroundColor: Theme.colors.secondary + '20',
+},
+targetOptionText: {
+  fontSize: 16,
+  color: Theme.colors.primary,
+  fontWeight: '600',
+},
+selectedTargetOptionText: {
+  color: Theme.colors.secondary,
+  fontWeight: 'bold',
+},
+recommendedText: {
+  fontSize: 12,
+  color: Theme.colors.secondary,
+  fontWeight: 'bold',
+  marginTop: 4,
+},
+dailyTargetModalCancelButton: {
+  backgroundColor: '#f5f5f5',
+  borderRadius: 12,
+  paddingVertical: 12,
+  paddingHorizontal: 30,
+},
+dailyTargetModalCancelText: {
+  color: '#666',
   fontSize: 16,
   fontWeight: '600',
 },

@@ -293,58 +293,58 @@ export default function AnalyticsScreen({ navigation }) {
               </View>
               
               <View style={styles.projectionItem}>
-                <View style={styles.projectionLabelContainer}>
-                  <Icon 
-                    name="flash" 
-                    type="Ionicons" 
-                    size={16} 
-                    color={Theme.colors.success} 
-                  />
-                  <Text style={styles.projectionLabel}>Optimistic</Text>
-                </View>
-                <Text style={styles.projectionDate}>
-                  {projections.optimistic.date.toLocaleDateString()}
-                </Text>
-                <Text style={styles.projectionDays}>
-                  {projections.optimistic.days} days
-                </Text>
-              </View>
+  <View style={styles.projectionLabelContainer}>
+    <Icon 
+      name="flash" 
+      type="Ionicons" 
+      size={16} 
+      color={Theme.colors.success} 
+    />
+    <Text style={styles.projectionLabel}>Optimistic</Text>
+  </View>
+  <Text style={styles.projectionDate}>
+    {projections.optimistic.date.toLocaleDateString()}
+  </Text>
+  <Text style={styles.projectionDays}>
+    {projections.optimistic.days} days
+  </Text>
+</View>
 
-              <View style={styles.projectionItem}>
-                <View style={styles.projectionLabelContainer}>
-                  <Icon 
-                    name="checkmark-circle" 
-                    type="Ionicons" 
-                    size={16} 
-                    color={Theme.colors.info} 
-                  />
-                  <Text style={styles.projectionLabel}>Realistic</Text>
-                </View>
-                <Text style={styles.projectionDate}>
-                  {projections.realistic.date.toLocaleDateString()}
-                </Text>
-                <Text style={styles.projectionDays}>
-                  {projections.realistic.days} days
-                </Text>
-              </View>
+<View style={styles.projectionItem}>
+  <View style={styles.projectionLabelContainer}>
+    <Icon 
+      name="checkmark-circle" 
+      type="Ionicons" 
+      size={16} 
+      color={Theme.colors.info} 
+    />
+    <Text style={styles.projectionLabel}>Realistic</Text>
+  </View>
+  <Text style={styles.projectionDate}>
+    {projections.realistic.date.toLocaleDateString()}
+  </Text>
+  <Text style={styles.projectionDays}>
+    {projections.realistic.days} days
+  </Text>
+</View>
 
-              <View style={styles.projectionItem}>
-                <View style={styles.projectionLabelContainer}>
-                  <Icon 
-                    name="time" 
-                    type="Ionicons" 
-                    size={16} 
-                    color={Theme.colors.warning} 
-                  />
-                  <Text style={styles.projectionLabel}>Conservative</Text>
-                </View>
-                <Text style={styles.projectionDate}>
-                  {projections.conservative.date.toLocaleDateString()}
-                </Text>
-                <Text style={styles.projectionDays}>
-                  {projections.conservative.days} days
-                </Text>
-              </View>
+<View style={styles.projectionItem}>
+  <View style={styles.projectionLabelContainer}>
+    <Icon 
+      name="time" 
+      type="Ionicons" 
+      size={16} 
+      color={Theme.colors.warning} 
+    />
+    <Text style={styles.projectionLabel}>Conservative</Text>
+  </View>
+  <Text style={styles.projectionDate}>
+    {projections.conservative.date.toLocaleDateString()}
+  </Text>
+  <Text style={styles.projectionDays}>
+    {projections.conservative.days} days
+  </Text>
+</View>
             </AnimatedCard>
 
             {surahProgress.length > 0 && (
@@ -593,38 +593,33 @@ const styles = StyleSheet.create({
     marginLeft: Theme.spacing.sm,
   },
   projectionItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: Theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Theme.colors.gray200,
-  },
-  projectionLabelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  projectionLabel: {
-    fontSize: Theme.typography.fontSize.sm,
-    color: Theme.colors.textSecondary,
-    marginLeft: Theme.spacing.sm,
-    fontWeight: Theme.typography.fontWeight.medium,
-  },
-  projectionDate: {
-    fontSize: Theme.typography.fontSize.sm,
-    color: Theme.colors.primary,
-    fontWeight: Theme.typography.fontWeight.semibold,
-    flex: 1,
-    textAlign: 'center',
-  },
-  projectionDays: {
-    fontSize: Theme.typography.fontSize.sm,
-    color: Theme.colors.secondary,
-    fontWeight: Theme.typography.fontWeight.bold,
-    flex: 1,
-    textAlign: 'right',
-  },
+  flexDirection: 'column',
+  paddingVertical: Theme.spacing.md,
+  borderBottomWidth: 1,
+  borderBottomColor: Theme.colors.gray200,
+},
+projectionLabelContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: Theme.spacing.xs,
+},
+projectionLabel: {
+  fontSize: Theme.typography.fontSize.sm,
+  color: Theme.colors.textSecondary,
+  marginLeft: Theme.spacing.sm,
+  fontWeight: Theme.typography.fontWeight.medium,
+},
+projectionDate: {
+  fontSize: Theme.typography.fontSize.base,
+  color: Theme.colors.primary,
+  fontWeight: Theme.typography.fontWeight.semibold,
+  marginBottom: Theme.spacing.xs,
+},
+projectionDays: {
+  fontSize: Theme.typography.fontSize.sm,
+  color: Theme.colors.secondary,
+  fontWeight: Theme.typography.fontWeight.bold,
+},
   surahCard: {
     padding: Theme.spacing.xl,
   },

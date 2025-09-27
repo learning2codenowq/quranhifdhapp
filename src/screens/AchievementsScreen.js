@@ -10,7 +10,11 @@ import { Theme } from '../styles/theme';
 
 export default function AchievementsScreen({ navigation }) {
   const [earnedAchievements, setEarnedAchievements] = useState([]);
-  const [totalAchievements] = useState(AchievementSystem.achievements.length);
+  const totalAchievements = React.useMemo(() => {
+  const memorization = AchievementSystem.achievements.filter(a => a.type === 'memorization');
+  const streak = AchievementSystem.achievements.filter(a => a.type === 'streak');
+    return memorization.length + streak.length;
+   }, []);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -110,38 +114,31 @@ export default function AchievementsScreen({ navigation }) {
   };
 
   const categorizedAchievements = {
-    memorization: AchievementSystem.achievements.filter(a => a.type === 'memorization'),
-    streak: AchievementSystem.achievements.filter(a => a.type === 'streak'),
-    special: AchievementSystem.achievements.filter(a => 
-      ['surah_completion', 'specific_surah', 'juz_completion', 'special'].includes(a.type)
-    )
-  };
+  memorization: AchievementSystem.achievements.filter(a => a.type === 'memorization'),
+  streak: AchievementSystem.achievements.filter(a => a.type === 'streak')
+};
 
   const getCategoryIcon = (category) => {
-    switch (category) {
-      case 'memorization':
-        return { name: 'library', type: 'Ionicons' };
-      case 'streak':
-        return { name: 'flame', type: 'Ionicons' };
-      case 'special':
-        return { name: 'star', type: 'Ionicons' };
-      default:
-        return { name: 'trophy', type: 'Ionicons' };
-    }
-  };
+  switch (category) {
+    case 'memorization':
+      return { name: 'library', type: 'Ionicons' };
+    case 'streak':
+      return { name: 'book', type: 'Ionicons' };
+    default:
+      return { name: 'trophy', type: 'Ionicons' };
+  }
+};
 
   const getCategoryTitle = (category) => {
-    switch (category) {
-      case 'memorization':
-        return 'Memorization Milestones';
-      case 'streak':
-        return 'Consistency Streaks';
-      case 'special':
-        return 'Special Recognition';
-      default:
-        return 'Achievements';
-    }
-  };
+  switch (category) {
+    case 'memorization':
+      return 'Memorization Milestones';
+    case 'streak':
+      return 'Consistency Streaks';
+    default:
+      return 'Achievements';
+  }
+};
 
   if (loading) {
     return (
