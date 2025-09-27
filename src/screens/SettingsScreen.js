@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch, Mo
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../services/StorageService';
+import { NotificationService } from '../services/NotificationService';
 import { TestingUtils } from '../utils/TestingUtils';
 import { Logger } from '../utils/Logger'
 import { Theme } from '../styles/theme';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function SettingsScreen({ navigation }) {
   const [settings, setSettings] = useState({
@@ -24,29 +26,44 @@ export default function SettingsScreen({ navigation }) {
 
   const [fontPreviewModal, setFontPreviewModal] = useState(false);
   const [previewFontSize, setPreviewFontSize] = useState('Medium');
+  const [notificationSettings, setNotificationSettings] = useState({
+  enabled: false,
+  morningTime: { hour: 6, minute: 0 },
+  eveningTime: { hour: 18, minute: 0 }
+});
+const [showMorningTimePicker, setShowMorningTimePicker] = useState(false);
+const [showEveningTimePicker, setShowEveningTimePicker] = useState(false);
+const [morningTimeDate, setMorningTimeDate] = useState(new Date(2024, 0, 1, 6, 0));
+const [eveningTimeDate, setEveningTimeDate] = useState(new Date(2024, 0, 1, 18, 0));
 
   useEffect(() => {
     loadSettings();
   }, []);
 
   const loadSettings = async () => {
-    try {
-      const state = await StorageService.getState();
-      if (state && state.settings) {
-        setSettings(prev => ({
-  ...prev,
-  dailyGoal: state.settings.dailyGoal || 10,
-  userName: state.settings.userName || 'Student',
-  autoPlayNext: state.settings.autoPlayNext || false,
-  showTranslations: state.settings.showTranslations !== false,
-  arabicFontSize: state.settings.arabicFontSize || 'Medium',
-  translationFontSize: state.settings.translationFontSize || 'Medium',
-}));
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error);
+  try {
+    const state = await StorageService.getState();
+    if (state && state.settings) {
+      setSettings(prev => ({
+        ...prev,
+        dailyGoal: state.settings.dailyGoal || 10,
+        userName: state.settings.userName || 'Student',
+        autoPlayNext: state.settings.autoPlayNext || false,
+        showTranslations: state.settings.showTranslations !== false,
+        arabicFontSize: state.settings.arabicFontSize || 'Medium',
+        translationFontSize: state.settings.translationFontSize || 'Medium',
+      }));
     }
-  };
+    
+    // Load notification settings
+    const notifSettings = await NotificationService.getNotificationSettings();
+    setNotificationSettings(notifSettings);
+    setMorningTimeDate(new Date(2024, 0, 1, notifSettings.morningTime.hour, notifSettings.morningTime.minute));
+    setEveningTimeDate(new Date(2024, 0, 1, notifSettings.eveningTime.hour, notifSettings.eveningTime.minute));
+  } catch (error) {
+    console.error('Error loading settings:', error);
+  }
+};
 
   const updateSetting = async (key, value) => {
     try {
@@ -61,6 +78,66 @@ export default function SettingsScreen({ navigation }) {
       console.error('Error updating setting:', error);
     }
   };
+  const updateNotificationSetting = async (key, value) => {
+  try {
+    const newSettings = { ...notificationSettings, [key]: value };
+    setNotificationSettings(newSettings);
+    
+    await NotificationService.saveNotificationSettings(
+      newSettings.morningTime,
+      newSettings.eveningTime,
+      newSettings.enabled
+    );
+    
+    if (newSettings.enabled) {
+      await NotificationService.scheduleNotifications(
+        newSettings.morningTime,
+        newSettings.eveningTime,
+        settings.dailyGoal
+      );
+    }
+  } catch (error) {
+    console.error('Error updating notification setting:', error);
+  }
+};
+
+const handleTimeChange = (event, selectedTime, isEvening = false) => {
+  setShowMorningTimePicker(false);
+  setShowEveningTimePicker(false);
+  
+  if (selectedTime) {
+    const timeObj = {
+      hour: selectedTime.getHours(),
+      minute: selectedTime.getMinutes()
+    };
+    
+    if (isEvening) {
+      setEveningTimeDate(selectedTime);
+      setNotificationSettings(prev => ({
+        ...prev,
+        eveningTime: timeObj
+      }));
+    } else {
+      setMorningTimeDate(selectedTime);
+      setNotificationSettings(prev => ({
+        ...prev,
+        morningTime: timeObj
+      }));
+    }
+    
+    // Save and reschedule notifications
+    updateNotificationSetting('enabled', notificationSettings.enabled);
+  }
+};
+
+const formatTime = (timeObj) => {
+  const date = new Date(2024, 0, 1, timeObj.hour, timeObj.minute);
+  return date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+};
 
   const getFontSize = (sizeCategory) => {
     const sizes = {
@@ -180,33 +257,33 @@ export default function SettingsScreen({ navigation }) {
     icon: { name: 'person', type: 'Ionicons' },
     items: [
       {
-  type: 'button',
-  title: 'Your Name',
-  subtitle: `Current: ${settings.userName}`,
-  icon: { name: 'person-outline', type: 'Ionicons' },
-  onPress: () => {
-    Alert.prompt(
-      'Change Name',
-      'Enter your new name:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Save',
-          onPress: (newName) => {
-            if (newName && newName.trim().length > 0) {
-              updateSetting('userName', newName.trim());
-              Alert.alert('Success', 'Your name has been updated!');
-            } else {
-              Alert.alert('Invalid Name', 'Please enter a valid name.');
-            }
-          }
+        type: 'button',
+        title: 'Your Name',
+        subtitle: `Current: ${settings.userName}`,
+        icon: { name: 'person-outline', type: 'Ionicons' },
+        onPress: () => {
+          Alert.prompt(
+            'Change Name',
+            'Enter your new name:',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Save',
+                onPress: (newName) => {
+                  if (newName && newName.trim().length > 0) {
+                    updateSetting('userName', newName.trim());
+                    Alert.alert('Success', 'Your name has been updated!');
+                  } else {
+                    Alert.alert('Invalid Name', 'Please enter a valid name.');
+                  }
+                }
+              }
+            ],
+            'plain-text',
+            settings.userName
+          );
         }
-      ],
-      'plain-text',
-      settings.userName
-    );
-  }
-},
+      },
       {
         type: 'button',
         title: 'Daily Target',
@@ -229,6 +306,33 @@ export default function SettingsScreen({ navigation }) {
     ]
   },
   {
+    title: '🔔 Notifications',
+    icon: { name: 'notifications', type: 'Ionicons' },
+    items: [
+      {
+        type: 'switch',
+        title: 'Daily Reminders',
+        subtitle: 'Receive daily Quran memorization reminders',
+        value: notificationSettings.enabled,
+        onValueChange: (value) => updateNotificationSetting('enabled', value)
+      },
+      {
+        type: 'button',
+        title: 'Morning Reminder',
+        subtitle: `${formatTime(notificationSettings.morningTime)} (preferably after Fajr)`,
+        icon: { name: 'sunny', type: 'Ionicons' },
+        onPress: () => setShowMorningTimePicker(true)
+      },
+      {
+        type: 'button',
+        title: 'Evening Reminder',
+        subtitle: `${formatTime(notificationSettings.eveningTime)} (after work/school)`,
+        icon: { name: 'moon', type: 'Ionicons' },
+        onPress: () => setShowEveningTimePicker(true)
+      }
+    ]
+  },
+  {
     title: '🔊 Audio Settings',
     icon: { name: 'volume-high', type: 'Ionicons' },
     items: [
@@ -241,6 +345,7 @@ export default function SettingsScreen({ navigation }) {
       }
     ]
   },
+  // ... rest of existing sections remain the same
   {
     title: '🎨 Display Settings', 
     icon: { name: 'color-palette', type: 'Ionicons' },
@@ -493,6 +598,78 @@ export default function SettingsScreen({ navigation }) {
           </ScrollView>
 
           <FontPreviewModal />
+         {/* Modern Time Pickers for Settings */}
+{showMorningTimePicker && (
+  <Modal visible={true} transparent={true} animationType="fade">
+    <View style={styles.settingsTimePickerOverlay}>
+      <View style={styles.settingsTimePickerModal}>
+        <Text style={styles.settingsTimePickerTitle}>Morning Reminder</Text>
+        <Text style={styles.settingsTimePickerSubtitle}>Preferably after Fajr prayer</Text>
+        
+        <DateTimePicker
+          value={morningTimeDate}
+          mode="time"
+          is24Hour={false}
+          display="spinner"
+          onChange={(event, selectedTime) => handleTimeChange(event, selectedTime, false)}
+          textColor="#22575D"
+          themeVariant="light"
+        />
+        
+        <View style={styles.settingsTimePickerButtons}>
+          <TouchableOpacity 
+            style={styles.settingsTimePickerCancelButton}
+            onPress={() => setShowMorningTimePicker(false)}
+          >
+            <Text style={styles.settingsTimePickerCancelText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.settingsTimePickerConfirmButton}
+            onPress={() => setShowMorningTimePicker(false)}
+          >
+            <Text style={styles.settingsTimePickerConfirmText}>Save</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </Modal>
+)}
+
+{showEveningTimePicker && (
+  <Modal visible={true} transparent={true} animationType="fade">
+    <View style={styles.settingsTimePickerOverlay}>
+      <View style={styles.settingsTimePickerModal}>
+        <Text style={styles.settingsTimePickerTitle}>Evening Reminder</Text>
+        <Text style={styles.settingsTimePickerSubtitle}>When done from work/school</Text>
+        
+        <DateTimePicker
+          value={eveningTimeDate}
+          mode="time"
+          is24Hour={false}
+          display="spinner"
+          onChange={(event, selectedTime) => handleTimeChange(event, selectedTime, true)}
+          textColor="#22575D"
+          themeVariant="light"
+        />
+        
+        <View style={styles.settingsTimePickerButtons}>
+          <TouchableOpacity 
+            style={styles.settingsTimePickerCancelButton}
+            onPress={() => setShowEveningTimePicker(false)}
+          >
+            <Text style={styles.settingsTimePickerCancelText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.settingsTimePickerConfirmButton}
+            onPress={() => setShowEveningTimePicker(false)}
+          >
+            <Text style={styles.settingsTimePickerConfirmText}>Save</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </Modal>
+)}
         </SafeAreaView>
       </LinearGradient>
     </SafeAreaProvider>
@@ -646,4 +823,68 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
+  settingsTimePickerOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 20,
+},
+settingsTimePickerModal: {
+  backgroundColor: 'white',
+  borderRadius: 20,
+  padding: 25,
+  width: '100%',
+  maxWidth: 350,
+  alignItems: 'center',
+  elevation: 10,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 5 },
+  shadowOpacity: 0.3,
+  shadowRadius: 10,
+},
+settingsTimePickerTitle: {
+  fontSize: 20,
+  fontWeight: 'bold',
+  color: Theme.colors.primary,
+  textAlign: 'center',
+  marginBottom: 8,
+},
+settingsTimePickerSubtitle: {
+  fontSize: 14,
+  color: '#666',
+  textAlign: 'center',
+  marginBottom: 20,
+  fontStyle: 'italic',
+},
+settingsTimePickerButtons: {
+  flexDirection: 'row',
+  gap: 12,
+  marginTop: 20,
+  width: '100%',
+},
+settingsTimePickerCancelButton: {
+  flex: 1,
+  backgroundColor: '#f5f5f5',
+  borderRadius: 12,
+  paddingVertical: 12,
+  alignItems: 'center',
+},
+settingsTimePickerConfirmButton: {
+  flex: 1,
+  backgroundColor: Theme.colors.secondary,
+  borderRadius: 12,
+  paddingVertical: 12,
+  alignItems: 'center',
+},
+settingsTimePickerCancelText: {
+  color: '#666',
+  fontSize: 16,
+  fontWeight: '600',
+},
+settingsTimePickerConfirmText: {
+  color: 'white',
+  fontSize: 16,
+  fontWeight: '600',
+},
 });
