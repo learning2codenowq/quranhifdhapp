@@ -5,11 +5,17 @@ export class AchievementSystem {
     { id: 'ten_ayahs', title: 'Decade', description: 'Memorized 10 ayahs', threshold: 10, type: 'memorization' },
     { id: 'fifty_ayahs', title: 'Half Century', description: 'Memorized 50 ayahs', threshold: 50, type: 'memorization' },
     { id: 'hundred_ayahs', title: 'Century', description: 'Memorized 100 ayahs', threshold: 100, type: 'memorization' },
-    { id: 'first_surah', title: 'Surah Master', description: 'Completed your first surah', threshold: 1, type: 'surah_completion' },
-    { id: 'al_mulk', title: 'The Sovereignty', description: 'Memorized Surah Al-Mulk', threshold: 67, type: 'specific_surah' },
     { id: 'five_hundred', title: 'Half Path', description: 'Memorized 500 ayahs', threshold: 500, type: 'memorization' },
     { id: 'thousand_ayahs', title: 'The Thousand', description: 'Memorized 1000 ayahs', threshold: 1000, type: 'memorization' },
-    { id: 'juz_amma', title: 'Juz Amma Complete', description: 'Memorized the 30th Juz', threshold: 30, type: 'juz_completion' },
+    { id: 'hafidh', title: 'Hafidh', description: 'Memorized all 6236 ayahs of the Holy Quran', threshold: 6236, type: 'memorization' },
+    
+    // Surah Completion Achievements
+    { id: 'first_surah', title: 'First Surah', description: 'Completed your first surah', threshold: 1, type: 'surah_completion' },
+    { id: 'ten_surahs', title: 'Ten Surahs', description: 'Completed 10 surahs', threshold: 10, type: 'surah_completion' },
+    { id: 'fifty_seven_surahs', title: 'More Than Half', description: 'Completed 57 surahs (half of the Quran)', threshold: 57, type: 'surah_completion' },
+    
+    // Specific Surah Achievement
+    { id: 'al_mulk', title: 'The Sovereignty', description: 'Memorized Surah Al-Mulk', threshold: 67, type: 'specific_surah' },
     
     // Consistency Achievements
     { id: 'week_streak', title: 'Consistent Week', description: '7 days of consistent practice', threshold: 7, type: 'streak' },
@@ -20,6 +26,24 @@ export class AchievementSystem {
     { id: 'early_bird', title: 'Early Bird', description: 'Completed Tikrar before 6 AM', threshold: 1, type: 'special' },
     { id: 'night_warrior', title: 'Night Warrior', description: 'Completed memorization after 10 PM', threshold: 1, type: 'special' },
   ];
+
+  // Surah data with actual ayah counts
+  static surahData = {
+    1: { name: 'Al-Fatihah', totalAyahs: 7 },
+    2: { name: 'Al-Baqarah', totalAyahs: 286 },
+    3: { name: 'Ali-Imran', totalAyahs: 200 },
+    4: { name: 'An-Nisa', totalAyahs: 176 },
+    5: { name: 'Al-Maidah', totalAyahs: 120 },
+    6: { name: 'Al-Anam', totalAyahs: 165 },
+    7: { name: 'Al-Araf', totalAyahs: 206 },
+    8: { name: 'Al-Anfal', totalAyahs: 75 },
+    9: { name: 'At-Tawbah', totalAyahs: 129 },
+    10: { name: 'Yunus', totalAyahs: 109 },
+    // ... continuing with more surahs as needed
+    67: { name: 'Al-Mulk', totalAyahs: 30 },
+    // ... add more as needed
+    114: { name: 'An-Nas', totalAyahs: 6 }
+  };
 
   static checkAchievements(state) {
     if (!state) return [];
@@ -79,13 +103,18 @@ export class AchievementSystem {
   static getCompletedSurahs(state) {
     const completedSurahs = [];
     
-    // Basic surah completion check - you might want to enhance this with actual surah lengths
-    Object.keys(state?.ayahProgress || {}).forEach(surahId => {
+    if (!state?.ayahProgress) return completedSurahs;
+    
+    Object.keys(state.ayahProgress).forEach(surahId => {
       const surahProgress = state.ayahProgress[surahId];
       const memorizedCount = Object.values(surahProgress).filter(ayah => ayah.memorized).length;
       
-      // Rough estimate - consider surah complete if substantial portion is memorized
-      if (memorizedCount >= 5) { // Minimum threshold
+      // Get actual surah length or use memorized count as approximation
+      const surahInfo = this.surahData[parseInt(surahId)];
+      const totalAyahs = surahInfo ? surahInfo.totalAyahs : memorizedCount;
+      
+      // Consider surah complete if all ayahs are memorized
+      if (memorizedCount >= totalAyahs) {
         completedSurahs.push(parseInt(surahId));
       }
     });
@@ -94,11 +123,8 @@ export class AchievementSystem {
   }
 
   static isSurahCompleted(state, surahId) {
-    const surahProgress = state?.ayahProgress?.[surahId];
-    if (!surahProgress) return false;
-    
-    const memorizedCount = Object.values(surahProgress).filter(ayah => ayah.memorized).length;
-    return memorizedCount >= 5; // Rough completion threshold
+    const completedSurahs = this.getCompletedSurahs(state);
+    return completedSurahs.includes(surahId);
   }
 
   static getCurrentStreak(state) {

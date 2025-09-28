@@ -10,11 +10,7 @@ import { Theme } from '../styles/theme';
 
 export default function AchievementsScreen({ navigation }) {
   const [earnedAchievements, setEarnedAchievements] = useState([]);
-  const totalAchievements = React.useMemo(() => {
-  const memorization = AchievementSystem.achievements.filter(a => a.type === 'memorization');
-  const streak = AchievementSystem.achievements.filter(a => a.type === 'streak');
-    return memorization.length + streak.length;
-   }, []);
+  const [totalAchievements, setTotalAchievements] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,6 +22,7 @@ export default function AchievementsScreen({ navigation }) {
     const state = await StorageService.getState();
     const earned = state?.earnedAchievements || [];
     setEarnedAchievements(earned);
+    setTotalAchievements(AchievementSystem.achievements.length);
     setLoading(false);
   };
 
@@ -44,10 +41,11 @@ export default function AchievementsScreen({ navigation }) {
       case 'streak':
         return { name: AppIcons.flame.name, type: AppIcons.flame.type, color: Theme.colors.warning };
       case 'surah_completion':
-      case 'specific_surah':
         return { name: AppIcons.book.name, type: AppIcons.book.type, color: Theme.colors.info };
-      case 'juz_completion':
+      case 'specific_surah':
         return { name: AppIcons.star.name, type: AppIcons.star.type, color: Theme.colors.secondary };
+      case 'juz_completion':
+        return { name: AppIcons.medal.name, type: AppIcons.medal.type, color: Theme.colors.secondary };
       default:
         return { name: AppIcons.trophy.name, type: AppIcons.trophy.type, color: Theme.colors.primary };
     }
@@ -114,31 +112,46 @@ export default function AchievementsScreen({ navigation }) {
   };
 
   const categorizedAchievements = {
-  memorization: AchievementSystem.achievements.filter(a => a.type === 'memorization'),
-  streak: AchievementSystem.achievements.filter(a => a.type === 'streak')
-};
+    memorization: AchievementSystem.achievements.filter(a => a.type === 'memorization'),
+    surah_completion: AchievementSystem.achievements.filter(a => a.type === 'surah_completion'),
+    specific_surah: AchievementSystem.achievements.filter(a => a.type === 'specific_surah'),
+    streak: AchievementSystem.achievements.filter(a => a.type === 'streak'),
+    special: AchievementSystem.achievements.filter(a => a.type === 'special')
+  };
 
   const getCategoryIcon = (category) => {
-  switch (category) {
-    case 'memorization':
-      return { name: 'library', type: 'Ionicons' };
-    case 'streak':
-      return { name: 'book', type: 'Ionicons' };
-    default:
-      return { name: 'trophy', type: 'Ionicons' };
-  }
-};
+    switch (category) {
+      case 'memorization':
+        return { name: 'library', type: 'Ionicons' };
+      case 'surah_completion':
+        return { name: 'book', type: 'Ionicons' };
+      case 'specific_surah':
+        return { name: 'star', type: 'Ionicons' };
+      case 'streak':
+        return { name: 'flame', type: 'Ionicons' };
+      case 'special':
+        return { name: 'trophy', type: 'Ionicons' };
+      default:
+        return { name: 'trophy', type: 'Ionicons' };
+    }
+  };
 
   const getCategoryTitle = (category) => {
-  switch (category) {
-    case 'memorization':
-      return 'Memorization Milestones';
-    case 'streak':
-      return 'Consistency Streaks';
-    default:
-      return 'Achievements';
-  }
-};
+    switch (category) {
+      case 'memorization':
+        return 'Memorization Milestones';
+      case 'surah_completion':
+        return 'Surah Completion';
+      case 'specific_surah':
+        return 'Special Surahs';
+      case 'streak':
+        return 'Consistency Streaks';
+      case 'special':
+        return 'Special Achievements';
+      default:
+        return 'Achievements';
+    }
+  };
 
   if (loading) {
     return (
@@ -191,27 +204,31 @@ export default function AchievementsScreen({ navigation }) {
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         
-        {Object.entries(categorizedAchievements).map(([category, achievements]) => (
-          <View key={category} style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Icon 
-                name={getCategoryIcon(category).name}
-                type={getCategoryIcon(category).type}
-                size={24}
-                color={Theme.colors.secondary}
-              />
-              <Text style={styles.sectionTitle}>{getCategoryTitle(category)}</Text>
+        {Object.entries(categorizedAchievements).map(([category, achievements]) => {
+          if (achievements.length === 0) return null;
+          
+          return (
+            <View key={category} style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Icon 
+                  name={getCategoryIcon(category).name}
+                  type={getCategoryIcon(category).type}
+                  size={24}
+                  color={Theme.colors.secondary}
+                />
+                <Text style={styles.sectionTitle}>{getCategoryTitle(category)}</Text>
+              </View>
+              
+              {achievements.map(achievement => (
+                <AchievementCard 
+                  key={achievement.id}
+                  achievement={achievement}
+                  isEarned={earnedAchievements.includes(achievement.id)}
+                />
+              ))}
             </View>
-            
-            {achievements.map(achievement => (
-              <AchievementCard 
-                key={achievement.id}
-                achievement={achievement}
-                isEarned={earnedAchievements.includes(achievement.id)}
-              />
-            ))}
-          </View>
-        ))}
+          );
+        })}
 
       </ScrollView>
     </LinearGradient>
