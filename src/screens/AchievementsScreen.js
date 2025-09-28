@@ -39,7 +39,7 @@ export default function AchievementsScreen({ navigation }) {
       case 'memorization':
         return { name: AppIcons.checkmark.name, type: AppIcons.checkmark.type, color: Theme.colors.success };
       case 'streak':
-        return { name: AppIcons.flame.name, type: AppIcons.flame.type, color: Theme.colors.warning };
+        return { name: AppIcons.diamond.name, type: AppIcons.diamond.type, color: Theme.colors.warning };
       case 'surah_completion':
         return { name: AppIcons.book.name, type: AppIcons.book.type, color: Theme.colors.info };
       case 'specific_surah':
@@ -128,7 +128,7 @@ export default function AchievementsScreen({ navigation }) {
       case 'specific_surah':
         return { name: 'star', type: 'Ionicons' };
       case 'streak':
-        return { name: 'flame', type: 'Ionicons' };
+        return { name: 'diamond', type: 'Ionicons' };
       case 'special':
         return { name: 'trophy', type: 'Ionicons' };
       default:

@@ -46,6 +46,7 @@ export const AppIcons = {
   medal: { name: 'medal', type: 'Ionicons' },
   star: { name: 'star', type: 'Ionicons' },
   flame: { name: 'flame', type: 'Ionicons' },
+  diamond: { name: 'diamond', type: 'Ionicons' },
   trending: { name: 'trending-up', type: 'Ionicons' },
   calendar: { name: 'calendar', type: 'Ionicons' },
   stats: { name: 'stats-chart', type: 'Ionicons' },

@@ -20,30 +20,129 @@ export class AchievementSystem {
     // Consistency Achievements
     { id: 'week_streak', title: 'Consistent Week', description: '7 days of consistent practice', threshold: 7, type: 'streak' },
     { id: 'month_streak', title: 'Dedicated Month', description: '30 days of consistent practice', threshold: 30, type: 'streak' },
-    { id: 'hundred_days', title: 'Hundred Day Warrior', description: '100 days of consistent practice', threshold: 100, type: 'streak' },
+    { id: 'hundred_days', title: 'Hundred Day Reciter', description: '100 days of consistent practice', threshold: 100, type: 'streak' },
  
     // Special Achievements
-    { id: 'early_bird', title: 'Early Bird', description: 'Completed Tikrar before 6 AM', threshold: 1, type: 'special' },
-    { id: 'night_warrior', title: 'Night Warrior', description: 'Completed memorization after 10 PM', threshold: 1, type: 'special' },
+    { id: 'night_reciter', title: 'Night Reciter', description: 'Completed memorization after 10 PM', threshold: 1, type: 'special' },
   ];
 
   // Surah data with actual ayah counts
   static surahData = {
-    1: { name: 'Al-Fatihah', totalAyahs: 7 },
-    2: { name: 'Al-Baqarah', totalAyahs: 286 },
-    3: { name: 'Ali-Imran', totalAyahs: 200 },
-    4: { name: 'An-Nisa', totalAyahs: 176 },
-    5: { name: 'Al-Maidah', totalAyahs: 120 },
-    6: { name: 'Al-Anam', totalAyahs: 165 },
-    7: { name: 'Al-Araf', totalAyahs: 206 },
-    8: { name: 'Al-Anfal', totalAyahs: 75 },
-    9: { name: 'At-Tawbah', totalAyahs: 129 },
-    10: { name: 'Yunus', totalAyahs: 109 },
-    // ... continuing with more surahs as needed
-    67: { name: 'Al-Mulk', totalAyahs: 30 },
-    // ... add more as needed
-    114: { name: 'An-Nas', totalAyahs: 6 }
-  };
+  1: { name: 'Al-Fatihah', totalAyahs: 7 },
+  2: { name: 'Al-Baqarah', totalAyahs: 286 },
+  3: { name: 'Ali-Imran', totalAyahs: 200 },
+  4: { name: 'An-Nisa', totalAyahs: 176 },
+  5: { name: 'Al-Maidah', totalAyahs: 120 },
+  6: { name: 'Al-Anam', totalAyahs: 165 },
+  7: { name: 'Al-Araf', totalAyahs: 206 },
+  8: { name: 'Al-Anfal', totalAyahs: 75 },
+  9: { name: 'At-Tawbah', totalAyahs: 129 },
+  10: { name: 'Yunus', totalAyahs: 109 },
+  11: { name: 'Hud', totalAyahs: 123 },
+  12: { name: 'Yusuf', totalAyahs: 111 },
+  13: { name: 'Ar-Ra\'d', totalAyahs: 43 },
+  14: { name: 'Ibrahim', totalAyahs: 52 },
+  15: { name: 'Al-Hijr', totalAyahs: 99 },
+  16: { name: 'An-Nahl', totalAyahs: 128 },
+  17: { name: 'Al-Isra', totalAyahs: 111 },
+  18: { name: 'Al-Kahf', totalAyahs: 110 },
+  19: { name: 'Maryam', totalAyahs: 98 },
+  20: { name: 'Ta-Ha', totalAyahs: 135 },
+  21: { name: 'Al-Anbiya', totalAyahs: 112 },
+  22: { name: 'Al-Hajj', totalAyahs: 78 },
+  23: { name: 'Al-Mu\'minun', totalAyahs: 118 },
+  24: { name: 'An-Nur', totalAyahs: 64 },
+  25: { name: 'Al-Furqan', totalAyahs: 77 },
+  26: { name: 'Ash-Shu\'ara', totalAyahs: 227 },
+  27: { name: 'An-Naml', totalAyahs: 93 },
+  28: { name: 'Al-Qasas', totalAyahs: 88 },
+  29: { name: 'Al-Ankabut', totalAyahs: 69 },
+  30: { name: 'Ar-Rum', totalAyahs: 60 },
+  31: { name: 'Luqman', totalAyahs: 34 },
+  32: { name: 'As-Sajdah', totalAyahs: 30 },
+  33: { name: 'Al-Ahzab', totalAyahs: 73 },
+  34: { name: 'Saba', totalAyahs: 54 },
+  35: { name: 'Fatir', totalAyahs: 45 },
+  36: { name: 'Ya-Sin', totalAyahs: 83 },
+  37: { name: 'As-Saffat', totalAyahs: 182 },
+  38: { name: 'Sad', totalAyahs: 88 },
+  39: { name: 'Az-Zumar', totalAyahs: 75 },
+  40: { name: 'Ghafir', totalAyahs: 85 },
+  41: { name: 'Fussilat', totalAyahs: 54 },
+  42: { name: 'Ash-Shura', totalAyahs: 53 },
+  43: { name: 'Az-Zukhruf', totalAyahs: 89 },
+  44: { name: 'Ad-Dukhan', totalAyahs: 59 },
+  45: { name: 'Al-Jathiyah', totalAyahs: 37 },
+  46: { name: 'Al-Ahqaf', totalAyahs: 35 },
+  47: { name: 'Muhammad', totalAyahs: 38 },
+  48: { name: 'Al-Fath', totalAyahs: 29 },
+  49: { name: 'Al-Hujurat', totalAyahs: 18 },
+  50: { name: 'Qaf', totalAyahs: 45 },
+  51: { name: 'Adh-Dhariyat', totalAyahs: 60 },
+  52: { name: 'At-Tur', totalAyahs: 49 },
+  53: { name: 'An-Najm', totalAyahs: 62 },
+  54: { name: 'Al-Qamar', totalAyahs: 55 },
+  55: { name: 'Ar-Rahman', totalAyahs: 78 },
+  56: { name: 'Al-Waqi\'ah', totalAyahs: 96 },
+  57: { name: 'Al-Hadid', totalAyahs: 29 },
+  58: { name: 'Al-Mujadilah', totalAyahs: 22 },
+  59: { name: 'Al-Hashr', totalAyahs: 24 },
+  60: { name: 'Al-Mumtahanah', totalAyahs: 13 },
+  61: { name: 'As-Saff', totalAyahs: 14 },
+  62: { name: 'Al-Jumu\'ah', totalAyahs: 11 },
+  63: { name: 'Al-Munafiqun', totalAyahs: 11 },
+  64: { name: 'At-Taghabun', totalAyahs: 18 },
+  65: { name: 'At-Talaq', totalAyahs: 12 },
+  66: { name: 'At-Tahrim', totalAyahs: 12 },
+  67: { name: 'Al-Mulk', totalAyahs: 30 },
+  68: { name: 'Al-Qalam', totalAyahs: 52 },
+  69: { name: 'Al-Haqqah', totalAyahs: 52 },
+  70: { name: 'Al-Ma\'arij', totalAyahs: 44 },
+  71: { name: 'Nuh', totalAyahs: 28 },
+  72: { name: 'Al-Jinn', totalAyahs: 28 },
+  73: { name: 'Al-Muzzammil', totalAyahs: 20 },
+  74: { name: 'Al-Muddaththir', totalAyahs: 56 },
+  75: { name: 'Al-Qiyamah', totalAyahs: 40 },
+  76: { name: 'Al-Insan', totalAyahs: 31 },
+  77: { name: 'Al-Mursalat', totalAyahs: 50 },
+  78: { name: 'An-Naba', totalAyahs: 40 },
+  79: { name: 'An-Nazi\'at', totalAyahs: 46 },
+  80: { name: '\'Abasa', totalAyahs: 42 },
+  81: { name: 'At-Takwir', totalAyahs: 29 },
+  82: { name: 'Al-Infitar', totalAyahs: 19 },
+  83: { name: 'Al-Mutaffifin', totalAyahs: 36 },
+  84: { name: 'Al-Inshiqaq', totalAyahs: 25 },
+  85: { name: 'Al-Buruj', totalAyahs: 22 },
+  86: { name: 'At-Tariq', totalAyahs: 17 },
+  87: { name: 'Al-A\'la', totalAyahs: 19 },
+  88: { name: 'Al-Ghashiyah', totalAyahs: 26 },
+  89: { name: 'Al-Fajr', totalAyahs: 30 },
+  90: { name: 'Al-Balad', totalAyahs: 20 },
+  91: { name: 'Ash-Shams', totalAyahs: 15 },
+  92: { name: 'Al-Layl', totalAyahs: 21 },
+  93: { name: 'Ad-Duha', totalAyahs: 11 },
+  94: { name: 'Ash-Sharh', totalAyahs: 8 },
+  95: { name: 'At-Tin', totalAyahs: 8 },
+  96: { name: 'Al-\'Alaq', totalAyahs: 19 },
+  97: { name: 'Al-Qadr', totalAyahs: 5 },
+  98: { name: 'Al-Bayyinah', totalAyahs: 8 },
+  99: { name: 'Az-Zalzalah', totalAyahs: 8 },
+  100: { name: 'Al-\'Adiyat', totalAyahs: 11 },
+  101: { name: 'Al-Qari\'ah', totalAyahs: 11 },
+  102: { name: 'At-Takathur', totalAyahs: 8 },
+  103: { name: 'Al-\'Asr', totalAyahs: 3 },
+  104: { name: 'Al-Humazah', totalAyahs: 9 },
+  105: { name: 'Al-Fil', totalAyahs: 5 },
+  106: { name: 'Quraysh', totalAyahs: 4 },
+  107: { name: 'Al-Ma\'un', totalAyahs: 7 },
+  108: { name: 'Al-Kawthar', totalAyahs: 3 },
+  109: { name: 'Al-Kafirun', totalAyahs: 6 },
+  110: { name: 'An-Nasr', totalAyahs: 3 },
+  111: { name: 'Al-Masad', totalAyahs: 5 },
+  112: { name: 'Al-Ikhlas', totalAyahs: 4 },
+  113: { name: 'Al-Falaq', totalAyahs: 5 },
+  114: { name: 'An-Nas', totalAyahs: 6 }
+};
 
   static checkAchievements(state) {
     if (!state) return [];
@@ -182,12 +281,8 @@ export class AchievementSystem {
     const today = new Date().toISOString().split('T')[0];
     const todayTikrar = state?.tikrarProgress?.[today];
     
-    switch (achievementId) {
-      case 'early_bird':
-        // Check if any tikrar was completed early (simplified)
-        return todayTikrar && Object.values(todayTikrar).some(val => val > 0);
-      
-      case 'night_warrior':
+    switch (achievementId) {      
+      case 'night_reciter':
         // Similar logic for late completion
         return todayTikrar && Object.values(todayTikrar).some(val => val > 0);
       
