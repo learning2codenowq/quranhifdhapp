@@ -7,6 +7,7 @@ import AnimatedCard from '../components/AnimatedCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Icon, AppIcons } from '../components/Icon';
 import { Theme } from '../styles/theme';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AchievementsScreen({ navigation }) {
   const [earnedAchievements, setEarnedAchievements] = useState([]);
@@ -156,6 +157,7 @@ export default function AchievementsScreen({ navigation }) {
   if (loading) {
     return (
       <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}></SafeAreaView>
         <LoadingSpinner message="Loading achievements..." />
       </LinearGradient>
     );

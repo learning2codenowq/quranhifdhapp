@@ -239,13 +239,11 @@ export default function QuranReaderScreen({ route, navigation }) {
             
             if (nextAyahExists && ayahAudioUrls[nextAyahNumber]) {
               console.log(`🎵 Playing next ayah: ${nextAyahNumber}`);
-              setTimeout(() => {
                 handleAudioPlay(currentSurahId, nextAyahNumber);
-              }, 500);
             } else {
-              console.log('🎵 Reached end of surah');
-              setPlayingAyah(null);
-            }
+  console.log('🎵 Reached end of surah');
+  setTimeout(() => setPlayingAyah(null), 100); // Quick cleanup
+}
           } else {
             console.log('🎵 Auto-play disabled, stopping');
             setPlayingAyah(null);
@@ -454,13 +452,13 @@ export default function QuranReaderScreen({ route, navigation }) {
         
         if (i < ayahsWithAudio.length - 1 && isReplayingRef.current) {
           Logger.log(`💤 Brief pause between ayahs...`);
-          await delayWithStopCheck(500);
+          await delayWithStopCheck(100);
         }
       }
       
       if (rep < repetitions && isReplayingRef.current) {
         Logger.log(`🔄 Brief pause between repetitions...`);
-        await delayWithStopCheck(1000);
+        await delayWithStopCheck(200);
       }
     }
 
@@ -510,20 +508,23 @@ export default function QuranReaderScreen({ route, navigation }) {
   };
 
   const delayWithStopCheck = (ms) => {
-    return new Promise((resolve) => {
-      const checkInterval = 100;
-      let elapsed = 0;
+  // Reduced delays for faster replay
+  const actualDelay = Math.min(ms, 200); // Max 200ms delay
+  
+  return new Promise((resolve) => {
+    const checkInterval = 50; // Faster checking
+    let elapsed = 0;
+    
+    const intervalId = setInterval(() => {
+      elapsed += checkInterval;
       
-      const intervalId = setInterval(() => {
-        elapsed += checkInterval;
-        
-        if (!isReplayingRef.current || elapsed >= ms) {
-          clearInterval(intervalId);
-          resolve();
-        }
-      }, checkInterval);
-    });
-  };
+      if (!isReplayingRef.current || elapsed >= actualDelay) {
+        clearInterval(intervalId);
+        resolve();
+      }
+    }, checkInterval);
+  });
+};
 
   const waitForAudioCompletion = () => {
   return new Promise((resolve) => {
@@ -739,7 +740,7 @@ export default function QuranReaderScreen({ route, navigation }) {
   return (
     <SafeAreaProvider>
       <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
           
           {/* Modern Header */}
 <View style={styles.modernHeader}>

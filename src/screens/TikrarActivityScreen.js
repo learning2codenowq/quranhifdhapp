@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StorageService } from '../services/StorageService';
 import { QuranUtils } from '../utils/QuranUtils';
 import { Theme } from '../styles/theme';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 export default function TikrarActivityScreen({ route, navigation }) {
   const { categoryType, categoryData } = route.params;
@@ -104,6 +105,7 @@ export default function TikrarActivityScreen({ route, navigation }) {
 
   return (
     <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+            <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}></SafeAreaView>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>← Back</Text>

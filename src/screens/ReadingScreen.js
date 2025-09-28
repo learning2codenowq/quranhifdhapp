@@ -230,7 +230,7 @@ export default function ReadingScreen() {
             <View style={styles.comingSoonContainer}>
               <Text style={styles.comingSoonText}>Coming Soon</Text>
               <Text style={styles.comingSoonSubtext}>
-                We're working on bringing you the perfect reading experience
+                We're working on bringing you the best reading experience
               </Text>
             </View>
           </View>

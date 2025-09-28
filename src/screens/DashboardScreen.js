@@ -8,6 +8,7 @@ import AchievementModal from '../components/AchievementModal';
 import AnimatedProgressRing from '../components/AnimatedProgressRing';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Icon, AppIcons } from '../components/Icon';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Theme } from '../styles/theme';
 import { Logger } from '../utils/Logger';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
@@ -104,6 +105,7 @@ export default function DashboardScreen({ navigation }) {
   if (!stats) {
     return (
      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}></SafeAreaView>
        <DashboardSkeleton />
      </LinearGradient>
    );
@@ -412,6 +414,10 @@ export default function DashboardScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
   flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+    paddingBottom: 20, 
   },
   scrollContent: {
   paddingTop: 50,

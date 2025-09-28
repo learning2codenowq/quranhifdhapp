@@ -8,6 +8,7 @@ import AnimatedCard from '../components/AnimatedCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Icon, AppIcons } from '../components/Icon';
 import { Theme } from '../styles/theme';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -79,6 +80,7 @@ export default function AnalyticsScreen({ navigation }) {
 
   return (
     <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}></SafeAreaView>
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}

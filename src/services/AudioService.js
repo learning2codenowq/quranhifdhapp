@@ -30,20 +30,11 @@ export class AudioService {
 
     console.log('Playing audio from URL:', audioUrl);
     
-    // Check if URL is reachable first
-    try {
-      const testResponse = await fetch(audioUrl, { method: 'HEAD', timeout: 5000 });
-      if (!testResponse.ok) {
-        throw new Error(`Audio file not available (${testResponse.status})`);
-      }
-    } catch (fetchError) {
-      console.log('Audio URL test failed:', fetchError.message);
-      throw new Error('Audio file not available or network issue');
-    }
-    
+    // REMOVED: Network check that was causing delays
     await this.stopAudio();
     
-    const audioPromise = Audio.Sound.createAsync(
+    // Load and play audio immediately without timeout restrictions
+    const { sound } = await Audio.Sound.createAsync(
       { uri: audioUrl },
       { 
         shouldPlay: true, 
@@ -54,12 +45,6 @@ export class AudioService {
         shouldCorrectPitch: true
       }
     );
-
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Audio loading timeout')), 10000)
-    );
-
-    const { sound } = await Promise.race([audioPromise, timeoutPromise]);
     
     this.sound = sound;
     this.isPlaying = true;
@@ -69,20 +54,21 @@ export class AudioService {
       if (status.isLoaded) {
         this.isPlaying = status.isPlaying;
         
-        if (status.didJustFinish) {
+        if (status.didJustFinish && !this.isStoppingIntentionally) {
           console.log('🎵 Audio finished playing naturally');
           this.isPlaying = false;
           
           if (onComplete) {
-            console.log('🎵 Calling completion callback');
-            setTimeout(() => onComplete(), 100);
+            console.log('🎵 Calling completion callback immediately');
+            onComplete(); // REMOVED: setTimeout delay
           }
           
+          // Clean up sound object
           setTimeout(() => {
             if (this.sound === sound) {
               this.sound = null;
             }
-          }, 200);
+          }, 100); // Reduced cleanup delay
         }
         
         if (status.error) {
@@ -102,11 +88,6 @@ export class AudioService {
   } catch (error) {
     console.error('Audio playback failed:', error);
     this.isPlaying = false;
-    
-    // Return more specific error info
-    if (error.message.includes('not available')) {
-      console.log('Specific error: Audio file not available');
-    }
     return false;
   }
 }

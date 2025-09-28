@@ -23,8 +23,8 @@ const onboardingData = [
   {
   id: 1,
   title: 'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
-  subtitle: 'As-salamu alaykum, welcome!',
-  description: 'You are not just opening an app.\n\nYou are stepping into the protection of Allah to carry His words in your heart.\n\nNarrated Uthman:\nThe Prophet (ﷺ) said, "The best among you (Muslims) are those who learn the Qur\'an and teach it."\n— (Sahih al-Bukhari 5027)',
+  subtitle: 'As-salamu alaykum!',
+  description: 'You are not just opening an app.\n\nYou are stepping into the path of those whom the Prophet ﷺ called the best.\n\nNarrated Uthman:\nThe Prophet (ﷺ) said, "The best among you (Muslims) are those who learn the Qur\'an and teach it."\n— (Sahih al-Bukhari 5027)',
   showTargetSelection: false,
   showNameInput: false
 },
@@ -201,7 +201,7 @@ export default function OnboardingScreen({ navigation }) {
   <Text style={styles.description}>
     <Text style={styles.boldText}>You are not just opening an app.</Text>
     {'\n\n'}
-    You are stepping into the protection of Allah to carry His words in your heart.
+    You are stepping into the path of those whom the Prophet (ﷺ) called the best.
     {'\n\n'}
     <Text style={styles.italicText}>Narrated by Uthman (RA):{'\n'}The Prophet (ﷺ) said, "The best among you (Muslims) are those who learn the Qur'an and teach it."{'\n'}— (Sahih al-Bukhari 5027)</Text>
   </Text>
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
     lineHeight: 36,
   },
   subtitle: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.95)',
     textAlign: 'center',
@@ -888,6 +888,7 @@ const styles = StyleSheet.create({
   },
   arabicTitle: {
   fontFamily: 'UthmanicFont',
+  color: '#d4af37',
 },
 boldText: {
   fontWeight: 'bold',

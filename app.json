@@ -37,12 +37,19 @@
       }
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#22575D"
-      },
+  "adaptiveIcon": {
+    "foregroundImage": "./assets/adaptive-icon.png",
+    "backgroundColor": "#22575D"
+  },
       "package": "com.shayan.quranhifdh",
       "versionCode": 1,
+      "navigationBar": {
+    "backgroundColor": "#22575D"
+  },
+  "statusBar": {
+    "backgroundColor": "#22575D",
+    "barStyle": "light-content"
+  },
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",

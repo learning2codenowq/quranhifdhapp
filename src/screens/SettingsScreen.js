@@ -563,7 +563,7 @@ const formatTime = (timeObj) => {
   return (
     <SafeAreaProvider>
       <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Text style={styles.backText}>← Dashboard</Text>
