@@ -7,6 +7,7 @@ import { NotificationService } from '../services/NotificationService';
 import { TestingUtils } from '../utils/TestingUtils';
 import { Logger } from '../utils/Logger'
 import { Theme } from '../styles/theme';
+import CustomTimePicker from '../components/CustomTimePicker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 
@@ -93,25 +94,47 @@ const [eveningTimeDate, setEveningTimeDate] = useState(new Date(2024, 0, 1, 18, 
     const newSettings = { ...notificationSettings, [key]: value };
     setNotificationSettings(newSettings);
     
-    // Save settings without triggering notifications
+    console.log('⚙️ Updating notification setting:', key, value);
+    
+    // Save settings first
     await NotificationService.saveNotificationSettings(
       key === 'morningTime' ? value : newSettings.morningTime,
       key === 'eveningTime' ? value : newSettings.eveningTime,
       newSettings.enabled
     );
     
-    // Only reschedule if notifications are enabled
-    if (newSettings.enabled) {
-      await NotificationService.scheduleNotifications(
-        key === 'morningTime' ? value : newSettings.morningTime,
-        key === 'eveningTime' ? value : newSettings.eveningTime,
-        settings.dailyGoal
-      );
+    // Handle different setting changes
+    if (key === 'enabled') {
+      if (value) {
+        // Enabling notifications - schedule them
+        setTimeout(async () => {
+          await NotificationService.scheduleNotifications(
+            newSettings.morningTime,
+            newSettings.eveningTime,
+            settings.dailyGoal
+          );
+          console.log('📅 Notifications enabled and scheduled');
+        }, 1000);
+      } else {
+        // Disabling notifications - cancel all
+        await Notifications.cancelAllScheduledNotificationsAsync();
+        console.log('🔕 All notifications cancelled');
+      }
+    } else if (newSettings.enabled && (key === 'morningTime' || key === 'eveningTime')) {
+      // Time changed and notifications are enabled - reschedule
+      setTimeout(async () => {
+        await NotificationService.scheduleNotifications(
+          newSettings.morningTime,
+          newSettings.eveningTime,
+          settings.dailyGoal
+        );
+        console.log('⏰ Notification times updated and rescheduled');
+      }, 1000);
     }
     
-    console.log('Settings updated - notifications scheduled for future times only');
+    console.log('✅ Notification settings updated successfully');
   } catch (error) {
-    console.error('Error updating notification setting:', error);
+    console.error('❌ Error updating notification setting:', error);
   }
 };
 
@@ -580,213 +603,35 @@ const formatTime = (timeObj) => {
           </ScrollView>
 
           <FontPreviewModal />
-         {/* Custom Morning Time Picker Modal */}
-{showMorningTimePicker && (
-  <Modal visible={true} transparent={true} animationType="slide">
-    <View style={styles.modernTimePickerOverlay}>
-      <View style={styles.modernTimePickerModal}>
-        <Text style={styles.modernTimePickerTitle}>Morning Reminder</Text>
-        <Text style={styles.modernTimePickerSubtitle}>Preferably after Fajr prayer</Text>
-        
-        <View style={styles.modernTimeDisplay}>
-          <Text style={styles.modernTimeText}>
-            {formatTime(morningTimeDate)}
-          </Text>
-        </View>
+        <CustomTimePicker
+  visible={showMorningTimePicker}
+  onClose={() => setShowMorningTimePicker(false)}
+  onSave={(time) => {
+    setMorningTimeDate(new Date(2024, 0, 1, time.hour, time.minute));
+    updateNotificationSetting('morningTime', time);
+  }}
+  initialTime={{ 
+    hour: morningTimeDate.getHours(), 
+    minute: morningTimeDate.getMinutes() 
+  }}
+  title="Morning Reminder"
+  subtitle="Preferably after Fajr prayer"
+/>
 
-        <View style={styles.timeControls}>
-          <View style={styles.timeControlGroup}>
-            <Text style={styles.timeControlLabel}>Hour</Text>
-            <View style={styles.timeControlButtons}>
-              <TouchableOpacity 
-                style={styles.timeControlButton}
-                onPress={() => {
-                  const newTime = new Date(morningTimeDate);
-                  newTime.setHours((newTime.getHours() - 1 + 24) % 24);
-                  setMorningTimeDate(newTime);
-                }}
-              >
-                <Text style={styles.timeControlButtonText}>−</Text>
-              </TouchableOpacity>
-              
-              <Text style={styles.timeControlValue}>
-                {morningTimeDate.getHours().toString().padStart(2, '0')}
-              </Text>
-              
-              <TouchableOpacity 
-                style={styles.timeControlButton}
-                onPress={() => {
-                  const newTime = new Date(morningTimeDate);
-                  newTime.setHours((newTime.getHours() + 1) % 24);
-                  setMorningTimeDate(newTime);
-                }}
-              >
-                <Text style={styles.timeControlButtonText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.timeControlGroup}>
-            <Text style={styles.timeControlLabel}>Minute</Text>
-            <View style={styles.timeControlButtons}>
-              <TouchableOpacity 
-                style={styles.timeControlButton}
-                onPress={() => {
-                  const newTime = new Date(morningTimeDate);
-                  newTime.setMinutes((newTime.getMinutes() - 15 + 60) % 60);
-                  setMorningTimeDate(newTime);
-                }}
-              >
-                <Text style={styles.timeControlButtonText}>−</Text>
-              </TouchableOpacity>
-              
-              <Text style={styles.timeControlValue}>
-                {morningTimeDate.getMinutes().toString().padStart(2, '0')}
-              </Text>
-              
-              <TouchableOpacity 
-                style={styles.timeControlButton}
-                onPress={() => {
-                  const newTime = new Date(morningTimeDate);
-                  newTime.setMinutes((newTime.getMinutes() + 15) % 60);
-                  setMorningTimeDate(newTime);
-                }}
-              >
-                <Text style={styles.timeControlButtonText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-        
-        <View style={styles.modernTimePickerButtons}>
-          <TouchableOpacity 
-            style={styles.modernTimePickerCancelButton}
-            onPress={() => setShowMorningTimePicker(false)}
-          >
-            <Text style={styles.modernTimePickerCancelText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.modernTimePickerConfirmButton}
-            onPress={() => {
-              const timeObj = {
-                hour: morningTimeDate.getHours(),
-                minute: morningTimeDate.getMinutes()
-              };
-              updateNotificationSetting('morningTime', timeObj);
-              setShowMorningTimePicker(false);
-            }}
-          >
-            <Text style={styles.modernTimePickerConfirmText}>Save</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  </Modal>
-)}
-
-{/* Custom Evening Time Picker Modal */}
-{showEveningTimePicker && (
-  <Modal visible={true} transparent={true} animationType="slide">
-    <View style={styles.modernTimePickerOverlay}>
-      <View style={styles.modernTimePickerModal}>
-        <Text style={styles.modernTimePickerTitle}>Evening Reminder</Text>
-        <Text style={styles.modernTimePickerSubtitle}>When done from work/school</Text>
-        
-        <View style={styles.modernTimeDisplay}>
-          <Text style={styles.modernTimeText}>
-            {formatTime(eveningTimeDate)}
-          </Text>
-        </View>
-
-        <View style={styles.timeControls}>
-          <View style={styles.timeControlGroup}>
-            <Text style={styles.timeControlLabel}>Hour</Text>
-            <View style={styles.timeControlButtons}>
-              <TouchableOpacity 
-                style={styles.timeControlButton}
-                onPress={() => {
-                  const newTime = new Date(eveningTimeDate);
-                  newTime.setHours((newTime.getHours() - 1 + 24) % 24);
-                  setEveningTimeDate(newTime);
-                }}
-              >
-                <Text style={styles.timeControlButtonText}>−</Text>
-              </TouchableOpacity>
-              
-              <Text style={styles.timeControlValue}>
-                {eveningTimeDate.getHours().toString().padStart(2, '0')}
-              </Text>
-              
-              <TouchableOpacity 
-                style={styles.timeControlButton}
-                onPress={() => {
-                  const newTime = new Date(eveningTimeDate);
-                  newTime.setHours((newTime.getHours() + 1) % 24);
-                  setEveningTimeDate(newTime);
-                }}
-              >
-                <Text style={styles.timeControlButtonText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.timeControlGroup}>
-            <Text style={styles.timeControlLabel}>Minute</Text>
-            <View style={styles.timeControlButtons}>
-              <TouchableOpacity 
-                style={styles.timeControlButton}
-                onPress={() => {
-                  const newTime = new Date(eveningTimeDate);
-                  newTime.setMinutes((newTime.getMinutes() - 15 + 60) % 60);
-                  setEveningTimeDate(newTime);
-                }}
-              >
-                <Text style={styles.timeControlButtonText}>−</Text>
-              </TouchableOpacity>
-              
-              <Text style={styles.timeControlValue}>
-                {eveningTimeDate.getMinutes().toString().padStart(2, '0')}
-              </Text>
-              
-              <TouchableOpacity 
-                style={styles.timeControlButton}
-                onPress={() => {
-                  const newTime = new Date(eveningTimeDate);
-                  newTime.setMinutes((newTime.getMinutes() + 15) % 60);
-                  setEveningTimeDate(newTime);
-                }}
-              >
-                <Text style={styles.timeControlButtonText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-        
-        <View style={styles.modernTimePickerButtons}>
-          <TouchableOpacity 
-            style={styles.modernTimePickerCancelButton}
-            onPress={() => setShowEveningTimePicker(false)}
-          >
-            <Text style={styles.modernTimePickerCancelText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.modernTimePickerConfirmButton}
-            onPress={() => {
-              const timeObj = {
-                hour: eveningTimeDate.getHours(),
-                minute: eveningTimeDate.getMinutes()
-              };
-              updateNotificationSetting('eveningTime', timeObj);
-              setShowEveningTimePicker(false);
-            }}
-          >
-            <Text style={styles.modernTimePickerConfirmText}>Save</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  </Modal>
-)}
+<CustomTimePicker
+  visible={showEveningTimePicker}
+  onClose={() => setShowEveningTimePicker(false)}
+  onSave={(time) => {
+    setEveningTimeDate(new Date(2024, 0, 1, time.hour, time.minute));
+    updateNotificationSetting('eveningTime', time);
+  }}
+  initialTime={{ 
+    hour: eveningTimeDate.getHours(), 
+    minute: eveningTimeDate.getMinutes() 
+  }}
+  title="Evening Reminder"
+  subtitle="When done from work/school"
+/>
 {/* Name Change Modal */}
 <Modal visible={showNameModal} transparent={true} animationType="slide">
   <View style={styles.modalOverlay}>

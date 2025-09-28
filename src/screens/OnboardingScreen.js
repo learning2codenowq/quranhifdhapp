@@ -15,19 +15,19 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../services/StorageService';
 import { NotificationService } from '../services/NotificationService';
 import { Theme } from '../styles/theme';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import CustomTimePicker from '../components/CustomTimePicker';
 
 const { width, height } = Dimensions.get('window');
 
 const onboardingData = [
   {
-    id: 1,
-    title: 'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
-    subtitle: 'As-salamu alaykum, welcome!',
-    description: 'Begin your journey of memorizing the Holy Quran structure and clarity',
-    showTargetSelection: false,
-    showNameInput: false
-  },
+  id: 1,
+  title: 'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
+  subtitle: 'As-salamu alaykum, welcome!',
+  description: 'You are not just opening an app.\n\nYou are stepping into the protection of Allah to carry His words in your heart.\n\nNarrated Uthman:\nThe Prophet (ﷺ) said, "The best among you (Muslims) are those who learn the Qur\'an and teach it."\n— (Sahih al-Bukhari 5027)',
+  showTargetSelection: false,
+  showNameInput: false
+},
   {
     id: 2,
     title: 'What is your name?',
@@ -100,46 +100,47 @@ export default function OnboardingScreen({ navigation }) {
   ];
 
   const handleNext = async () => {
-  if (currentIndex < onboardingData.length - 1) {
-    // If we're moving to the notification screen, request permissions
-    if (currentIndex === 2) { // Moving to notification screen (index 3)
-      await requestNotificationPermission();
-    }
-    setCurrentIndex(currentIndex + 1);
-  } else {
-    // Complete onboarding with notification setup
-    const finalUserName = userName.trim();
-    
-    // Get the actual times from state
-    const morningTimeObj = { 
-      hour: morningTime.getHours(), 
-      minute: morningTime.getMinutes() 
-    };
-    const eveningTimeObj = { 
-      hour: eveningTime.getHours(), 
-      minute: eveningTime.getMinutes() 
-    };
-    
-    console.log('Saving onboarding times:', { morningTimeObj, eveningTimeObj });
-    
-    // Initialize app state FIRST with notification settings
-    const initialState = await StorageService.initializeState({
-      dailyGoal: selectedTarget,
-      userName: finalUserName || 'Student',
-      notificationsEnabled: true,
-      morningTime: morningTimeObj,
-      eveningTime: eveningTimeObj
-    });
-    
-    // Save notification settings to the notification service
-    await NotificationService.saveNotificationSettings(morningTimeObj, eveningTimeObj, true);
-    
-    // Schedule notifications for future times only
+    if (currentIndex < onboardingData.length - 1) {
+      if (currentIndex === 2) {
+        await requestNotificationPermission();
+      }
+      setCurrentIndex(currentIndex + 1);
+    } else {
+  const finalUserName = userName.trim();
+  
+  const morningTimeObj = { 
+    hour: morningTime.getHours(), 
+    minute: morningTime.getMinutes() 
+  };
+  const eveningTimeObj = { 
+    hour: eveningTime.getHours(), 
+    minute: eveningTime.getMinutes() 
+  };
+  
+  console.log('🚀 Completing onboarding with times:', { morningTimeObj, eveningTimeObj });
+  
+  // Initialize app state FIRST
+  const initialState = await StorageService.initializeState({
+    dailyGoal: selectedTarget,
+    userName: finalUserName || 'Student',
+    notificationsEnabled: true,
+    morningTime: morningTimeObj,
+    eveningTime: eveningTimeObj
+  });
+  
+  // Save notification settings WITHOUT scheduling yet
+  await NotificationService.saveNotificationSettings(morningTimeObj, eveningTimeObj, true);
+  
+  // Navigate to Dashboard first
+  navigation.replace('Dashboard');
+  
+  // Schedule notifications AFTER navigation to prevent immediate triggers
+  setTimeout(async () => {
     await NotificationService.scheduleNotifications(morningTimeObj, eveningTimeObj, selectedTarget);
-    
-    navigation.replace('Dashboard');
-  }
-};
+    console.log('📋 Notifications scheduled after onboarding completion');
+  }, 3000);
+}
+  };
 
   const handleBack = () => {
     if (currentIndex > 0) {
@@ -155,42 +156,33 @@ export default function OnboardingScreen({ navigation }) {
   };
 
   const handleTimeChange = (event, selectedTime, isEvening = false) => {
-  if (Platform.OS === 'android') {
-    setShowMorningPicker(false);
-    setShowEveningPicker(false);
-  }
-  
-  if (selectedTime) {
-    if (isEvening) {
-      setEveningTime(selectedTime);
-    } else {
-      setMorningTime(selectedTime);
+    if (Platform.OS === 'android') {
+      setShowMorningPicker(false);
+      setShowEveningPicker(false);
     }
-  }
-};
+    
+    if (selectedTime) {
+      if (isEvening) {
+        setEveningTime(selectedTime);
+      } else {
+        setMorningTime(selectedTime);
+      }
+    }
+  };
 
-const formatTime = (time) => {
-  return time.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
-};
+  const formatTime = (time) => {
+    return time.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
 
-const requestNotificationPermission = async () => {
-  const hasPermission = await NotificationService.requestPermissions();
-  setNotificationPermission(hasPermission);
-  return hasPermission;
-};
-
-// Add these functions before the return statement
-const handleSliderStart = (event, type, component) => {
-  // Handle touch start for sliders
-};
-
-const handleSliderMove = (event, type, component) => {
-  // Handle touch move for sliders
-};
+  const requestNotificationPermission = async () => {
+    const hasPermission = await NotificationService.requestPermissions();
+    setNotificationPermission(hasPermission);
+    return hasPermission;
+  };
 
   return (
     <SafeAreaProvider>
@@ -198,24 +190,29 @@ const handleSliderMove = (event, type, component) => {
       <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           
-          {/* Centered Content */}
           <View style={styles.centeredContent}>
             
-            {/* Header */}
             <View style={styles.headerSection}>
-              <Text style={styles.title}>{currentScreen.title}</Text>
+              <Text style={[styles.title, currentScreen.id === 1 && styles.arabicTitle]}>{currentScreen.title}</Text>
               {currentScreen.subtitle && (
                 <Text style={styles.subtitle}>{currentScreen.subtitle}</Text>
               )}
-              {currentScreen.description && (
-                <Text style={styles.description}>{currentScreen.description}</Text>
-              )}
+              {currentScreen.description && currentScreen.id === 1 && (
+  <Text style={styles.description}>
+    <Text style={styles.boldText}>You are not just opening an app.</Text>
+    {'\n\n'}
+    You are stepping into the protection of Allah to carry His words in your heart.
+    {'\n\n'}
+    <Text style={styles.italicText}>Narrated by Uthman (RA):{'\n'}The Prophet (ﷺ) said, "The best among you (Muslims) are those who learn the Qur'an and teach it."{'\n'}— (Sahih al-Bukhari 5027)</Text>
+  </Text>
+)}
+{currentScreen.description && currentScreen.id !== 1 && (
+  <Text style={styles.description}>{currentScreen.description}</Text>
+)}
             </View>
 
-            {/* Dynamic Content */}
             <View style={styles.dynamicContent}>
               
-              {/* Name Input */}
               {currentScreen.showNameInput && (
                 <TextInput
                   style={styles.nameInput}
@@ -229,7 +226,6 @@ const handleSliderMove = (event, type, component) => {
                 />
               )}
 
-              {/* Target Selection with 2x2 Grid */}
               {currentScreen.showTargetSelection && (
                 <View style={styles.targetSelectionContainer}>
                   <View style={styles.targetGrid}>
@@ -275,7 +271,6 @@ const handleSliderMove = (event, type, component) => {
                           )}
                         </TouchableOpacity>
                         
-                        {/* Warning below card */}
                         {(hoveredTarget === option.value || selectedTarget === option.value) && 
                          getWarningMessage(option.value) && (
                           <View style={styles.warningContainer}>
@@ -288,7 +283,6 @@ const handleSliderMove = (event, type, component) => {
                     ))}
                   </View>
 
-                  {/* Completion Estimate */}
                   <View style={styles.estimateCard}>
                     <Text style={styles.estimateTitle}>Completion Estimate</Text>
                     <View style={styles.estimateDetails}>
@@ -302,8 +296,8 @@ const handleSliderMove = (event, type, component) => {
                   </View>
                 </View>
               )}
-              {/* Notification Setup */}
-{currentScreen.showNotificationSetup && (
+
+              {currentScreen.showNotificationSetup && (
   <View style={styles.notificationContainer}>
     {notificationPermission === false && (
       <View style={styles.permissionWarning}>
@@ -313,45 +307,35 @@ const handleSliderMove = (event, type, component) => {
       </View>
     )}
     
-    {/* Morning Time */}
     <View style={styles.timeSection}>
       <Text style={styles.timeLabel}>Morning Session (preferably after Fajr)</Text>
       <Text style={styles.timeHelper}>Best time when there are no distractions</Text>
       <TouchableOpacity 
         style={styles.timePicker}
-        onPress={() => {
-          setShowEveningPicker(false);
-          setShowMorningPicker(true);
-        }}
+        onPress={() => setShowMorningPicker(true)}
       >
         <Text style={styles.timeText}>{formatTime(morningTime)}</Text>
       </TouchableOpacity>
     </View>
 
-    {/* Evening Time */}
-<View style={styles.timeSection}>
-  <Text style={styles.timeLabel}>Evening Reminder</Text>
-  <Text style={styles.timeHelper}>When done from work/school</Text>
-  <TouchableOpacity 
-    style={styles.timePicker}
-    onPress={() => {
-      setShowMorningPicker(false); // Close morning picker
-      setShowEveningPicker(true);  // Open evening picker
-    }}
-  >
-    <Text style={styles.timeText}>{formatTime(eveningTime)}</Text>
-  </TouchableOpacity>
-</View>
+    <View style={styles.timeSection}>
+      <Text style={styles.timeLabel}>Evening Reminder</Text>
+      <Text style={styles.timeHelper}>When done from work/school</Text>
+      <TouchableOpacity 
+        style={styles.timePicker}
+        onPress={() => setShowEveningPicker(true)}
+      >
+        <Text style={styles.timeText}>{formatTime(eveningTime)}</Text>
+      </TouchableOpacity>
+    </View>
   </View>
 )}
             </View>
             
           </View>
 
-          {/* Fixed Bottom Navigation */}
           <View style={styles.bottomNavigation}>
             
-            {/* Progress Indicators */}
             <View style={styles.indicatorContainer}>
               {onboardingData.map((_, index) => (
                 <View
@@ -365,7 +349,6 @@ const handleSliderMove = (event, type, component) => {
               ))}
             </View>
 
-            {/* Buttons */}
             <View style={styles.buttonRow}>
               {currentIndex > 0 && (
                 <TouchableOpacity 
@@ -393,7 +376,6 @@ const handleSliderMove = (event, type, component) => {
 
           </View>
 
-          {/* Hadith Modal */}
           <Modal
             visible={showHadithModal}
             transparent={true}
@@ -418,205 +400,34 @@ const handleSliderMove = (event, type, component) => {
             </View>
           </Modal>
 
-          {/* Ultra-Modern Time Picker for Morning */}
-{showMorningTimePicker && (
-  <Modal visible={true} transparent={true} animationType="slide">
-    <View style={styles.ultraModernPickerOverlay}>
-      <View style={styles.ultraModernPickerModal}>
-        <View style={styles.ultraModernPickerHeader}>
-          <Text style={styles.ultraModernPickerTitle}>Morning Reminder</Text>
-          <Text style={styles.ultraModernPickerSubtitle}>Preferably after Fajr prayer</Text>
-        </View>
-        
-        <View style={styles.timeWheelsContainer}>
-          <View style={styles.timeWheel}>
-            <Text style={styles.wheelLabel}>Hour</Text>
-            <ScrollView 
-              style={styles.wheelScroll}
-              contentContainerStyle={styles.wheelContent}
-              showsVerticalScrollIndicator={false}
-              snapToInterval={40}
-              decelerationRate="fast"
-            >
-              {Array.from({length: 24}, (_, i) => (
-                <TouchableOpacity 
-                  key={i}
-                  style={[
-                    styles.wheelItem,
-                    morningTimeDate.getHours() === i && styles.wheelItemSelected
-                  ]}
-                  onPress={() => {
-                    const newTime = new Date(morningTimeDate);
-                    newTime.setHours(i);
-                    setMorningTimeDate(newTime);
-                  }}
-                >
-                  <Text style={[
-                    styles.wheelItemText,
-                    morningTimeDate.getHours() === i && styles.wheelItemTextSelected
-                  ]}>
-                    {i.toString().padStart(2, '0')}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+         <CustomTimePicker
+  visible={showMorningPicker}
+  onClose={() => setShowMorningPicker(false)}
+  onSave={(time) => {
+    setMorningTime(new Date(2024, 0, 1, time.hour, time.minute));
+  }}
+  initialTime={{ 
+    hour: morningTime.getHours(), 
+    minute: morningTime.getMinutes() 
+  }}
+  title="Morning Reminder"
+  subtitle="Preferably after Fajr prayer"
+/>
 
-          <Text style={styles.timeSeparator}>:</Text>
+<CustomTimePicker
+  visible={showEveningPicker}
+  onClose={() => setShowEveningPicker(false)}
+  onSave={(time) => {
+    setEveningTime(new Date(2024, 0, 1, time.hour, time.minute));
+  }}
+  initialTime={{ 
+    hour: eveningTime.getHours(), 
+    minute: eveningTime.getMinutes() 
+  }}
+  title="Evening Reminder"
+  subtitle="When done from work/school"
+/>
 
-          <View style={styles.timeWheel}>
-            <Text style={styles.wheelLabel}>Minute</Text>
-            <ScrollView 
-              style={styles.wheelScroll}
-              contentContainerStyle={styles.wheelContent}
-              showsVerticalScrollIndicator={false}
-              snapToInterval={40}
-              decelerationRate="fast"
-            >
-              {Array.from({length: 4}, (_, i) => i * 15).map(minute => (
-                <TouchableOpacity 
-                  key={minute}
-                  style={[
-                    styles.wheelItem,
-                    morningTimeDate.getMinutes() === minute && styles.wheelItemSelected
-                  ]}
-                  onPress={() => {
-                    const newTime = new Date(morningTimeDate);
-                    newTime.setMinutes(minute);
-                    setMorningTimeDate(newTime);
-                  }}
-                >
-                  <Text style={[
-                    styles.wheelItemText,
-                    morningTimeDate.getMinutes() === minute && styles.wheelItemTextSelected
-                  ]}>
-                    {minute.toString().padStart(2, '0')}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-        
-        <View style={styles.ultraModernPickerButtons}>
-          <TouchableOpacity 
-            style={styles.ultraModernCancelButton}
-            onPress={() => setShowMorningTimePicker(false)}
-          >
-            <Text style={styles.ultraModernCancelText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.ultraModernSaveButton}
-            onPress={() => {
-              const timeObj = {
-                hour: morningTimeDate.getHours(),
-                minute: morningTimeDate.getMinutes()
-              };
-              updateNotificationSetting('morningTime', timeObj);
-              setShowMorningTimePicker(false);
-            }}
-          >
-            <Text style={styles.ultraModernSaveText}>Save</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  </Modal>
-)}
-
-{/* Modern Evening Time Picker Modal */}
-{showEveningTimePicker && (
-  <Modal visible={true} transparent={true} animationType="slide">
-    <View style={styles.sliderTimePickerOverlay}>
-      <View style={styles.sliderTimePickerModal}>
-        <Text style={styles.sliderTimePickerTitle}>Evening Reminder</Text>
-        <Text style={styles.sliderTimePickerSubtitle}>When done from work/school</Text>
-        
-        <View style={styles.timeDisplayContainer}>
-          <Text style={styles.timeDisplayText}>
-            {eveningTimeDate.getHours().toString().padStart(2, '0')}:
-            {eveningTimeDate.getMinutes().toString().padStart(2, '0')}
-          </Text>
-          <Text style={styles.timeDisplayPeriod}>
-            {eveningTimeDate.getHours() >= 12 ? 'PM' : 'AM'}
-          </Text>
-        </View>
-
-        <View style={styles.slidersContainer}>
-          <View style={styles.sliderGroup}>
-            <Text style={styles.sliderLabel}>Hour</Text>
-            <View style={styles.sliderWrapper}>
-              <Text style={styles.sliderValue}>0</Text>
-              <View style={styles.sliderTrack}>
-                <TouchableOpacity 
-                  style={[
-                    styles.sliderThumb, 
-                    { left: `${(eveningTimeDate.getHours() / 23) * 85}%` }
-                  ]}
-                  onTouchStart={(e) => handleSliderStart(e, 'evening', 'hour')}
-                  onTouchMove={(e) => handleSliderMove(e, 'evening', 'hour')}
-                />
-                <View 
-                  style={[
-                    styles.sliderProgress, 
-                    { width: `${(eveningTimeDate.getHours() / 23) * 100}%` }
-                  ]}
-                />
-              </View>
-              <Text style={styles.sliderValue}>23</Text>
-            </View>
-          </View>
-
-          <View style={styles.sliderGroup}>
-            <Text style={styles.sliderLabel}>Minute</Text>
-            <View style={styles.sliderWrapper}>
-              <Text style={styles.sliderValue}>00</Text>
-              <View style={styles.sliderTrack}>
-                <TouchableOpacity 
-                  style={[
-                    styles.sliderThumb, 
-                    { left: `${(eveningTimeDate.getMinutes() / 59) * 85}%` }
-                  ]}
-                  onTouchStart={(e) => handleSliderStart(e, 'evening', 'minute')}
-                  onTouchMove={(e) => handleSliderMove(e, 'evening', 'minute')}
-                />
-                <View 
-                  style={[
-                    styles.sliderProgress, 
-                    { width: `${(eveningTimeDate.getMinutes() / 59) * 100}%` }
-                  ]}
-                />
-              </View>
-              <Text style={styles.sliderValue}>59</Text>
-            </View>
-          </View>
-        </View>
-        
-        <View style={styles.sliderTimePickerButtons}>
-          <TouchableOpacity 
-            style={styles.sliderTimePickerCancelButton}
-            onPress={() => setShowEveningTimePicker(false)}
-          >
-            <Text style={styles.sliderTimePickerCancelText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.sliderTimePickerConfirmButton}
-            onPress={() => {
-              const timeObj = {
-                hour: eveningTimeDate.getHours(),
-                minute: eveningTimeDate.getMinutes()
-              };
-              updateNotificationSetting('eveningTime', timeObj);
-              setShowEveningTimePicker(false);
-            }}
-          >
-            <Text style={styles.sliderTimePickerConfirmText}>Save</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  </Modal>
-)}
         </SafeAreaView>
       </LinearGradient>
     </SafeAreaProvider>
@@ -631,7 +442,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   
-  // Main layout - properly centered
   centeredContent: {
     flex: 1,
     justifyContent: 'center',
@@ -640,7 +450,6 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   
-  // Header Section
   headerSection: {
     alignItems: 'center',
     marginBottom: 60,
@@ -671,13 +480,11 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
 
-  // Dynamic content area
   dynamicContent: {
     alignItems: 'center',
     width: '100%',
   },
 
-  // Name Input
   nameInput: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 20,
@@ -697,7 +504,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
-  // Target Selection - 2x2 Grid
   targetSelectionContainer: {
     width: '100%',
     alignItems: 'center',
@@ -710,7 +516,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   targetItemContainer: {
-    width: '48%', // Two columns
+    width: '48%',
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -805,7 +611,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Completion Estimate
   estimateCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 14,
@@ -837,7 +642,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // Fixed Bottom Navigation
   bottomNavigation: {
     paddingHorizontal: 24,
     paddingBottom: 40,
@@ -902,7 +706,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -957,268 +760,139 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  // Notification Screen
-notificationContainer: {
-  width: '100%',
-  alignItems: 'center',
-  paddingHorizontal: 20,
+
+  notificationContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  permissionWarning: {
+    backgroundColor: 'rgba(255, 193, 7, 0.15)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 40,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 193, 7, 0.4)',
+    width: '100%',
+  },
+  permissionWarningText: {
+    fontSize: 14,
+    color: '#ffc107',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  timeSection: {
+    width: '100%',
+    marginBottom: 40,
+    alignItems: 'center',
+  },
+  timeLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  timeHelper: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontStyle: 'italic',
+  },
+  timePicker: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    paddingVertical: 18,
+    paddingHorizontal: 40,
+    minWidth: 160,
+    alignItems: 'center',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  timeText: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: 'white',
+    letterSpacing: 0.5,
+  },
+
+  timePickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  timePickerModal: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 25,
+    width: '100%',
+    maxWidth: 350,
+    alignItems: 'center',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+  },
+  timePickerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#22575D',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  timePickerSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontStyle: 'italic',
+  },
+  timePickerButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+    width: '100%',
+  },
+  timePickerCancelButton: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  timePickerConfirmButton: {
+    flex: 1,
+    backgroundColor: '#d4af37',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  timePickerCancelText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  timePickerConfirmText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  arabicTitle: {
+  fontFamily: 'UthmanicFont',
 },
-permissionWarning: {
-  backgroundColor: 'rgba(255, 193, 7, 0.15)',
-  borderRadius: 12,
-  padding: 16,
-  marginBottom: 40,
-  borderWidth: 1,
-  borderColor: 'rgba(255, 193, 7, 0.4)',
-  width: '100%',
-},
-permissionWarningText: {
-  fontSize: 14,
-  color: '#ffc107',
-  textAlign: 'center',
-  fontWeight: '600',
-},
-timeSection: {
-  width: '100%',
-  marginBottom: 40,
-  alignItems: 'center',
-},
-timeLabel: {
-  fontSize: 18,
-  fontWeight: '700',
-  color: 'white',
-  textAlign: 'center',
-  marginBottom: 8,
-},
-timeHelper: {
-  fontSize: 14,
-  color: 'rgba(255, 255, 255, 0.8)',
-  textAlign: 'center',
-  marginBottom: 20,
-  fontStyle: 'italic',
-},
-timePicker: {
-  backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  borderRadius: 16,
-  borderWidth: 2,
-  borderColor: 'rgba(255, 255, 255, 0.3)',
-  paddingVertical: 18,
-  paddingHorizontal: 40,
-  minWidth: 160,
-  alignItems: 'center',
-  shadowColor: 'rgba(0, 0, 0, 0.1)',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.2,
-  shadowRadius: 4,
-  elevation: 2,
-},
-timeText: {
-  fontSize: 22,
-  fontWeight: '700',
-  color: 'white',
-  letterSpacing: 0.5,
-},
-previewSection: {
-  width: '90%',
-  marginTop: 20,
-  alignItems: 'center',
-},
-previewTitle: {
-  fontSize: 16,
-  fontWeight: '700',
-  color: 'white',
-  marginBottom: 16,
-  textAlign: 'center',
-},
-notificationPreview: {
-  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  borderRadius: 12,
-  padding: 16,
-  marginBottom: 12,
-  width: '100%',
-  borderLeftWidth: 4,
-  borderLeftColor: '#d4af37',
-},
-previewText: {
-  fontSize: 16,
-  fontWeight: '600',
-  color: 'white',
-  marginBottom: 4,
-},
-previewSubtext: {
-  fontSize: 14,
-  color: 'rgba(255, 255, 255, 0.8)',
-  lineHeight: 20,
-},
-timePickerOverlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  justifyContent: 'center',
-  alignItems: 'center',
-  paddingHorizontal: 20,
-  zIndex: 9999,
-  elevation: 9999,
-},
-timePickerModal: {
-  backgroundColor: 'white',
-  borderRadius: 20,
-  padding: 25,
-  width: '100%',
-  maxWidth: 350,
-  alignItems: 'center',
-  elevation: 10000,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 5 },
-  shadowOpacity: 0.3,
-  shadowRadius: 10,
-  zIndex: 10000,
-},
-timePickerTitle: {
-  fontSize: 20,
+boldText: {
   fontWeight: 'bold',
-  color: '#22575D',
-  textAlign: 'center',
-  marginBottom: 8,
 },
-timePickerSubtitle: {
-  fontSize: 14,
-  color: '#666',
-  textAlign: 'center',
-  marginBottom: 20,
+italicText: {
   fontStyle: 'italic',
-},
-timePickerButtons: {
-  flexDirection: 'row',
-  gap: 12,
-  marginTop: 20,
-  width: '100%',
-},
-timePickerCancelButton: {
-  flex: 1,
-  backgroundColor: '#f5f5f5',
-  borderRadius: 12,
-  paddingVertical: 12,
-  alignItems: 'center',
-},
-timePickerConfirmButton: {
-  flex: 1,
-  backgroundColor: '#d4af37',
-  borderRadius: 12,
-  paddingVertical: 12,
-  alignItems: 'center',
-},
-timePickerCancelText: {
-  color: '#666',
-  fontSize: 16,
-  fontWeight: '600',
-},
-timePickerConfirmText: {
-  color: 'white',
-  fontSize: 16,
-  fontWeight: '600',
-},
-ultraModernPickerOverlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0, 0, 0, 0.8)',
-  justifyContent: 'flex-end',
-},
-ultraModernPickerModal: {
-  backgroundColor: 'white',
-  borderTopLeftRadius: 30,
-  borderTopRightRadius: 30,
-  padding: 30,
-  paddingBottom: 40,
-  minHeight: 400,
-},
-ultraModernPickerHeader: {
-  alignItems: 'center',
-  marginBottom: 30,
-},
-ultraModernPickerTitle: {
-  fontSize: 24,
-  fontWeight: '800',
-  color: Theme.colors.primary,
-  marginBottom: 8,
-},
-ultraModernPickerSubtitle: {
-  fontSize: 14,
-  color: '#666',
-  textAlign: 'center',
-},
-timeWheelsContainer: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginBottom: 40,
-},
-timeWheel: {
-  alignItems: 'center',
-  width: 80,
-},
-wheelLabel: {
-  fontSize: 12,
-  color: '#999',
-  marginBottom: 15,
-  fontWeight: '600',
-  textTransform: 'uppercase',
-},
-wheelScroll: {
-  height: 120,
-},
-wheelContent: {
-  paddingVertical: 40,
-},
-wheelItem: {
-  height: 40,
-  justifyContent: 'center',
-  alignItems: 'center',
-  borderRadius: 12,
-  marginVertical: 2,
-},
-wheelItemSelected: {
-  backgroundColor: Theme.colors.secondary,
-},
-wheelItemText: {
-  fontSize: 24,
-  fontWeight: '600',
-  color: '#999',
-},
-wheelItemTextSelected: {
-  color: 'white',
-  fontWeight: '800',
-},
-timeSeparator: {
-  fontSize: 36,
-  fontWeight: '300',
-  color: Theme.colors.primary,
-  marginHorizontal: 20,
-},
-ultraModernPickerButtons: {
-  flexDirection: 'row',
-  gap: 15,
-},
-ultraModernCancelButton: {
-  flex: 1,
-  backgroundColor: '#f5f5f5',
-  borderRadius: 16,
-  paddingVertical: 16,
-  alignItems: 'center',
-},
-ultraModernSaveButton: {
-  flex: 1,
-  backgroundColor: Theme.colors.secondary,
-  borderRadius: 16,
-  paddingVertical: 16,
-  alignItems: 'center',
-},
-ultraModernCancelText: {
-  color: '#666',
-  fontSize: 16,
-  fontWeight: '600',
-},
-ultraModernSaveText: {
-  color: 'white',
-  fontSize: 16,
-  fontWeight: '600',
 },
 });

@@ -48,57 +48,108 @@ export class NotificationService {
 
   static async scheduleNotifications(morningTime, eveningTime, dailyGoal) {
   try {
-    console.log('Scheduling notifications for future only:', { morningTime, eveningTime });
+    console.log('🔔 Scheduling notifications for:', { morningTime, eveningTime });
     
-    // Cancel existing notifications
+    // Cancel ALL existing notifications
     await Notifications.cancelAllScheduledNotificationsAsync();
+    console.log('🗑️ Cancelled all existing notifications');
 
-    // Add a 5-minute delay to ensure no immediate notifications
     const now = new Date();
-    const delayedScheduling = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes from now
+    console.log('⏰ Current time:', now.toLocaleString());
 
-    // Schedule using setTimeout to avoid immediate triggers
-    setTimeout(async () => {
-      try {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '🌅 As-salamu alaykum!',
-            body: `Ready for today's Quran session? Goal: ${dailyGoal} ayahs`,
-            sound: true,
-          },
-          trigger: {
-            hour: morningTime.hour,
-            minute: morningTime.minute,
-            repeats: true,
-          },
-        });
+    // Calculate next morning time
+    const nextMorning = new Date();
+    nextMorning.setHours(morningTime.hour, morningTime.minute, 0, 0);
+    
+    // If morning time has passed today, schedule for tomorrow
+    if (nextMorning <= now) {
+      nextMorning.setDate(nextMorning.getDate() + 1);
+    }
 
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '🌙 Don\'t break your streak!',
-            body: 'Don\'t forget to memorize the Quran today',
-            sound: true,
-          },
-          trigger: {
-            hour: eveningTime.hour,
-            minute: eveningTime.minute,
-            repeats: true,
-          },
-        });
+    // Calculate next evening time  
+    const nextEvening = new Date();
+    nextEvening.setHours(eveningTime.hour, eveningTime.minute, 0, 0);
+    
+    // If evening time has passed today, schedule for tomorrow
+    if (nextEvening <= now) {
+      nextEvening.setDate(nextEvening.getDate() + 1);
+    }
 
-        console.log('Delayed notifications scheduled successfully');
-      } catch (error) {
-        console.error('Error in delayed scheduling:', error);
-      }
-    }, 2000); // 2 second delay
+    console.log('📅 Next morning:', nextMorning.toLocaleString());
+    console.log('📅 Next evening:', nextEvening.toLocaleString());
 
+    // Schedule morning notification (FIXED TRIGGER FORMAT)
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '🌅 As-salamu alaykum!',
+        body: `Ready for today's Quran session? Goal: ${dailyGoal} ayahs`,
+        sound: true,
+      },
+      trigger: {
+        type: 'date',
+        date: nextMorning,
+        repeats: false,
+      },
+    });
+
+    // Schedule evening notification (FIXED TRIGGER FORMAT)
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '🌙 Don\'t break your streak!',
+        body: 'Don\'t forget to memorize the Quran today',
+        sound: true,
+      },
+      trigger: {
+        type: 'date', 
+        date: nextEvening,
+        repeats: false,
+      },
+    });
+
+    // Schedule recurring daily notifications (these start from tomorrow onwards)
+    const tomorrowMorning = new Date(nextMorning);
+    if (tomorrowMorning.toDateString() === now.toDateString()) {
+      tomorrowMorning.setDate(tomorrowMorning.getDate() + 1);
+    }
+
+    const tomorrowEvening = new Date(nextEvening);
+    if (tomorrowEvening.toDateString() === now.toDateString()) {
+      tomorrowEvening.setDate(tomorrowEvening.getDate() + 1);
+    }
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '🌅 As-salamu alaykum!',
+        body: `Ready for today's Quran session? Goal: ${dailyGoal} ayahs`,
+        sound: true,
+      },
+      trigger: {
+        hour: morningTime.hour,
+        minute: morningTime.minute,
+        repeats: true,
+      },
+    });
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '🌙 Don\'t break your streak!',
+        body: 'Don\'t forget to memorize the Quran today',
+        sound: true,
+      },
+      trigger: {
+        hour: eveningTime.hour,
+        minute: eveningTime.minute,
+        repeats: true,
+      },
+    });
+
+    console.log('✅ All notifications scheduled for future times only');
     return true;
   } catch (error) {
-    console.error('Error scheduling notifications:', error);
+    console.error('❌ Error scheduling notifications:', error);
     return false;
   }
 }
-
   static async saveNotificationSettings(morningTime, eveningTime, enabled = true) {
   try {
     let state = await StorageService.getState();
@@ -121,12 +172,14 @@ export class NotificationService {
     state.settings.morningTime = morningTime;
     state.settings.eveningTime = eveningTime;
     
-    console.log('Saving notification settings:', { enabled, morningTime, eveningTime });
+    console.log('💾 Saving notification settings:', { enabled, morningTime, eveningTime });
     
     await StorageService.saveState(state);
+    
+    // Don't auto-schedule here, let the calling function handle it
     return true;
   } catch (error) {
-    console.error('Error saving notification settings:', error);
+    console.error('❌ Error saving notification settings:', error);
     return false;
   }
 }
