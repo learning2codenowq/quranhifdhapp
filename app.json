@@ -47,7 +47,10 @@
         "INTERNET",
         "ACCESS_NETWORK_STATE",
         "MODIFY_AUDIO_SETTINGS",
-        "WAKE_LOCK"
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "android.permission.SCHEDULE_EXACT_ALARM"
       ],
       "blockedPermissions": [
         "CAMERA",
@@ -67,7 +70,16 @@
             "./assets/fonts/KFGQPC_Uthmanic_Script_HAFS_Regular.otf"
           ]
         }
-      ]
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#22575D",
+          "defaultChannel": "default"
+        }
+      ],
+      "expo-dev-client"
     ],
     "extra": {
       "eas": {

@@ -47,7 +47,7 @@ const onboardingData = [
   {
     id: 4,
     title: 'Daily Reminders',
-    subtitle: 'Stay consistent with gentle notifications',
+    subtitle: '',
     description: 'Set two daily reminders to help maintain your memorization habit',
     showTargetSelection: false,
     showNameInput: false,
