@@ -71,7 +71,11 @@ export class StorageService {
         autoPlayNext: true,
         showTranslations: true,
         arabicFontSize: 'Medium',
-        translationFontSize: 'Medium'
+        translationFontSize: 'Medium',
+        // Add notification settings to main settings
+        notificationsEnabled: userSettings.notificationsEnabled || false,
+        morningTime: userSettings.morningTime || { hour: 6, minute: 0 },
+        eveningTime: userSettings.eveningTime || { hour: 18, minute: 0 }
       }
     };
     

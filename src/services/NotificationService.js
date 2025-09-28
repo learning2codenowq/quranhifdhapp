@@ -6,7 +6,8 @@ import Constants from 'expo-constants';
 // Configure notification behavior
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,  
+    shouldShowList: true,    
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
@@ -46,71 +47,81 @@ export class NotificationService {
   }
 
   static async scheduleNotifications(morningTime, eveningTime, dailyGoal) {
-    try {
-      // Check if we're in Expo Go
-      const isExpoGo = Constants.executionEnvironment === 'storeClient';
-      
-      if (isExpoGo) {
-        console.log('Scheduling local notifications (Expo Go has limitations for push notifications)');
+  try {
+    console.log('Scheduling notifications for future only:', { morningTime, eveningTime });
+    
+    // Cancel existing notifications
+    await Notifications.cancelAllScheduledNotificationsAsync();
+
+    // Add a 5-minute delay to ensure no immediate notifications
+    const now = new Date();
+    const delayedScheduling = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes from now
+
+    // Schedule using setTimeout to avoid immediate triggers
+    setTimeout(async () => {
+      try {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '🌅 As-salamu alaykum!',
+            body: `Ready for today's Quran session? Goal: ${dailyGoal} ayahs`,
+            sound: true,
+          },
+          trigger: {
+            hour: morningTime.hour,
+            minute: morningTime.minute,
+            repeats: true,
+          },
+        });
+
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '🌙 Don\'t break your streak!',
+            body: 'Don\'t forget to memorize the Quran today',
+            sound: true,
+          },
+          trigger: {
+            hour: eveningTime.hour,
+            minute: eveningTime.minute,
+            repeats: true,
+          },
+        });
+
+        console.log('Delayed notifications scheduled successfully');
+      } catch (error) {
+        console.error('Error in delayed scheduling:', error);
       }
+    }, 2000); // 2 second delay
 
-      // Cancel existing notifications
-      await Notifications.cancelAllScheduledNotificationsAsync();
-
-      // Schedule morning notification
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '🌅 As-salamu alaykum!',
-          body: `Ready for today's Quran session? Goal: ${dailyGoal} ayahs`,
-          sound: true,
-        },
-        trigger: {
-          hour: morningTime.hour,
-          minute: morningTime.minute,
-          repeats: true,
-        },
-      });
-
-      // Schedule evening notification
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '🌙 Don\'t break your streak!',
-          body: 'Don\'t forget to memorize the Quran today',
-          sound: true,
-        },
-        trigger: {
-          hour: eveningTime.hour,
-          minute: eveningTime.minute,
-          repeats: true,
-        },
-      });
-
-      console.log('Notifications scheduled successfully');
-      return true;
-    } catch (error) {
-      console.error('Error scheduling notifications:', error);
-      // Don't throw error, just log it since notifications are not critical
-      return false;
-    }
+    return true;
+  } catch (error) {
+    console.error('Error scheduling notifications:', error);
+    return false;
   }
+}
 
   static async saveNotificationSettings(morningTime, eveningTime, enabled = true) {
   try {
     let state = await StorageService.getState();
     if (!state) {
-      state = {
-        settings: {}
-      };
+      state = { settings: {} };
     }
     if (!state.settings) {
       state.settings = {};
     }
     
+    // Save to both locations for compatibility
     state.settings.notifications = {
       enabled,
       morningTime,
       eveningTime
     };
+    
+    // Also save to main settings for easier access
+    state.settings.notificationsEnabled = enabled;
+    state.settings.morningTime = morningTime;
+    state.settings.eveningTime = eveningTime;
+    
+    console.log('Saving notification settings:', { enabled, morningTime, eveningTime });
     
     await StorageService.saveState(state);
     return true;
@@ -121,22 +132,32 @@ export class NotificationService {
 }
 
   static async getNotificationSettings() {
-    try {
-      const state = await StorageService.getState();
-      return state?.settings?.notifications || {
-        enabled: false,
-        morningTime: { hour: 6, minute: 0 },
-        eveningTime: { hour: 18, minute: 0 }
-      };
-    } catch (error) {
-      console.error('Error getting notification settings:', error);
-      return {
-        enabled: false,
-        morningTime: { hour: 6, minute: 0 },
-        eveningTime: { hour: 18, minute: 0 }
-      };
-    }
+  try {
+    const state = await StorageService.getState();
+    
+    // Check both locations for settings
+    const notifications = state?.settings?.notifications;
+    const fallbackEnabled = state?.settings?.notificationsEnabled;
+    const fallbackMorning = state?.settings?.morningTime;
+    const fallbackEvening = state?.settings?.eveningTime;
+    
+    const settings = {
+      enabled: notifications?.enabled || fallbackEnabled || false,
+      morningTime: notifications?.morningTime || fallbackMorning || { hour: 6, minute: 0 },
+      eveningTime: notifications?.eveningTime || fallbackEvening || { hour: 18, minute: 0 }
+    };
+    
+    console.log('Retrieved notification settings:', settings);
+    return settings;
+  } catch (error) {
+    console.error('Error getting notification settings:', error);
+    return {
+      enabled: false,
+      morningTime: { hour: 6, minute: 0 },
+      eveningTime: { hour: 18, minute: 0 }
+    };
   }
+}
 
   static async updateStreakNotification(streak) {
     try {

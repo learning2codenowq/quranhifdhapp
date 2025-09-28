@@ -63,9 +63,11 @@ const [eveningTimeDate, setEveningTimeDate] = useState(new Date(2024, 0, 1, 18, 
       }));
     }
     
-    // Load notification settings
+    // Load notification settings properly
     const notifSettings = await NotificationService.getNotificationSettings();
     setNotificationSettings(notifSettings);
+    
+    // Set the time picker dates based on loaded settings
     setMorningTimeDate(new Date(2024, 0, 1, notifSettings.morningTime.hour, notifSettings.morningTime.minute));
     setEveningTimeDate(new Date(2024, 0, 1, notifSettings.eveningTime.hour, notifSettings.eveningTime.minute));
   } catch (error) {
@@ -91,12 +93,14 @@ const [eveningTimeDate, setEveningTimeDate] = useState(new Date(2024, 0, 1, 18, 
     const newSettings = { ...notificationSettings, [key]: value };
     setNotificationSettings(newSettings);
     
+    // Save settings without triggering notifications
     await NotificationService.saveNotificationSettings(
       key === 'morningTime' ? value : newSettings.morningTime,
       key === 'eveningTime' ? value : newSettings.eveningTime,
       newSettings.enabled
     );
     
+    // Only reschedule if notifications are enabled
     if (newSettings.enabled) {
       await NotificationService.scheduleNotifications(
         key === 'morningTime' ? value : newSettings.morningTime,
@@ -104,6 +108,8 @@ const [eveningTimeDate, setEveningTimeDate] = useState(new Date(2024, 0, 1, 18, 
         settings.dailyGoal
       );
     }
+    
+    console.log('Settings updated - notifications scheduled for future times only');
   } catch (error) {
     console.error('Error updating notification setting:', error);
   }
@@ -118,6 +124,8 @@ const handleTimeChange = (event, selectedTime, isEvening = false) => {
       hour: selectedTime.getHours(),
       minute: selectedTime.getMinutes()
     };
+    
+    console.log(`Setting ${isEvening ? 'evening' : 'morning'} time:`, timeObj);
     
     if (isEvening) {
       setEveningTimeDate(selectedTime);
@@ -285,19 +293,25 @@ const formatTime = (timeObj) => {
         onValueChange: (value) => updateNotificationSetting('enabled', value)
       },
       {
-        type: 'button',
-        title: 'Morning Reminder',
-        subtitle: `${formatTime(notificationSettings.morningTime)} (preferably after Fajr)`,
-        icon: { name: 'sunny', type: 'Ionicons' },
-        onPress: () => setShowMorningTimePicker(true)
-      },
-      {
-        type: 'button',
-        title: 'Evening Reminder',
-        subtitle: `${formatTime(notificationSettings.eveningTime)} (after work/school)`,
-        icon: { name: 'moon', type: 'Ionicons' },
-        onPress: () => setShowEveningTimePicker(true)
-      }
+  type: 'button',
+  title: 'Morning Reminder',
+  subtitle: `${formatTime(notificationSettings.morningTime)} (preferably after Fajr)`,
+  icon: { name: 'sunny', type: 'Ionicons' },
+  onPress: () => {
+    setShowEveningTimePicker(false); // Close evening if open
+    setShowMorningTimePicker(true);
+  }
+},
+{
+  type: 'button',
+  title: 'Evening Reminder',
+  subtitle: `${formatTime(notificationSettings.eveningTime)} (after work/school)`,
+  icon: { name: 'moon', type: 'Ionicons' },
+  onPress: () => {
+    setShowMorningTimePicker(false); // Close morning if open
+    setShowEveningTimePicker(true);
+  }
+}
     ]
   },
   {
@@ -566,36 +580,103 @@ const formatTime = (timeObj) => {
           </ScrollView>
 
           <FontPreviewModal />
-         {/* Modern Time Pickers for Settings */}
+         {/* Custom Morning Time Picker Modal */}
 {showMorningTimePicker && (
-  <Modal visible={true} transparent={true} animationType="fade">
-    <View style={styles.settingsTimePickerOverlay}>
-      <View style={styles.settingsTimePickerModal}>
-        <Text style={styles.settingsTimePickerTitle}>Morning Reminder</Text>
-        <Text style={styles.settingsTimePickerSubtitle}>Preferably after Fajr prayer</Text>
+  <Modal visible={true} transparent={true} animationType="slide">
+    <View style={styles.modernTimePickerOverlay}>
+      <View style={styles.modernTimePickerModal}>
+        <Text style={styles.modernTimePickerTitle}>Morning Reminder</Text>
+        <Text style={styles.modernTimePickerSubtitle}>Preferably after Fajr prayer</Text>
         
-        <DateTimePicker
-          value={morningTimeDate}
-          mode="time"
-          is24Hour={false}
-          display="spinner"
-          onChange={(event, selectedTime) => handleTimeChange(event, selectedTime, false)}
-          textColor="#22575D"
-          themeVariant="light"
-        />
+        <View style={styles.modernTimeDisplay}>
+          <Text style={styles.modernTimeText}>
+            {formatTime(morningTimeDate)}
+          </Text>
+        </View>
+
+        <View style={styles.timeControls}>
+          <View style={styles.timeControlGroup}>
+            <Text style={styles.timeControlLabel}>Hour</Text>
+            <View style={styles.timeControlButtons}>
+              <TouchableOpacity 
+                style={styles.timeControlButton}
+                onPress={() => {
+                  const newTime = new Date(morningTimeDate);
+                  newTime.setHours((newTime.getHours() - 1 + 24) % 24);
+                  setMorningTimeDate(newTime);
+                }}
+              >
+                <Text style={styles.timeControlButtonText}>−</Text>
+              </TouchableOpacity>
+              
+              <Text style={styles.timeControlValue}>
+                {morningTimeDate.getHours().toString().padStart(2, '0')}
+              </Text>
+              
+              <TouchableOpacity 
+                style={styles.timeControlButton}
+                onPress={() => {
+                  const newTime = new Date(morningTimeDate);
+                  newTime.setHours((newTime.getHours() + 1) % 24);
+                  setMorningTimeDate(newTime);
+                }}
+              >
+                <Text style={styles.timeControlButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.timeControlGroup}>
+            <Text style={styles.timeControlLabel}>Minute</Text>
+            <View style={styles.timeControlButtons}>
+              <TouchableOpacity 
+                style={styles.timeControlButton}
+                onPress={() => {
+                  const newTime = new Date(morningTimeDate);
+                  newTime.setMinutes((newTime.getMinutes() - 15 + 60) % 60);
+                  setMorningTimeDate(newTime);
+                }}
+              >
+                <Text style={styles.timeControlButtonText}>−</Text>
+              </TouchableOpacity>
+              
+              <Text style={styles.timeControlValue}>
+                {morningTimeDate.getMinutes().toString().padStart(2, '0')}
+              </Text>
+              
+              <TouchableOpacity 
+                style={styles.timeControlButton}
+                onPress={() => {
+                  const newTime = new Date(morningTimeDate);
+                  newTime.setMinutes((newTime.getMinutes() + 15) % 60);
+                  setMorningTimeDate(newTime);
+                }}
+              >
+                <Text style={styles.timeControlButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
         
-        <View style={styles.settingsTimePickerButtons}>
+        <View style={styles.modernTimePickerButtons}>
           <TouchableOpacity 
-            style={styles.settingsTimePickerCancelButton}
+            style={styles.modernTimePickerCancelButton}
             onPress={() => setShowMorningTimePicker(false)}
           >
-            <Text style={styles.settingsTimePickerCancelText}>Cancel</Text>
+            <Text style={styles.modernTimePickerCancelText}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={styles.settingsTimePickerConfirmButton}
-            onPress={() => setShowMorningTimePicker(false)}
+            style={styles.modernTimePickerConfirmButton}
+            onPress={() => {
+              const timeObj = {
+                hour: morningTimeDate.getHours(),
+                minute: morningTimeDate.getMinutes()
+              };
+              updateNotificationSetting('morningTime', timeObj);
+              setShowMorningTimePicker(false);
+            }}
           >
-            <Text style={styles.settingsTimePickerConfirmText}>Save</Text>
+            <Text style={styles.modernTimePickerConfirmText}>Save</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -603,35 +684,103 @@ const formatTime = (timeObj) => {
   </Modal>
 )}
 
+{/* Custom Evening Time Picker Modal */}
 {showEveningTimePicker && (
-  <Modal visible={true} transparent={true} animationType="fade">
-    <View style={styles.settingsTimePickerOverlay}>
-      <View style={styles.settingsTimePickerModal}>
-        <Text style={styles.settingsTimePickerTitle}>Evening Reminder</Text>
-        <Text style={styles.settingsTimePickerSubtitle}>When done from work/school</Text>
+  <Modal visible={true} transparent={true} animationType="slide">
+    <View style={styles.modernTimePickerOverlay}>
+      <View style={styles.modernTimePickerModal}>
+        <Text style={styles.modernTimePickerTitle}>Evening Reminder</Text>
+        <Text style={styles.modernTimePickerSubtitle}>When done from work/school</Text>
         
-        <DateTimePicker
-          value={eveningTimeDate}
-          mode="time"
-          is24Hour={false}
-          display="spinner"
-          onChange={(event, selectedTime) => handleTimeChange(event, selectedTime, true)}
-          textColor="#22575D"
-          themeVariant="light"
-        />
+        <View style={styles.modernTimeDisplay}>
+          <Text style={styles.modernTimeText}>
+            {formatTime(eveningTimeDate)}
+          </Text>
+        </View>
+
+        <View style={styles.timeControls}>
+          <View style={styles.timeControlGroup}>
+            <Text style={styles.timeControlLabel}>Hour</Text>
+            <View style={styles.timeControlButtons}>
+              <TouchableOpacity 
+                style={styles.timeControlButton}
+                onPress={() => {
+                  const newTime = new Date(eveningTimeDate);
+                  newTime.setHours((newTime.getHours() - 1 + 24) % 24);
+                  setEveningTimeDate(newTime);
+                }}
+              >
+                <Text style={styles.timeControlButtonText}>−</Text>
+              </TouchableOpacity>
+              
+              <Text style={styles.timeControlValue}>
+                {eveningTimeDate.getHours().toString().padStart(2, '0')}
+              </Text>
+              
+              <TouchableOpacity 
+                style={styles.timeControlButton}
+                onPress={() => {
+                  const newTime = new Date(eveningTimeDate);
+                  newTime.setHours((newTime.getHours() + 1) % 24);
+                  setEveningTimeDate(newTime);
+                }}
+              >
+                <Text style={styles.timeControlButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.timeControlGroup}>
+            <Text style={styles.timeControlLabel}>Minute</Text>
+            <View style={styles.timeControlButtons}>
+              <TouchableOpacity 
+                style={styles.timeControlButton}
+                onPress={() => {
+                  const newTime = new Date(eveningTimeDate);
+                  newTime.setMinutes((newTime.getMinutes() - 15 + 60) % 60);
+                  setEveningTimeDate(newTime);
+                }}
+              >
+                <Text style={styles.timeControlButtonText}>−</Text>
+              </TouchableOpacity>
+              
+              <Text style={styles.timeControlValue}>
+                {eveningTimeDate.getMinutes().toString().padStart(2, '0')}
+              </Text>
+              
+              <TouchableOpacity 
+                style={styles.timeControlButton}
+                onPress={() => {
+                  const newTime = new Date(eveningTimeDate);
+                  newTime.setMinutes((newTime.getMinutes() + 15) % 60);
+                  setEveningTimeDate(newTime);
+                }}
+              >
+                <Text style={styles.timeControlButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
         
-        <View style={styles.settingsTimePickerButtons}>
+        <View style={styles.modernTimePickerButtons}>
           <TouchableOpacity 
-            style={styles.settingsTimePickerCancelButton}
+            style={styles.modernTimePickerCancelButton}
             onPress={() => setShowEveningTimePicker(false)}
           >
-            <Text style={styles.settingsTimePickerCancelText}>Cancel</Text>
+            <Text style={styles.modernTimePickerCancelText}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={styles.settingsTimePickerConfirmButton}
-            onPress={() => setShowEveningTimePicker(false)}
+            style={styles.modernTimePickerConfirmButton}
+            onPress={() => {
+              const timeObj = {
+                hour: eveningTimeDate.getHours(),
+                minute: eveningTimeDate.getMinutes()
+              };
+              updateNotificationSetting('eveningTime', timeObj);
+              setShowEveningTimePicker(false);
+            }}
           >
-            <Text style={styles.settingsTimePickerConfirmText}>Save</Text>
+            <Text style={styles.modernTimePickerConfirmText}>Save</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1062,6 +1211,125 @@ dailyTargetModalCancelButton: {
 },
 dailyTargetModalCancelText: {
   color: '#666',
+  fontSize: 16,
+  fontWeight: '600',
+},
+modernTimePickerOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 20,
+},
+modernTimePickerModal: {
+  backgroundColor: 'white',
+  borderRadius: 24,
+  padding: 30,
+  width: '100%',
+  maxWidth: 350,
+  alignItems: 'center',
+  elevation: 10,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 5 },
+  shadowOpacity: 0.3,
+  shadowRadius: 10,
+},
+modernTimePickerTitle: {
+  fontSize: 22,
+  fontWeight: 'bold',
+  color: Theme.colors.primary,
+  marginBottom: 8,
+  textAlign: 'center',
+},
+modernTimePickerSubtitle: {
+  fontSize: 14,
+  color: '#666',
+  marginBottom: 30,
+  textAlign: 'center',
+  fontStyle: 'italic',
+},
+modernTimeDisplay: {
+  backgroundColor: Theme.colors.gray100,
+  borderRadius: 16,
+  paddingVertical: 20,
+  paddingHorizontal: 30,
+  marginBottom: 30,
+},
+modernTimeText: {
+  fontSize: 32,
+  fontWeight: 'bold',
+  color: Theme.colors.primary,
+  textAlign: 'center',
+},
+timeControls: {
+  flexDirection: 'row',
+  gap: 40,
+  marginBottom: 30,
+},
+timeControlGroup: {
+  alignItems: 'center',
+},
+timeControlLabel: {
+  fontSize: 14,
+  color: '#666',
+  marginBottom: 16,
+  fontWeight: '600',
+},
+timeControlButtons: {
+  alignItems: 'center',
+  gap: 12,
+},
+timeControlButton: {
+  backgroundColor: Theme.colors.secondary,
+  borderRadius: 12,
+  width: 44,
+  height: 44,
+  justifyContent: 'center',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 2,
+},
+timeControlButtonText: {
+  fontSize: 24,
+  fontWeight: 'bold',
+  color: 'white',
+},
+timeControlValue: {
+  fontSize: 24,
+  fontWeight: 'bold',
+  color: Theme.colors.primary,
+  minWidth: 40,
+  textAlign: 'center',
+},
+modernTimePickerButtons: {
+  flexDirection: 'row',
+  gap: 16,
+  width: '100%',
+},
+modernTimePickerCancelButton: {
+  flex: 1,
+  backgroundColor: '#f5f5f5',
+  borderRadius: 16,
+  paddingVertical: 16,
+  alignItems: 'center',
+},
+modernTimePickerConfirmButton: {
+  flex: 1,
+  backgroundColor: Theme.colors.secondary,
+  borderRadius: 16,
+  paddingVertical: 16,
+  alignItems: 'center',
+},
+modernTimePickerCancelText: {
+  color: '#666',
+  fontSize: 16,
+  fontWeight: '600',
+},
+modernTimePickerConfirmText: {
+  color: 'white',
   fontSize: 16,
   fontWeight: '600',
 },
