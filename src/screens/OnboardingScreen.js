@@ -135,10 +135,8 @@ export default function OnboardingScreen({ navigation }) {
   navigation.replace('Dashboard');
   
   // Schedule notifications AFTER navigation to prevent immediate triggers
-  setTimeout(async () => {
-    await NotificationService.scheduleNotifications(morningTimeObj, eveningTimeObj, selectedTarget);
-    console.log('📋 Notifications scheduled after onboarding completion');
-  }, 3000);
+  await NotificationService.scheduleNotifications(morningTimeObj, eveningTimeObj, selectedTarget);
+console.log('📋 Notifications scheduled for future times only');
 }
   };
 
@@ -444,36 +442,38 @@ const styles = StyleSheet.create({
   
   centeredContent: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'center', // Changed from space-between to center
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 20,
+    paddingVertical: 40, // Reduced from more
+    paddingTop: 20, // Much less top padding
   },
   
   headerSection: {
     alignItems: 'center',
-    marginBottom: 60,
+    marginBottom: 30, // Reduced from 60
     paddingHorizontal: 16,
+    marginTop: 0, // Remove extra top margin
   },
   title: {
-    fontSize: 26,
+    fontSize: 24, // Reduced from 26
     fontWeight: '800',
     color: 'white',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 12, // Reduced from 16
     letterSpacing: 0.3,
-    lineHeight: 36,
+    lineHeight: 32, // Reduced from 36
   },
   subtitle: {
-    fontSize: 25,
+    fontSize: 18, // Reduced from 20
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.95)',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 10, // Reduced from 12
     letterSpacing: 0.2,
   },
   description: {
-    fontSize: 16,
+    fontSize: 14, // Reduced from 16
     color: 'rgba(255, 255, 255, 0.85)',
     textAlign: 'center',
     lineHeight: 20,
@@ -483,6 +483,7 @@ const styles = StyleSheet.create({
   dynamicContent: {
     alignItems: 'center',
     width: '100%',
+    flex: 0, // Don't let it expand
   },
 
   nameInput: {
@@ -507,27 +508,28 @@ const styles = StyleSheet.create({
   targetSelectionContainer: {
     width: '100%',
     alignItems: 'center',
+    marginBottom: 15, // Reduced spacing
   },
   targetGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     width: '90%',
-    marginBottom: 30,
+    marginBottom: 20, // Reduced from 30
   },
   targetItemContainer: {
     width: '48%',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12, // Reduced from 16
   },
   targetCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.12)',
     borderRadius: 16,
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.25)',
-    padding: 20,
+    padding: 18, // Reduced from 20
     width: '100%',
-    height: 110,
+    height: 100, // Reduced from 110
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -547,14 +549,14 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.02 }],
   },
   targetNumber: {
-    fontSize: 32,
+    fontSize: 30, // Reduced from 32
     fontWeight: '800',
     color: 'white',
     marginBottom: 4,
     letterSpacing: -0.5,
   },
   targetLabel: {
-    fontSize: 12,
+    fontSize: 11, // Reduced from 12
     color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
   },
@@ -562,10 +564,10 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   recommendedBadge: {
-    fontSize: 8,
+    fontSize: 7, // Reduced from 8
     color: '#d4af37',
     fontWeight: '700',
-    marginTop: 8,
+    marginTop: 6, // Reduced from 8
     backgroundColor: 'rgba(212, 175, 55, 0.2)',
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -614,43 +616,44 @@ const styles = StyleSheet.create({
   estimateCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 14,
-    padding: 20,
+    padding: 16, // Reduced from 20
     width: '90%',
     borderLeftWidth: 4,
     borderLeftColor: '#d4af37',
     alignItems: 'center',
+    marginTop: 10, // Added spacing from grid
   },
   estimateTitle: {
-    fontSize: 16,
+    fontSize: 15, // Reduced from 16
     fontWeight: '700',
     color: 'white',
-    marginBottom: 12,
+    marginBottom: 10, // Reduced from 12
     textAlign: 'center',
   },
   estimateDetails: {
     alignItems: 'center',
   },
   estimateDays: {
-    fontSize: 18,
+    fontSize: 16, // Reduced from 18
     color: 'white',
     fontWeight: '700',
-    marginBottom: 6,
+    marginBottom: 5, // Reduced from 6
   },
   estimateDate: {
-    fontSize: 14,
+    fontSize: 13, // Reduced from 14
     color: 'rgba(255, 255, 255, 0.85)',
     fontWeight: '500',
   },
 
   bottomNavigation: {
     paddingHorizontal: 24,
-    paddingBottom: 40,
-    paddingTop: 20,
+    paddingBottom: 30, // Reduced from 40
+    paddingTop: 15, // Reduced from 20
   },
   indicatorContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 32,
+    marginBottom: 20, // Reduced from 32
     gap: 8,
   },
   indicator: {
@@ -705,7 +708,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
   },
-
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
