@@ -60,18 +60,24 @@ export class NotificationService {
     const nextMorning = new Date();
     nextMorning.setHours(morningTime.hour, morningTime.minute, 0, 0);
     
-    // If morning time already passed today, schedule for tomorrow
-    if (nextMorning <= now) {
+    // CRITICAL FIX: Add 5 minute buffer to prevent immediate triggers
+    const bufferTime = 5 * 60 * 1000; // 5 minutes in milliseconds
+    const nowPlusBuffer = new Date(now.getTime() + bufferTime);
+    
+    // If morning time already passed today OR is within next 5 minutes, schedule for tomorrow
+    if (nextMorning <= nowPlusBuffer) {
       nextMorning.setDate(nextMorning.getDate() + 1);
+      console.log('⏭️ Morning time passed or too soon, scheduling for tomorrow');
     }
     
     // Calculate next evening occurrence  
     const nextEvening = new Date();
     nextEvening.setHours(eveningTime.hour, eveningTime.minute, 0, 0);
     
-    // If evening time already passed today, schedule for tomorrow
-    if (nextEvening <= now) {
+    // If evening time already passed today OR is within next 5 minutes, schedule for tomorrow
+    if (nextEvening <= nowPlusBuffer) {
       nextEvening.setDate(nextEvening.getDate() + 1);
+      console.log('⏭️ Evening time passed or too soon, scheduling for tomorrow');
     }
 
     console.log('📅 Next morning notification:', nextMorning.toLocaleString());
@@ -98,9 +104,6 @@ export class NotificationService {
     });
 
     // Schedule recurring morning (starts day after first notification)
-    const recurringMorningStart = new Date(nextMorning);
-    recurringMorningStart.setDate(recurringMorningStart.getDate() + 1);
-    
     await Notifications.scheduleNotificationAsync({
       content: {
         title: '🌅 As-salamu alaykum!',
@@ -115,9 +118,6 @@ export class NotificationService {
     });
 
     // Schedule recurring evening (starts day after first notification)
-    const recurringEveningStart = new Date(nextEvening);
-    recurringEveningStart.setDate(recurringEveningStart.getDate() + 1);
-    
     await Notifications.scheduleNotificationAsync({
       content: {
         title: '🌙 Don\'t break your streak!',

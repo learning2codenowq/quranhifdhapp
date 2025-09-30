@@ -134,9 +134,12 @@ export default function OnboardingScreen({ navigation }) {
   // Navigate to Dashboard first
   navigation.replace('Dashboard');
   
-  // Schedule notifications AFTER navigation to prevent immediate triggers
-  await NotificationService.scheduleNotifications(morningTimeObj, eveningTimeObj, selectedTarget);
-console.log('📋 Notifications scheduled for future times only');
+  // Wait 2 seconds after navigation, then schedule notifications
+  // This prevents any immediate triggers during app initialization
+  setTimeout(async () => {
+    await NotificationService.scheduleNotifications(morningTimeObj, eveningTimeObj, selectedTarget);
+    console.log('📋 Notifications scheduled for future times only');
+  }, 2000);
 }
   };
 

@@ -9,7 +9,9 @@ import {
   Alert,
   Modal,
   TextInput,
-  Animated
+  Animated,
+  Platform,
+  Vibration
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -32,6 +34,7 @@ export default function QuranReaderScreen({ route, navigation }) {
   const [audioStatus, setAudioStatus] = useState({ isPlaying: false, hasSound: false });
   const [playingAyah, setPlayingAyah] = useState(null);
   const [ayahAudioUrls, setAyahAudioUrls] = useState({});
+  const [ayahCounters, setAyahCounters] = useState({});
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -60,11 +63,13 @@ export default function QuranReaderScreen({ route, navigation }) {
   const isReplayingRef = React.useRef(false);
   const flatListRef = React.useRef(null);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const counterLongPressTimer = useRef(null);
 
   console.log('🎯 QuranReaderScreen mounted');
   console.log('🔢 surahId from params:', surahId);
   console.log('📦 route.params:', route?.params);
 
+  // Cleanup on component unmount
   // Cleanup on component unmount
   useEffect(() => {
     console.log('🔥 useEffect triggered with surahId:', surahId);
@@ -174,6 +179,7 @@ export default function QuranReaderScreen({ route, navigation }) {
       ayah.surahId === currentSurahId && ayah.ayahNumber === ayahNumber
     );
   };
+  
 
   const toggleAyahMemorization = async (currentSurahId, ayahNumber, isCurrentlyMemorized) => {
     try {
@@ -308,6 +314,27 @@ export default function QuranReaderScreen({ route, navigation }) {
     console.log(`📱 Ayah ${ayahNumber} not found in list`);
   }
 };
+
+// Counter functions
+  const handleCounterTap = (ayahNumber) => {
+    const currentCount = ayahCounters[ayahNumber] || 0;
+    setAyahCounters(prev => ({
+      ...prev,
+      [ayahNumber]: currentCount + 1
+    }));
+  };
+
+  const handleCounterReset = (ayahNumber) => {
+    setAyahCounters(prev => ({
+      ...prev,
+      [ayahNumber]: 0
+    }));
+    try {
+      Vibration.vibrate(50); // Quick haptic feedback
+    } catch (error) {
+      console.log('Vibration not available');
+    }
+  };
 
   const openReplayModal = () => {
     const maxAyahs = ayahs.length;
@@ -640,6 +667,8 @@ export default function QuranReaderScreen({ route, navigation }) {
       playingAyah.surahId === currentSurahId && 
       playingAyah.ayahNumber === item.verse_number;
     
+    const currentCount = ayahCounters[item.verse_number] || 0;
+    
     return (
       <View style={styles.modernAyahContainer}>
         {/* Ayah Number Badge */}
@@ -673,6 +702,41 @@ export default function QuranReaderScreen({ route, navigation }) {
             </Text>
           </View>
         )}
+        
+        {/*Repetition Counter */}
+        
+        <View style={styles.counterContainer}>
+          <TouchableOpacity
+            style={styles.counterButton}
+            onPress={() => handleCounterTap(item.verse_number)}
+            activeOpacity={0.7}
+            accessible={true}
+            accessibilityLabel={`Repetition counter: ${currentCount} times`}
+            accessibilityHint="Tap to increment repetition count"
+          >
+            <Text style={styles.counterLabel}>Repetitions</Text>
+            <Text style={styles.counterNumber}>{currentCount}</Text>
+          </TouchableOpacity>
+          
+          {/* Reset Button - only show if count > 0 */}
+          {currentCount > 0 && (
+            <TouchableOpacity
+              style={styles.resetButton}
+              onPress={() => handleCounterReset(item.verse_number)}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityLabel="Reset counter"
+              accessibilityHint="Reset repetition count to zero"
+            >
+              <Icon 
+                name="refresh" 
+                type="Ionicons" 
+                size={20} 
+                color="white" 
+              />
+            </TouchableOpacity>
+          )}
+        </View>
         
         {/* Modern Controls */}
         <View style={styles.modernControls}>
@@ -1131,6 +1195,49 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 8,
     marginBottom: 8,
+  },
+  counterContainer: {
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  counterButton: {
+    backgroundColor: '#2C3E3F', // Dark teal-gray from theme
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    minWidth: 140,
+    alignItems: 'center',
+    ...Theme.shadows.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  counterLabel: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '600',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  counterNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  resetButton: {
+    backgroundColor: '#556B6D', // Medium teal-gray from theme
+    borderRadius: 12,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+    ...Theme.shadows.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   modernAudioButton: {
     backgroundColor: Theme.colors.primary,

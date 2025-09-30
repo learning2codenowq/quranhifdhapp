@@ -110,15 +110,35 @@ export class QuranUtils {
 
     const today = new Date();
     let streak = 0;
+    let startCounting = false;
 
+    // FIXED: Allow today to have no progress yet, start counting from yesterday
     for (let i = 0; i < 365; i++) {
       const checkDate = new Date(today);
       checkDate.setDate(today.getDate() - i);
       const dateString = this.localISO(checkDate);
       
-      if (progressData[dateString] && progressData[dateString] > 0) {
+      const hasProgress = progressData[dateString] && progressData[dateString] > 0;
+      
+      // For day 0 (today), we don't break the streak if there's no progress yet
+      if (i === 0) {
+        if (hasProgress) {
+          streak++;
+          startCounting = true;
+        }
+        // If today has no progress, we continue to check yesterday
+        continue;
+      }
+      
+      // For all other days, if there's progress, increment streak
+      if (hasProgress) {
         streak++;
+        startCounting = true;
+      } else if (startCounting) {
+        // Only break if we've started counting and hit a day with no progress
+        break;
       } else {
+        // Haven't started counting yet, keep looking back
         break;
       }
     }
@@ -214,7 +234,12 @@ export class QuranUtils {
       };
     }
     
-    if (memorizationHistory.length === 1) {
+    // FIXED: Check if there are previous days with memorization (not just today)
+    const today = this.localISO();
+    const previousDays = memorizationHistory.filter(day => day.date !== today);
+    
+    if (previousDays.length === 0) {
+      // Only today has memorization, come back tomorrow
       return {
         totalRecitations: 0,
         description: "Come back tomorrow to start revision",
@@ -224,16 +249,16 @@ export class QuranUtils {
     }
     
     // From day 2 onwards: revise previous days (rolling 6-day window)
-    const dayNumber = memorizationHistory.length;
+    const totalDays = memorizationHistory.length;
     
     // Determine which days to revise (previous 6 days max, excluding today)
     let daysToRevise;
-    if (dayNumber <= 7) {
+    if (previousDays.length <= 6) {
       // Days 2-7: revise all previous days
-      daysToRevise = memorizationHistory.slice(0, -1); // All except today
+      daysToRevise = previousDays;
     } else {
       // Day 8+: revise last 6 days (rolling window)
-      daysToRevise = memorizationHistory.slice(-7, -1); // Last 6 days (excluding today)
+      daysToRevise = previousDays.slice(-6);
     }
     
     return {
