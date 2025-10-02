@@ -268,7 +268,11 @@ const formatTime = (timeObj) => {
 
   const SettingItem = ({ title, subtitle, onPress, rightComponent, dangerous = false }) => (
   <TouchableOpacity
-    style={[styles.settingItem, dangerous && styles.dangerousItem]}
+    style={[
+      styles.settingItem, 
+      dangerous && styles.dangerousItem,
+      settings.darkMode && !dangerous && { backgroundColor: themedColors.cardBackground }
+    ]}
     onPress={onPress}
     disabled={!onPress}
     accessible={true}
@@ -276,19 +280,35 @@ const formatTime = (timeObj) => {
     accessibilityHint={subtitle}
     accessibilityRole="button"
   >
-      <View style={styles.settingContent}>
-        <Text style={[styles.settingTitle, dangerous && styles.dangerousText]}>
-          {title}
-        </Text>
-        <Text style={[styles.settingSubtitle, dangerous && { color: 'rgba(255, 255, 255, 0.8)' }]}>
-          {subtitle}
-        </Text>
-      </View>
-      {rightComponent || <Text style={[styles.settingArrow, dangerous && { color: 'white' }]}>→</Text>}
-    </TouchableOpacity>
-  );
+    <View style={styles.settingContent}>
+      <Text style={[
+        styles.settingTitle, 
+        dangerous && styles.dangerousText,
+        settings.darkMode && !dangerous && { color: themedColors.textPrimary }
+      ]}>
+        {title}
+      </Text>
+      <Text style={[
+        styles.settingSubtitle, 
+        dangerous && { color: 'rgba(255, 255, 255, 0.8)' },
+        settings.darkMode && !dangerous && { color: themedColors.textSecondary }
+      ]}>
+        {subtitle}
+      </Text>
+    </View>
+    {rightComponent || (
+      <Text style={[
+        styles.settingArrow, 
+        dangerous && { color: 'white' },
+        settings.darkMode && !dangerous && { color: themedColors.secondary }
+      ]}>
+        →
+      </Text>
+    )}
+  </TouchableOpacity>
+);
 
-  const SwitchItem = ({ title, subtitle, value, onValueChange }) => (
+  const SwitchItem = ({ title, subtitle, value, onValueChange, dangerous = false }) => (
     <View style={[
   styles.settingItem,
   dangerous && styles.dangerousItem,
