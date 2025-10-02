@@ -4,9 +4,9 @@ import { Logger } from '../utils/Logger';
 export class QuranService {
   static BASE_URL = 'https://quran.shayanshehzadqureshi.workers.dev/';
 
-  static async getSurahWithTranslation(surahId, reciterId = null) {
+  static async getSurahWithTranslation(surahId, reciterId = null, scriptType = 'uthmani') {
   try {
-    Logger.log(`🚀 Starting API call for surah ${surahId} with reciter ${reciterId || 'default'}...`);
+    Logger.log(`🚀 Starting API call for surah ${surahId} with reciter ${reciterId || 'default'} and script ${scriptType}...`);
     
     // Check internet connection first
     const hasInternet = await NetworkUtils.checkInternetConnection();
@@ -18,11 +18,23 @@ export class QuranService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 25000);
       
-      // Build URL with optional reciterId parameter
+      // Build URL with optional reciterId and scriptType parameters
       let apiUrl = `${this.BASE_URL}/api/qf/verses?chapter=${surahId}&perPage=300`;
       if (reciterId) {
         apiUrl += `&reciterId=${reciterId}`;
       }
+      // Map scriptType to textFormat for API
+      let textFormat = scriptType;
+      if (scriptType === 'tajweed') {
+        textFormat = 'tajweed';
+      } else if (scriptType === 'indopak') {
+        textFormat = 'indopak';
+      } else if (scriptType === 'imlaei') {
+        textFormat = 'imlaei';
+      } else {
+        textFormat = 'uthmani';
+      }
+      apiUrl += `&textFormat=${textFormat}`;
       
       Logger.log(`📡 API URL: ${apiUrl}`);
       const response = await fetch(apiUrl, { 

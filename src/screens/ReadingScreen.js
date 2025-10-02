@@ -12,11 +12,12 @@ export default function ReadingScreen({ navigation }) {
       id: 'classic',
       title: 'Classic Mushaf',
       subtitle: 'Traditional page-by-page reading',
-      description: '604 pages • Uthmani script',
+      description: 'Coming soon',
       icon: 'book',
-      color: Theme.colors.primary,
-      gradient: ['#22575D', '#55BAC6'],
-      screen: 'ClassicMushaf'
+      color: Theme.colors.secondary,
+      gradient: ['#B8947D', '#D4C4B0'],
+      screen: null,
+      disabled: true
     },
     {
       id: 'wordbyword',

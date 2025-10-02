@@ -8,44 +8,62 @@ export const Theme = {
 
 colors: {
   // Primary Brand Colors (Your Peaceful Teal)
-  primary: '#22575D',           // Dark teal - your main color
-  primaryLight: '#55BAC6',      // Light teal - your accent color
-  secondary: '#d4af37',         // Warm beige - complements teal beautifully
-  secondaryLight: '#f1cd57ff',    // Lighter beige
+  primary: '#22575D',
+  primaryLight: '#55BAC6',
+  secondary: '#d4af37',
+  secondaryLight: '#f1cd57ff',
   
-  // Success & Achievement Colors (Soft & Peaceful)
-  success: '#6B9B7C',          // Soft sage green
-  successLight: '#E8F4EA',     // Very light sage
+  // Success & Achievement Colors
+  success: '#6B9B7C',
+  successLight: '#E8F4EA',
   
-  // Background Colors (Clean & Peaceful)
-  background: '#FFFFFF',        // Your white
+  // Background Colors (Light Mode)
+  background: '#FFFFFF',
   cardBackground: 'rgba(255, 255, 255, 0.95)',
-  overlay: 'rgba(34, 87, 93, 0.6)',  // Teal overlay instead of black
+  overlay: 'rgba(34, 87, 93, 0.6)',
   
-  // Text Colors (Softer & More Peaceful)
-  textPrimary: '#2C3E3F',      // Soft dark teal-gray
-  textSecondary: '#556B6D',    // Medium teal-gray
-  textMuted: '#7A8E90',        // Light teal-gray
-  textOnDark: '#FFFFFF',       // White on dark
-  textOnPrimary: '#FFFFFF',    // White on primary
+  // Text Colors (Light Mode)
+  textPrimary: '#2C3E3F',
+  textSecondary: '#556B6D',
+  textMuted: '#7A8E90',
+  textOnDark: '#FFFFFF',
+  textOnPrimary: '#FFFFFF',
   
-  // Status Colors (Peaceful Versions)
-  warning: '#D4A574',          // Soft gold warning
-  error: '#C87B7B',            // Soft coral error
-  info: '#55BAC6',             // Your light teal for info
+  // Status Colors
+  warning: '#D4A574',
+  error: '#C87B7B',
+  info: '#55BAC6',
   
   // Neutral Colors
   white: '#FFFFFF',
-  light: '#F8FAFA',            // Very light teal tint
-  gray100: '#F5F7F7',         // Subtle teal tint
-  gray200: '#E8ECEC',         // Light teal-gray
-  gray300: '#D1D9DA',         // Medium teal-gray
-  gray400: '#A8B5B6',         // 
-  gray500: '#7A8E90',         // 
-  gray600: '#556B6D',         // 
-  gray700: '#3E5052',         // 
-  gray800: '#2C3E3F',         // 
-  gray900: '#1A2829',         // Darkest teal-gray
+  light: '#F8FAFA',
+  gray100: '#F5F7F7',
+  gray200: '#E8ECEC',
+  gray300: '#D1D9DA',
+  gray400: '#A8B5B6',
+  gray500: '#7A8E90',
+  gray600: '#556B6D',
+  gray700: '#3E5052',
+  gray800: '#2C3E3F',
+  gray900: '#1A2829',
+
+  // DARK MODE COLORS (NEW)
+  dark: {
+    background: '#0F1419',
+    cardBackground: '#1A1F26',
+    surface: '#252C35',
+    primary: '#55BAC6',
+    secondary: '#E8C468',
+    textPrimary: '#E8ECEC',
+    textSecondary: '#A8B5B6',
+    textMuted: '#7A8E90',
+    border: '#2C3E3F',
+    overlay: 'rgba(15, 20, 25, 0.9)',
+    
+    // Gradients for dark mode
+    gradient1: '#1A1F26',
+    gradient2: '#252C35',
+  }
 },
   
   // Typography
@@ -173,6 +191,40 @@ export const createCardStyle = (theme = Theme) => ({
   ...theme.shadows.md,
 });
 
+export const getThemedColors = (isDarkMode) => {
+  if (isDarkMode) {
+    return {
+      background: Theme.colors.dark.background,
+      cardBackground: Theme.colors.dark.cardBackground,
+      surface: Theme.colors.dark.surface,
+      primary: Theme.colors.dark.primary,
+      secondary: Theme.colors.dark.secondary,
+      textPrimary: Theme.colors.dark.textPrimary,
+      textSecondary: Theme.colors.dark.textSecondary,
+      textMuted: Theme.colors.dark.textMuted,
+      border: Theme.colors.dark.border,
+      overlay: Theme.colors.dark.overlay,
+      gradients: {
+        primary: [Theme.colors.dark.gradient1, Theme.colors.dark.gradient2],
+        secondary: [Theme.colors.dark.surface, Theme.colors.dark.cardBackground],
+      }
+    };
+  }
+  return {
+    background: Theme.colors.background,
+    cardBackground: Theme.colors.cardBackground,
+    surface: Theme.colors.light,
+    primary: Theme.colors.primary,
+    secondary: Theme.colors.secondary,
+    textPrimary: Theme.colors.textPrimary,
+    textSecondary: Theme.colors.textSecondary,
+    textMuted: Theme.colors.textMuted,
+    border: Theme.colors.gray200,
+    overlay: Theme.colors.overlay,
+    gradients: Theme.gradients
+  };
+};
+
 export const createButtonStyle = (variant = 'primary', theme = Theme) => {
   const baseStyle = {
     borderRadius: theme.borderRadius.full,
@@ -197,5 +249,7 @@ export const createButtonStyle = (variant = 'primary', theme = Theme) => {
         ...baseStyle,
         backgroundColor: theme.colors.primary,
       };
+      
   }
+  
 };

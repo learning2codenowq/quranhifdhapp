@@ -10,6 +10,7 @@ import { Theme } from '../styles/theme';
 import { Icon } from '../components/Icon';
 import CustomTimePicker from '../components/CustomTimePicker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { getThemedColors } from '../styles/theme';
 import { QuranService } from '../services/QuranService';
 
 
@@ -22,6 +23,9 @@ export default function SettingsScreen({ navigation }) {
   showTranslations: true,
   arabicFontSize: 'Medium',
   translationFontSize: 'Medium',
+  darkMode: false, 
+  tajweedHighlighting: false, 
+  scriptType: 'uthmani',
   
   // App Settings
   dailyGoal: 10,
@@ -65,22 +69,22 @@ const [eveningTimeDate, setEveningTimeDate] = useState(new Date(2024, 0, 1, 18, 
         showTranslations: state.settings.showTranslations !== false,
         arabicFontSize: state.settings.arabicFontSize || 'Medium',
         translationFontSize: state.settings.translationFontSize || 'Medium',
-        selectedReciter: state.settings.selectedReciter || null, // NEW LINE
+        selectedReciter: state.settings.selectedReciter || null,
+        darkMode: state.settings.darkMode || false,  // NEW
+        tajweedHighlighting: state.settings.tajweedHighlighting || false,  // NEW
+        scriptType: state.settings.scriptType || 'uthmani',  // NEW
       };
       Logger.log('🎵 Loaded settings:', newSettings);
       setSettings(newSettings);
-      setSelectedReciterId(newSettings.selectedReciter); // NEW LINE
+      setSelectedReciterId(newSettings.selectedReciter);
     }
     
-
     const recitersList = await QuranService.getReciters();
     setReciters(recitersList);
     
-
     const notifSettings = await NotificationService.getNotificationSettings();
     setNotificationSettings(notifSettings);
     
-    // Set the time picker dates based on loaded settings
     setMorningTimeDate(new Date(2024, 0, 1, notifSettings.morningTime.hour, notifSettings.morningTime.minute));
     setEveningTimeDate(new Date(2024, 0, 1, notifSettings.eveningTime.hour, notifSettings.eveningTime.minute));
   } catch (error) {
@@ -209,8 +213,14 @@ const formatTime = (timeObj) => {
   const FontPreviewModal = () => (
     <Modal visible={fontPreviewModal} transparent={true} animationType="slide">
       <View style={styles.modalOverlay}>
-        <View style={styles.fontPreviewModal}>
-          <Text style={styles.modalTitle}>Font Size Preview</Text>
+        <View style={[
+  styles.fontPreviewModal,
+  settings.darkMode && { backgroundColor: themedColors.cardBackground }
+]}>
+          <Text style={[
+  styles.modalTitle,
+  settings.darkMode && { color: themedColors.textPrimary }
+]}>Font Size Preview</Text>
           
           <View style={styles.previewContainer}>
             <Text style={styles.previewLabel}>Arabic Text ({previewFontSize})</Text>
@@ -279,7 +289,11 @@ const formatTime = (timeObj) => {
   );
 
   const SwitchItem = ({ title, subtitle, value, onValueChange }) => (
-    <View style={styles.settingItem}>
+    <View style={[
+  styles.settingItem,
+  dangerous && styles.dangerousItem,
+  settings.darkMode && !dangerous && { backgroundColor: themedColors.cardBackground }
+]}>
       <View style={styles.settingContent}>
         <Text style={styles.settingTitle}>{title}</Text>
         <Text style={styles.settingSubtitle}>{subtitle}</Text>
@@ -373,112 +387,157 @@ const formatTime = (timeObj) => {
     ]
   },
   {
-    title: '🎨 Display Settings', 
-    icon: { name: 'color-palette', type: 'Ionicons' },
-    items: [
-      {
-        type: 'switch',
-        title: 'Show Translations',
-        subtitle: 'Display English translations below Arabic text',
-        value: settings.showTranslations,
-        onValueChange: (value) => updateSetting('showTranslations', value)
-      },
-      {
-        type: 'button',
-        title: 'Arabic Font Size',
-        subtitle: `Current: ${settings.arabicFontSize}`,
-        icon: { name: 'text', type: 'Ionicons' },
-        onPress: () => {
-          Alert.alert(
-            'Arabic Font Size',
-            'Choose your preferred size for Arabic text',
-            [
-              { 
-                text: 'Small', 
-                onPress: () => {
-                  setPreviewFontSize('Small');
-                  setFontPreviewModal(true);
-                }
-              },
-              { 
-                text: 'Medium', 
-                onPress: () => {
-                  setPreviewFontSize('Medium');
-                  setFontPreviewModal(true);
-                }
-              },
-              { 
-                text: 'Large', 
-                onPress: () => {
-                  setPreviewFontSize('Large');
-                  setFontPreviewModal(true);
-                }
-              },
-              { 
-                text: 'Extra Large', 
-                onPress: () => {
-                  setPreviewFontSize('Extra Large');
-                  setFontPreviewModal(true);
-                }
-              },
-              { text: 'Cancel', style: 'cancel' }
-            ]
-          );
-        }
-      },
-      {
-        type: 'button',
-        title: 'Translation Font Size',
-        subtitle: `Current: ${settings.translationFontSize}`,
-        icon: { name: 'text-outline', type: 'Ionicons' },
-        onPress: () => {
-          Alert.alert(
-            'Translation Font Size',
-            'Choose your preferred size for translation text',
-            [
-              { 
-                text: 'Small', 
-                onPress: () => {
-                  setPreviewFontSize(settings.arabicFontSize);
-                  setSettings(prev => ({ ...prev, translationFontSize: 'Small' }));
-                  updateSetting('translationFontSize', 'Small');
-                  setFontPreviewModal(true);
-                }
-              },
-              { 
-                text: 'Medium', 
-                onPress: () => {
-                  setPreviewFontSize(settings.arabicFontSize);
-                  setSettings(prev => ({ ...prev, translationFontSize: 'Medium' }));
-                  updateSetting('translationFontSize', 'Medium');
-                  setFontPreviewModal(true);
-                }
-              },
-              { 
-                text: 'Large', 
-                onPress: () => {
-                  setPreviewFontSize(settings.arabicFontSize);
-                  setSettings(prev => ({ ...prev, translationFontSize: 'Large' }));
-                  updateSetting('translationFontSize', 'Large');
-                  setFontPreviewModal(true);
-                }
-              },
-              { 
-                text: 'Extra Large', 
-                onPress: () => {
-                  setPreviewFontSize(settings.arabicFontSize);
-                  setSettings(prev => ({ ...prev, translationFontSize: 'Extra Large' }));
-                  updateSetting('translationFontSize', 'Extra Large');
-                  setFontPreviewModal(true);
-                }
-              },
-              { text: 'Cancel', style: 'cancel' }
-            ]
-          );
-        }
-      },
-    ]
-  },
+  title: '🎨 Display Settings', 
+  icon: { name: 'color-palette', type: 'Ionicons' },
+  items: [
+    {
+      type: 'switch',
+      title: 'Dark Mode',
+      subtitle: 'Easy on the eyes for night reading',
+      value: settings.darkMode,
+      onValueChange: (value) => updateSetting('darkMode', value)
+    },
+    {
+      type: 'switch',
+      title: 'Show Translations',
+      subtitle: 'Display English translations below Arabic text',
+      value: settings.showTranslations,
+      onValueChange: (value) => updateSetting('showTranslations', value)
+    },
+    {
+      type: 'switch',
+      title: 'Tajweed Highlighting',
+      subtitle: 'Color-code tajweed rules for proper pronunciation',
+      value: settings.tajweedHighlighting,
+      onValueChange: (value) => updateSetting('tajweedHighlighting', value)
+    },
+    {
+      type: 'button',
+      title: 'Arabic Script Type',
+      subtitle: `Current: ${settings.scriptType.charAt(0).toUpperCase() + settings.scriptType.slice(1)}`,
+      icon: { name: 'text', type: 'Ionicons' },
+      onPress: () => {
+        Alert.alert(
+          'Arabic Script Type',
+          'Choose your preferred Quran script style',
+          [
+            { 
+              text: 'Uthmani (Madina)', 
+              onPress: () => updateSetting('scriptType', 'uthmani')
+            },
+            { 
+              text: 'IndoPak', 
+              onPress: () => updateSetting('scriptType', 'indopak')
+            },
+            { 
+              text: 'Imlaei (Simplified)', 
+              onPress: () => updateSetting('scriptType', 'imlaei')
+            },
+            { 
+              text: 'Tajweed (Color-coded)', 
+              onPress: () => updateSetting('scriptType', 'tajweed')
+            },
+            { text: 'Cancel', style: 'cancel' }
+          ]
+        );
+      }
+    },
+    {
+      type: 'button',
+      title: 'Arabic Font Size',
+      subtitle: `Current: ${settings.arabicFontSize}`,
+      icon: { name: 'text', type: 'Ionicons' },
+      onPress: () => {
+        Alert.alert(
+          'Arabic Font Size',
+          'Choose your preferred size for Arabic text',
+          [
+            { 
+              text: 'Small', 
+              onPress: () => {
+                setPreviewFontSize('Small');
+                setFontPreviewModal(true);
+              }
+            },
+            { 
+              text: 'Medium', 
+              onPress: () => {
+                setPreviewFontSize('Medium');
+                setFontPreviewModal(true);
+              }
+            },
+            { 
+              text: 'Large', 
+              onPress: () => {
+                setPreviewFontSize('Large');
+                setFontPreviewModal(true);
+              }
+            },
+            { 
+              text: 'Extra Large', 
+              onPress: () => {
+                setPreviewFontSize('Extra Large');
+                setFontPreviewModal(true);
+              }
+            },
+            { text: 'Cancel', style: 'cancel' }
+          ]
+        );
+      }
+    },
+    {
+      type: 'button',
+      title: 'Translation Font Size',
+      subtitle: `Current: ${settings.translationFontSize}`,
+      icon: { name: 'text-outline', type: 'Ionicons' },
+      onPress: () => {
+        Alert.alert(
+          'Translation Font Size',
+          'Choose your preferred size for translation text',
+          [
+            { 
+              text: 'Small', 
+              onPress: () => {
+                setPreviewFontSize(settings.arabicFontSize);
+                setSettings(prev => ({ ...prev, translationFontSize: 'Small' }));
+                updateSetting('translationFontSize', 'Small');
+                setFontPreviewModal(true);
+              }
+            },
+            { 
+              text: 'Medium', 
+              onPress: () => {
+                setPreviewFontSize(settings.arabicFontSize);
+                setSettings(prev => ({ ...prev, translationFontSize: 'Medium' }));
+                updateSetting('translationFontSize', 'Medium');
+                setFontPreviewModal(true);
+              }
+            },
+            { 
+              text: 'Large', 
+              onPress: () => {
+                setPreviewFontSize(settings.arabicFontSize);
+                setSettings(prev => ({ ...prev, translationFontSize: 'Large' }));
+                updateSetting('translationFontSize', 'Large');
+                setFontPreviewModal(true);
+              }
+            },
+            { 
+              text: 'Extra Large', 
+              onPress: () => {
+                setPreviewFontSize(settings.arabicFontSize);
+                setSettings(prev => ({ ...prev, translationFontSize: 'Extra Large' }));
+                updateSetting('translationFontSize', 'Extra Large');
+                setFontPreviewModal(true);
+              }
+            },
+            { text: 'Cancel', style: 'cancel' }
+          ]
+        );
+      }
+    },
+  ]
+},
   {
     title: '🔒 Data & Privacy',
     icon: { name: 'shield-checkmark', type: 'Ionicons' },
@@ -581,10 +640,15 @@ const formatTime = (timeObj) => {
   }] : [])
 ];
 
-  return (
-    <SafeAreaProvider>
-      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
+  const themedColors = getThemedColors(settings.darkMode);
+
+return (
+  <SafeAreaProvider>
+    <LinearGradient 
+      colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
+      style={styles.container}
+    >
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Text style={styles.backText}>← Dashboard</Text>
@@ -656,8 +720,14 @@ const formatTime = (timeObj) => {
 {/* Name Change Modal */}
 <Modal visible={showNameModal} transparent={true} animationType="slide">
   <View style={styles.modalOverlay}>
-    <View style={styles.nameModal}>
-      <Text style={styles.nameModalTitle}>Change Your Name</Text>
+    <View style={[
+  styles.nameModal,
+  settings.darkMode && { backgroundColor: themedColors.cardBackground }
+]}>
+      <Text style={[
+  styles.namemodalTitle,
+  settings.darkMode && { color: themedColors.textPrimary }
+]}>Change Your Name</Text>
       <TextInput
         style={styles.nameInput}
         placeholder="Enter your name"
@@ -705,8 +775,14 @@ const formatTime = (timeObj) => {
 {/* Daily Target Modal */}
 <Modal visible={showDailyTargetModal} transparent={true} animationType="slide">
   <View style={styles.modalOverlay}>
-    <View style={styles.dailyTargetModal}>
-      <Text style={styles.dailyTargetModalTitle}>Daily Target</Text>
+    <View style={[
+  styles.dailyTargetModal,
+  settings.darkMode && { backgroundColor: themedColors.cardBackground }
+]}>
+      <Text style={[
+  styles.dailytargetmodalTitle,
+  settings.darkMode && { color: themedColors.textPrimary }
+]}>Daily Target</Text>
       <Text style={styles.dailyTargetModalSubtitle}>Choose your daily memorization goal:</Text>
       
       <View style={styles.targetOptions}>
@@ -747,9 +823,15 @@ const formatTime = (timeObj) => {
 {/* Reciter Selection Modal */}
 <Modal visible={showReciterModal} transparent={true} animationType="slide">
   <View style={styles.modalOverlay}>
-    <View style={styles.reciterModal}>
+    <View style={[
+  styles.reciterModal,
+  settings.darkMode && { backgroundColor: themedColors.cardBackground }
+]}>
       <View style={styles.modalHeader}>
-        <Text style={styles.modalTitle}>Choose Reciter</Text>
+        <Text style={[
+  styles.modalTitle,
+  settings.darkMode && { color: themedColors.textPrimary }
+]}>Choose Reciter</Text>
         <TouchableOpacity onPress={() => setShowReciterModal(false)}>
           <Icon name="close" type="Ionicons" size={24} color={Theme.colors.textMuted} />
         </TouchableOpacity>

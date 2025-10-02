@@ -17,11 +17,13 @@ import AnimatedCard from '../components/AnimatedCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Icon, AppIcons } from '../components/Icon';
 import { Theme } from '../styles/theme';
+import { getThemedColors } from '../styles/theme';
 import { SurahListSkeleton } from '../components/SkeletonLoader';
 
 export default function SurahListScreen({ navigation }) {
   const [surahs, setSurahs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState({ darkMode: false });
   const [memorizedStats, setMemorizedStats] = useState({});
 
   useEffect(() => {
@@ -40,11 +42,17 @@ export default function SurahListScreen({ navigation }) {
   const loadSurahs = async () => {
   try {
     setLoading(true);
+    
+    // Load dark mode setting - ADD THIS
+    const state = await StorageService.getState();
+    if (state?.settings) {
+      setSettings({ darkMode: state.settings.darkMode || false });
+    }
+    
     const surahList = await QuranService.getAllSurahs();
     setSurahs(surahList);
   } catch (error) {
     console.error('Error loading surahs:', error);
-    // Show error to user
     Alert.alert(
       'Connection Error',
       error.message || 'Unable to load Surahs. Please check your internet connection and try again.',
@@ -94,7 +102,8 @@ export default function SurahListScreen({ navigation }) {
       <AnimatedCard
   style={[
     styles.surahCard,
-    isCompleted && styles.completedSurah
+    isCompleted && styles.completedSurah,
+    settings.darkMode && { backgroundColor: themedColors.cardBackground }
   ]}
   onPress={() => navigation.navigate('QuranReader', { surahId: item.id })}
   variant={isCompleted ? "elevated" : "default"}
@@ -203,9 +212,14 @@ export default function SurahListScreen({ navigation }) {
   );
 }
 
-  return (
-    <SafeAreaProvider>
-      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+  const themedColors = getThemedColors(settings.darkMode);
+
+return (
+  <SafeAreaProvider>
+    <LinearGradient 
+      colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
+      style={styles.container}
+    >
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           <View style={styles.header}>
             <TouchableOpacity 

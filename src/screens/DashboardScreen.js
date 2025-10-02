@@ -11,11 +11,13 @@ import { Icon, AppIcons } from '../components/Icon';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Theme } from '../styles/theme';
 import { Logger } from '../utils/Logger';
+import { getThemedColors } from '../styles/theme';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
 
 export default function DashboardScreen({ navigation }) {
   const [stats, setStats] = useState(null);
   const [state, setState] = useState(null);
+  const [settings, setSettings] = useState({ darkMode: false });
   const [refreshing, setRefreshing] = useState(false);
   const [revisionPlan, setRevisionPlan] = useState(null);
   const [achievementModal, setAchievementModal] = useState({
@@ -37,12 +39,19 @@ export default function DashboardScreen({ navigation }) {
   }, [navigation]);
 
   const loadData = async () => {
-    try {
-      // Logger.log('Loading dashboard data...');
-      let appState = await StorageService.getState();
-      if (!appState) {
-        appState = await StorageService.initializeState();
-      }
+  try {
+    // Logger.log('Loading dashboard data...');
+    let appState = await StorageService.getState();
+    if (!appState) {
+      appState = await StorageService.initializeState();
+    }
+    
+    // Load dark mode setting - ADD THIS SECTION
+    if (appState?.settings) {
+      setSettings({
+        darkMode: appState.settings.darkMode || false
+      });
+    }
       
       // Logger.log('App state loaded:', {
       //  ayahProgressKeys: Object.keys(appState?.ayahProgress || {}),
@@ -138,20 +147,25 @@ export default function DashboardScreen({ navigation }) {
 
   const currentStreak = QuranUtils.computeStreak(state?.progress || {});
 
-  return (
-    <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent} 
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[Theme.colors.secondary]}
-            tintColor={Theme.colors.secondary}
-          />
-        }
-      >
+  const themedColors = getThemedColors(settings.darkMode);
+
+return (
+  <LinearGradient 
+    colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
+    style={styles.container}
+  >
+    <ScrollView 
+      contentContainerStyle={styles.scrollContent} 
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[Theme.colors.secondary]}
+          tintColor={Theme.colors.secondary}
+        />
+      }
+    >
         
         {/* Header */}
         <View style={styles.header}>
@@ -172,7 +186,10 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.title}>Quran Hifdh</Text>
         </View>
 
-        <View style={styles.modernStreakCard}>
+        <View style={[
+  styles.modernStreakCard,
+  settings.darkMode && { backgroundColor: themedColors.cardBackground }
+]}>
   <View style={styles.streakIconContainer}>
     <Icon 
       name={AppIcons.book.name} 
@@ -240,7 +257,10 @@ export default function DashboardScreen({ navigation }) {
         {/* Today's Progress */}
         <View style={styles.todaySection}>
           <Text style={styles.sectionTitle}>Today's Progress</Text>
-          <View style={styles.todayCard}>
+          <View style={[
+  styles.todayCard,
+  settings.darkMode && { backgroundColor: themedColors.cardBackground }
+]}>
             <View style={styles.todayContent}>
               <View style={styles.todayStats}>
                 <View style={styles.todayStatsHeader}>
@@ -273,7 +293,11 @@ export default function DashboardScreen({ navigation }) {
         {/* Stats Grid */}
 <View style={styles.statsGrid}>
   {/* Remaining Ayahs */}
-  <View style={[styles.statCard, styles.statCardBlue]}>
+  <View style={[
+  styles.statCard, 
+  styles.statCardBlue,
+  settings.darkMode && { backgroundColor: themedColors.cardBackground }
+]}>
     <View style={[styles.statIconContainer, styles.statIconBlue]}>
       <Icon 
         name={AppIcons.trending.name} 
@@ -290,7 +314,11 @@ export default function DashboardScreen({ navigation }) {
   </View>
 
   {/* Daily Target */}
-  <View style={[styles.statCard, styles.statCardGold]}>
+  <View style={[
+  styles.statCard, 
+  styles.statCardGold,
+  settings.darkMode && { backgroundColor: themedColors.cardBackground }
+]}>
     <View style={[styles.statIconContainer, styles.statIconGold]}>
       <Icon 
         name={AppIcons.calendar.name} 
@@ -307,7 +335,11 @@ export default function DashboardScreen({ navigation }) {
   </View>
 
   {/* Days to Hafidh */}
-  <View style={[styles.statCard, styles.statCardOrange]}>
+  <View style={[
+  styles.statCard, 
+  styles.statCardOrange,
+  settings.darkMode && { backgroundColor: themedColors.cardBackground }
+]}>
     <View style={[styles.statIconContainer, styles.statIconOrange]}>
       <Icon 
         name={AppIcons.trophy.name} 
@@ -324,7 +356,11 @@ export default function DashboardScreen({ navigation }) {
   </View>
 
   {/* Expected Date */}
-  <View style={[styles.statCard, styles.statCardGreen]}>
+  <View style={[
+  styles.statCard, 
+  styles.statCardGreen,
+  settings.darkMode && { backgroundColor: themedColors.cardBackground }
+]}>
     <View style={[styles.statIconContainer, styles.statIconGreen]}>
       <Icon 
         name={AppIcons.star.name} 
@@ -343,7 +379,10 @@ export default function DashboardScreen({ navigation }) {
 
         {/* Analytics Card */}
 <TouchableOpacity 
-  style={styles.analyticsCard}
+  style={[
+    styles.analyticsCard,
+    settings.darkMode && { backgroundColor: themedColors.cardBackground }
+  ]}
   onPress={() => navigation.navigate('Analytics')}
   activeOpacity={0.85}
 >
@@ -372,10 +411,13 @@ export default function DashboardScreen({ navigation }) {
         {/* Achievements Card */}
 {totalAchievements > 0 && (
   <TouchableOpacity 
-    style={styles.achievementCard}
-    onPress={() => navigation.navigate('Achievements')}
-    activeOpacity={0.85}
-  >
+  style={[
+    styles.achievementCard,
+    settings.darkMode && { backgroundColor: themedColors.cardBackground }
+  ]}
+  onPress={() => navigation.navigate('Achievements')}
+  activeOpacity={0.85}
+>
     <View style={styles.cardContent}>
       <View style={styles.cardIconContainer}>
         <Icon 

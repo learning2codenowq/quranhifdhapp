@@ -22,6 +22,7 @@ import { AudioService } from '../services/AudioService';
 import { cleanArabicText } from '../utils/TextCleaner';
 import { Logger } from '../utils/Logger';
 import { Theme } from '../styles/theme'; 
+import { getThemedColors } from '../styles/theme';
 import { Icon, AppIcons } from '../components/Icon';
 
 export default function QuranReaderScreen({ route, navigation }) {
@@ -30,6 +31,7 @@ export default function QuranReaderScreen({ route, navigation }) {
   const [surahData, setSurahData] = useState(null);
   const [ayahs, setAyahs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showTajweedHelp, setShowTajweedHelp] = useState(false);
   const [memorizedAyahs, setMemorizedAyahs] = useState([]);
   const [audioStatus, setAudioStatus] = useState({ isPlaying: false, hasSound: false });
   const [playingAyah, setPlayingAyah] = useState(null);
@@ -38,11 +40,14 @@ export default function QuranReaderScreen({ route, navigation }) {
 
   // Settings state
   const [settings, setSettings] = useState({
-    showTranslations: true,
-    arabicFontSize: 'Medium',
-    translationFontSize: 'Medium',
-    autoPlayNext: true 
-  });
+  showTranslations: true,
+  arabicFontSize: 'Medium',
+  translationFontSize: 'Medium',
+  autoPlayNext: true,
+  darkMode: false,  // NEW
+  tajweedHighlighting: false,  // NEW
+  scriptType: 'uthmani',  // NEW
+});
   const [selectedReciterId, setSelectedReciterId] = useState(null);
   
   // Replay segment states
@@ -92,23 +97,110 @@ export default function QuranReaderScreen({ route, navigation }) {
   }, [surahId, selectedReciterId]); 
 
   const loadSettings = async () => {
-    try {
-      const state = await StorageService.getState();
-      if (state?.settings) {
-        const newSettings = {
-          showTranslations: state.settings.showTranslations !== false,
-          arabicFontSize: state.settings.arabicFontSize || 'Medium',
-          translationFontSize: state.settings.translationFontSize || 'Medium',
-          autoPlayNext: state.settings.autoPlayNext !== false
-        };
-        Logger.log('🎵 Loaded settings:', newSettings);
-        setSettings(newSettings);
-        setSelectedReciterId(state.settings.selectedReciter || null); // NEW LINE
-      }
-    } catch (error) {
-      Logger.error('Error loading settings:', error);
+  try {
+    const state = await StorageService.getState();
+    if (state?.settings) {
+      const newSettings = {
+        showTranslations: state.settings.showTranslations !== false,
+        arabicFontSize: state.settings.arabicFontSize || 'Medium',
+        translationFontSize: state.settings.translationFontSize || 'Medium',
+        autoPlayNext: state.settings.autoPlayNext !== false,
+        darkMode: state.settings.darkMode || false,  // NEW
+        tajweedHighlighting: state.settings.tajweedHighlighting || false,  // NEW
+        scriptType: state.settings.scriptType || 'uthmani',  // NEW
+      };
+      Logger.log('🎵 Loaded settings:', newSettings);
+      setSettings(newSettings);
+      setSelectedReciterId(state.settings.selectedReciter || null);
     }
-  };
+  } catch (error) {
+    Logger.error('Error loading settings:', error);
+  }
+};
+const TajweedHelpModal = () => (
+  <Modal visible={showTajweedHelp} transparent={true} animationType="fade">
+    <View style={styles.modalOverlay}>
+      <View style={[
+        styles.tajweedHelpModal,
+        settings.darkMode && { backgroundColor: themedColors.cardBackground }
+      ]}>
+        <View style={styles.modalHeader}>
+          <Text style={[
+            styles.modalTitle,
+            settings.darkMode && { color: themedColors.textPrimary }
+          ]}>Tajweed Guide</Text>
+          <TouchableOpacity onPress={() => setShowTajweedHelp(false)}>
+            <Icon name="close" type="Ionicons" size={24} color={settings.darkMode ? themedColors.textMuted : Theme.colors.textMuted} />
+          </TouchableOpacity>
+        </View>
+        
+        <ScrollView style={styles.tajweedContent}>
+          <Text style={[
+            styles.tajweedDescription,
+            settings.darkMode && { color: themedColors.textSecondary }
+          ]}>
+            Tajweed rules help you pronounce the Quran correctly. Enable "Tajweed Highlighting" in Settings and select "Tajweed" script type.
+          </Text>
+          
+          <View style={styles.tajweedRule}>
+            <View style={[styles.colorBox, { backgroundColor: '#AAAAAA' }]} />
+            <Text style={[
+              styles.ruleText,
+              settings.darkMode && { color: themedColors.textPrimary }
+            ]}>Ghunnah (Nasal sound)</Text>
+          </View>
+          
+          <View style={styles.tajweedRule}>
+            <View style={[styles.colorBox, { backgroundColor: '#537FFF' }]} />
+            <Text style={[
+              styles.ruleText,
+              settings.darkMode && { color: themedColors.textPrimary }
+            ]}>Qalqalah (Echoing)</Text>
+          </View>
+          
+          <View style={styles.tajweedRule}>
+            <View style={[styles.colorBox, { backgroundColor: '#4050FF' }]} />
+            <Text style={[
+              styles.ruleText,
+              settings.darkMode && { color: themedColors.textPrimary }
+            ]}>Madd (Prolonging)</Text>
+          </View>
+          
+          <View style={styles.tajweedRule}>
+            <View style={[styles.colorBox, { backgroundColor: '#000000' }]} />
+            <Text style={[
+              styles.ruleText,
+              settings.darkMode && { color: themedColors.textPrimary }
+            ]}>Idgham (Merging)</Text>
+          </View>
+          
+          <View style={styles.tajweedRule}>
+            <View style={[styles.colorBox, { backgroundColor: '#DD0008' }]} />
+            <Text style={[
+              styles.ruleText,
+              settings.darkMode && { color: themedColors.textPrimary }
+            ]}>Iqlab (Changing)</Text>
+          </View>
+          
+          <View style={styles.tajweedRule}>
+            <View style={[styles.colorBox, { backgroundColor: '#169777' }]} />
+            <Text style={[
+              styles.ruleText,
+              settings.darkMode && { color: themedColors.textPrimary }
+            ]}>Ikhfa (Hiding)</Text>
+          </View>
+        </ScrollView>
+        
+        <TouchableOpacity 
+          style={styles.tajweedCloseButton}
+          onPress={() => setShowTajweedHelp(false)}
+        >
+          <Text style={styles.tajweedCloseText}>Got it!</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+);
   const getDefaultReciterId = async () => {
     try {
       const reciters = await QuranService.getReciters();
@@ -124,48 +216,52 @@ export default function QuranReaderScreen({ route, navigation }) {
   };
 
   const loadSurahData = async () => {
-    try {
-      console.log('🚀 Starting loadSurahData for surah:', surahId);
-      setLoading(true);
-      
-      // Force timeout after 15 seconds
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 15000)
-      );
-      
-      // Pass selected reciter to API - NEW!
-      const apiPromise = QuranService.getSurahWithTranslation(surahId, selectedReciterId);
-      
-      console.log('🔄 Making API call with reciter:', selectedReciterId || 'default');
-      const data = await Promise.race([apiPromise, timeoutPromise]);
-      console.log('✅ API call succeeded, got data:', data);
-      
-      setSurahData(data.surah);
-      setAyahs(data.ayahs || []);
-      
-      // Store audio URLs for each ayah
-      const audioMap = {};
-      (data.ayahs || []).forEach(ayah => {
-        if (ayah.audioUrl) {
-          audioMap[ayah.verse_number] = ayah.audioUrl;
-        }
-      });
-      setAyahAudioUrls(audioMap);
-      
-      console.log('✅ Successfully loaded surah data');
-      
-    } catch (error) {
-      console.error('❌ Error in loadSurahData:', error);
-      Logger.error('Error loading surah:', error);
-      Alert.alert('Error', 'Failed to load surah data. Please check your internet connection.', [
-        { text: 'Go Back', onPress: () => navigation.goBack() },
-        { text: 'Retry', onPress: () => loadSurahData() }
-      ]);
-    } finally {
-      console.log('🏁 Setting loading to false');
-      setLoading(false);
-    }
-  };
+  try {
+    console.log('🚀 Starting loadSurahData for surah:', surahId);
+    setLoading(true);
+    
+    // Force timeout after 15 seconds
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout')), 15000)
+    );
+    
+    // Pass selected reciter AND script type to API - NEW!
+    const apiPromise = QuranService.getSurahWithTranslation(
+      surahId, 
+      selectedReciterId,
+      settings.scriptType  // NEW - pass script type
+    );
+    
+    console.log('🔄 Making API call with reciter:', selectedReciterId, 'and script:', settings.scriptType);
+    const data = await Promise.race([apiPromise, timeoutPromise]);
+    console.log('✅ API call succeeded, got data:', data);
+    
+    setSurahData(data.surah);
+    setAyahs(data.ayahs || []);
+    
+    // Store audio URLs for each ayah
+    const audioMap = {};
+    (data.ayahs || []).forEach(ayah => {
+      if (ayah.audioUrl) {
+        audioMap[ayah.verse_number] = ayah.audioUrl;
+      }
+    });
+    setAyahAudioUrls(audioMap);
+    
+    console.log('✅ Successfully loaded surah data');
+    
+  } catch (error) {
+    console.error('❌ Error in loadSurahData:', error);
+    Logger.error('Error loading surah:', error);
+    Alert.alert('Error', 'Failed to load surah data. Please check your internet connection.', [
+      { text: 'Go Back', onPress: () => navigation.goBack() },
+      { text: 'Retry', onPress: () => loadSurahData() }
+    ]);
+  } finally {
+    console.log('🏁 Setting loading to false');
+    setLoading(false);
+  }
+};
 
   const loadMemorizedAyahs = async () => {
     try {
@@ -693,31 +789,50 @@ export default function QuranReaderScreen({ route, navigation }) {
         </View>
 
         {/* Arabic Text Card */}
-        <View style={[styles.arabicTextCard, isMemorized && styles.memorizedCard]}>
+<View style={[
+  styles.arabicTextCard, 
+  isMemorized && styles.memorizedCard,
+  settings.darkMode && { backgroundColor: themedColors.cardBackground }
+]}>
   <View style={styles.arabicTextWrapper}>
     <Text style={[
       styles.modernArabicText, 
       { 
         fontSize: getFontSize(settings.arabicFontSize),
         lineHeight: getFontSize(settings.arabicFontSize) * 1.8,
+        color: settings.darkMode ? themedColors.textPrimary : Theme.colors.primary,
       }
     ]}>
-      {cleanArabicText(item.text)}
+      {settings.tajweedHighlighting && settings.scriptType === 'tajweed' 
+        ? cleanArabicText(item.text) // For now, show text without HTML tags
+        : cleanArabicText(item.text)
+      }
     </Text>
+    {settings.tajweedHighlighting && settings.scriptType === 'tajweed' && (
+      <Text style={styles.tajweedNote}>
+        ℹ️ Tajweed text loaded
+      </Text>
+    )}
   </View>
 </View>
         
         {/* Translation Card */}
         {settings.showTranslations && (
-          <View style={styles.translationCard}>
-            <Text style={[
-              styles.modernTranslationText,
-              { fontSize: getTranslationFontSize(settings.translationFontSize) }
-            ]}>
-              {cleanTranslation(item.translation)}
-            </Text>
-          </View>
-        )}
+  <View style={[
+    styles.translationCard,
+    settings.darkMode && { backgroundColor: themedColors.surface }
+  ]}>
+    <Text style={[
+      styles.modernTranslationText,
+      { 
+        fontSize: getTranslationFontSize(settings.translationFontSize),
+        color: settings.darkMode ? themedColors.textSecondary : Theme.colors.textSecondary,
+      }
+    ]}>
+      {cleanTranslation(item.translation)}
+    </Text>
+  </View>
+)}
         
         {/*Repetition Counter */}
         
@@ -756,70 +871,86 @@ export default function QuranReaderScreen({ route, navigation }) {
         
         {/* Modern Controls */}
         <View style={styles.modernControls}>
-          <TouchableOpacity
-            style={[styles.modernAudioButton, isCurrentlyPlaying && styles.activeAudioButton]}
-            onPress={() => handleAudioPlay(currentSurahId, item.verse_number)}
-            accessible={true}
-            accessibilityLabel={isCurrentlyPlaying && audioStatus.isPlaying ? "Pause ayah recitation" : "Play ayah recitation"}
-            accessibilityRole="button"
-          >
-            <Icon 
-              name={isCurrentlyPlaying && audioStatus.isPlaying ? 'pause' : 'play'} 
-              type="Ionicons" 
-              size={20} 
-              color="white" 
-            />
-          </TouchableOpacity>
-          
-          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-            <TouchableOpacity
-              style={[
-                styles.modernMemorizeButton,
-                isMemorized && styles.modernMemorizedButton
-              ]}
-              onPress={() => toggleAyahMemorization(
-                currentSurahId, 
-                item.verse_number, 
-                isMemorized
-              )}
-              accessible={true}
-              accessibilityLabel={isMemorized ? "Mark ayah as not memorized" : "Mark ayah as memorized"}
-              accessibilityRole="button"
-            >
-              <Icon 
-                name={isMemorized ? 'checkmark-circle' : 'radio-button-off'} 
-                type="Ionicons" 
-                size={20} 
-                color={isMemorized ? Theme.colors.success : Theme.colors.textMuted} 
-              />
-              <Text style={[
-                styles.modernMemorizeText,
-                isMemorized && styles.modernMemorizedText
-              ]}>
-                {isMemorized ? 'Memorized' : 'Mark as Memorized'}
-              </Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
+  <TouchableOpacity
+    style={[
+      styles.modernAudioButton, 
+      isCurrentlyPlaying && styles.activeAudioButton,
+      settings.darkMode && { backgroundColor: themedColors.primary }
+    ]}
+    onPress={() => handleAudioPlay(currentSurahId, item.verse_number)}
+    accessible={true}
+    accessibilityLabel={isCurrentlyPlaying && audioStatus.isPlaying ? "Pause ayah recitation" : "Play ayah recitation"}
+    accessibilityRole="button"
+  >
+    <Icon 
+      name={isCurrentlyPlaying && audioStatus.isPlaying ? 'pause' : 'play'} 
+      type="Ionicons" 
+      size={20} 
+      color="white" 
+    />
+  </TouchableOpacity>
+  
+  <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+    <TouchableOpacity
+      style={[
+        styles.modernMemorizeButton,
+        isMemorized && styles.modernMemorizedButton,
+        settings.darkMode && !isMemorized && { backgroundColor: themedColors.surface }
+      ]}
+      onPress={() => toggleAyahMemorization(
+        currentSurahId, 
+        item.verse_number, 
+        isMemorized
+      )}
+      accessible={true}
+      accessibilityLabel={isMemorized ? "Mark ayah as not memorized" : "Mark ayah as memorized"}
+      accessibilityRole="button"
+    >
+      <Icon 
+        name={isMemorized ? 'checkmark-circle' : 'radio-button-off'} 
+        type="Ionicons" 
+        size={20} 
+        color={isMemorized ? Theme.colors.success : (settings.darkMode ? themedColors.textMuted : Theme.colors.textMuted)} 
+      />
+      <Text style={[
+        styles.modernMemorizeText,
+        isMemorized && styles.modernMemorizedText,
+        settings.darkMode && !isMemorized && { color: themedColors.textPrimary }
+      ]}>
+        {isMemorized ? 'Memorized' : 'Mark as Memorized'}
+      </Text>
+    </TouchableOpacity>
+  </Animated.View>
+</View>
       </View>
     );
   };
 
+  const themedColors = getThemedColors(settings.darkMode);
+
   if (loading) {
     return (
       <SafeAreaProvider>
-        <SafeAreaView style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Theme.colors.secondary} />
-          <Text style={styles.loadingText}>Loading Surah...</Text>
-          <Text style={styles.loadingSubtext}>Preparing ayahs and audio</Text>
-        </SafeAreaView>
+        <LinearGradient 
+          colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
+          style={styles.container}
+        >
+          <SafeAreaView style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Theme.colors.secondary} />
+            <Text style={styles.loadingText}>Loading Surah...</Text>
+            <Text style={styles.loadingSubtext}>Preparing ayahs and audio</Text>
+          </SafeAreaView>
+        </LinearGradient>
       </SafeAreaProvider>
     );
   }
 
   return (
     <SafeAreaProvider>
-      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+      <LinearGradient 
+        colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
+        style={styles.container}
+      >
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
           
           {/* Modern Header */}
@@ -840,7 +971,18 @@ export default function QuranReaderScreen({ route, navigation }) {
     )}
   </View>
 
-  <View style={styles.headerSpacer} />
+  {/* ADD THIS HELP BUTTON */}
+  {settings.tajweedHighlighting && settings.scriptType === 'tajweed' && (
+    <TouchableOpacity 
+      style={styles.backButtonModern}
+      onPress={() => setShowTajweedHelp(true)}
+    >
+      <Icon name="help-circle" type="Ionicons" size={24} color="white" />
+    </TouchableOpacity>
+  )}
+  {!(settings.tajweedHighlighting && settings.scriptType === 'tajweed') && (
+    <View style={styles.headerSpacer} />
+  )}
 </View>
 
           {/* Progress Indicator */}
@@ -949,6 +1091,8 @@ export default function QuranReaderScreen({ route, navigation }) {
               </View>
             </View>
           </Modal>
+          {/* Tajweed Help Modal */}
+<TajweedHelpModal />
 
           {/* Replay Progress Bottom Bar */}
           {isReplaying && (
@@ -1423,4 +1567,56 @@ const styles = StyleSheet.create({
   width: '100%',
   alignItems: 'flex-end',
   },
+  tajweedNote: {
+  fontSize: 10,
+  color: Theme.colors.secondary,
+  fontStyle: 'italic',
+  marginTop: 8,
+  textAlign: 'center',
+},
+tajweedHelpModal: {
+  backgroundColor: 'white',
+  borderRadius: 20,
+  padding: 20,
+  width: '90%',
+  maxWidth: 400,
+  maxHeight: '80%',
+},
+tajweedContent: {
+  maxHeight: 400,
+},
+tajweedDescription: {
+  fontSize: 14,
+  color: Theme.colors.textSecondary,
+  marginBottom: 20,
+  lineHeight: 20,
+},
+tajweedRule: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 15,
+},
+colorBox: {
+  width: 30,
+  height: 30,
+  borderRadius: 6,
+  marginRight: 15,
+},
+ruleText: {
+  fontSize: 16,
+  color: Theme.colors.primary,
+  fontWeight: '500',
+},
+tajweedCloseButton: {
+  backgroundColor: Theme.colors.secondary,
+  borderRadius: 12,
+  paddingVertical: 12,
+  marginTop: 15,
+  alignItems: 'center',
+},
+tajweedCloseText: {
+  color: 'white',
+  fontSize: 16,
+  fontWeight: '600',
+},
 });
