@@ -8,6 +8,7 @@ import {
   ActivityIndicator, 
   Alert,
   Modal,
+  ScrollView,
   TextInput,
   Animated,
   Platform,
@@ -48,6 +49,9 @@ export default function QuranReaderScreen({ route, navigation }) {
   tajweedHighlighting: false,  // NEW
   scriptType: 'uthmani',  // NEW
 });
+
+  const themedColors = getThemedColors(settings.darkMode);
+
   const [selectedReciterId, setSelectedReciterId] = useState(null);
   
   // Replay segment states
@@ -925,8 +929,6 @@ const TajweedHelpModal = () => (
       </View>
     );
   };
-
-  const themedColors = getThemedColors(settings.darkMode);
 
   if (loading) {
     return (
