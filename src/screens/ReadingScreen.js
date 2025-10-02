@@ -180,23 +180,45 @@ export default function ReadingScreen() {
     return (
       <View style={[styles.pageContainer, { width }]}>
         <View style={styles.pageContent}>
+          {/* Page Header with Juz info */}
           {pageData.page && (
             <View style={styles.pageHeader}>
-              <Text style={styles.pageInfo}>
-                Page {pageData.page.number} • Juz {pageData.page.juz_number}
-              </Text>
+              <View style={styles.pageHeaderContent}>
+                <Text style={styles.pageInfo}>
+                  Page {pageData.page.number}
+                </Text>
+                <View style={styles.juzBadge}>
+                  <Text style={styles.juzText}>Juz {pageData.page.juz_number}</Text>
+                </View>
+              </View>
             </View>
           )}
           
+          {/* Verses Container */}
           <View style={styles.versesContainer}>
-            {pageData.verses?.map((verse, index) => (
-              <Text key={verse.key || index} style={styles.arabicText}>
-                {cleanArabicText(verse.text)}
-                {verse.number && (
-                  <Text style={styles.verseNumber}> ﴿{verse.number}﴾ </Text>
-                )}
-              </Text>
-            ))}
+            {pageData.verses?.map((verse, index) => {
+              // Check if this is a new surah (verse number 1)
+              const isNewSurah = verse.number === 1 && verse.key !== '1:1'; // Not Al-Fatihah
+              
+              return (
+                <View key={verse.key || index}>
+                  {/* Basmala for new surahs (except At-Tawbah) */}
+                  {isNewSurah && !verse.key.startsWith('9:') && (
+                    <Text style={styles.basmalaText}>
+                      بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+                    </Text>
+                  )}
+                  
+                  {/* Ayah text */}
+                  <Text style={styles.arabicText}>
+                    {cleanArabicText(verse.text)}
+                    {verse.number && (
+                      <Text style={styles.verseNumber}> ﴿{verse.number}﴾ </Text>
+                    )}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
         </View>
       </View>
@@ -211,34 +233,36 @@ export default function ReadingScreen() {
   }).current;
 
   if (!isReading) {
-  return (
-    <SafeAreaProvider>
-      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.welcomeContainer}>
-            <Text style={styles.welcomeTitle}>Quran</Text>
-            <Text style={styles.welcomeSubtitle}>Classic Mushaf-style reading</Text>
-            
-            <TouchableOpacity 
-              style={[styles.startButton, styles.disabledButton]} 
-              onPress={() => {}} 
-              disabled={true}
-            >
-              <Text style={styles.startButtonText}>Start Reading</Text>
-            </TouchableOpacity>
-            
-            <View style={styles.comingSoonContainer}>
-              <Text style={styles.comingSoonText}>Coming Soon</Text>
-              <Text style={styles.comingSoonSubtext}>
-                We're working on bringing you the best reading experience
+    return (
+      <SafeAreaProvider>
+        <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+          <SafeAreaView style={styles.safeArea}>
+            <View style={styles.welcomeContainer}>
+              <Text style={styles.welcomeTitle}>Quran Reading</Text>
+              <Text style={styles.welcomeSubtitle}>Classic Mushaf-style page reading</Text>
+              
+              <View style={styles.infoCard}>
+                <Text style={styles.infoText}>📖 Read the Quran page by page</Text>
+                <Text style={styles.infoText}>🔖 Resume from your last page</Text>
+                <Text style={styles.infoText}>📱 Authentic Mushaf layout</Text>
+              </View>
+              
+              <TouchableOpacity 
+                style={styles.startButton}
+                onPress={startReading}
+              >
+                <Text style={styles.startButtonText}>Start Reading</Text>
+              </TouchableOpacity>
+              
+              <Text style={styles.lastReadText}>
+                Last read: Page {lastReadPage} of 604
               </Text>
             </View>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-    </SafeAreaProvider>
-  );
-}
+          </SafeAreaView>
+        </LinearGradient>
+      </SafeAreaProvider>
+    );
+  }
 
   const pageNumbers = Array.from({ length: 604 }, (_, i) => i + 1);
 
@@ -328,26 +352,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
   },
   welcomeTitle: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 10,
     textAlign: 'center',
   },
   welcomeSubtitle: {
-  fontSize: 18,
-  color: 'rgba(255, 255, 255, 0.8)',
-  marginBottom: 60,
-  textAlign: 'center',
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 40,
+    textAlign: 'center',
+  },
+  infoCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 20,
+    padding: 25,
+    marginBottom: 40,
+    width: '100%',
+    maxWidth: 350,
+  },
+  infoText: {
+    fontSize: 16,
+    color: 'white',
+    marginBottom: 15,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   startButton: {
     backgroundColor: Theme.colors.secondary,
-    borderRadius: 25,
+    borderRadius: 30,
     paddingVertical: 18,
-    paddingHorizontal: 50,
+    paddingHorizontal: 60,
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
     marginBottom: 20,
@@ -357,6 +396,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  lastReadText: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontStyle: 'italic',
   },
   header: {
     flexDirection: 'row',
@@ -385,7 +429,7 @@ const styles = StyleSheet.create({
   },
   pageContainer: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#FFF9E6', // Cream/beige like real Mushaf
     marginHorizontal: 5,
     marginVertical: 10,
     borderRadius: 15,
@@ -399,43 +443,68 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#FFF9E6',
   },
   loadingPageText: {
-    color: '#666',
+    color: Theme.colors.primary,
     fontSize: 16,
-    marginTop: 10,
+    marginTop: 15,
+    fontWeight: '500',
   },
   pageContent: {
     flex: 1,
-    padding: 15,
+    padding: 20,
   },
   pageHeader: {
+    marginBottom: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 2,
+    borderBottomColor: '#d4af37',
+  },
+  pageHeaderContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   pageInfo: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 16,
+    color: Theme.colors.primary,
+    fontWeight: '700',
+  },
+  juzBadge: {
+    backgroundColor: Theme.colors.secondary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  juzText: {
+    fontSize: 12,
+    color: 'white',
     fontWeight: '600',
   },
   versesContainer: {
     flex: 1,
-    paddingHorizontal: 5,
+    paddingHorizontal: 10,
+  },
+  basmalaText: {
+    fontFamily: 'UthmanicFont',
+    fontSize: 24,
+    color: Theme.colors.primary,
+    textAlign: 'center',
+    marginVertical: 20,
+    lineHeight: 40,
   },
   arabicText: {
     fontFamily: 'UthmanicFont',
-    fontSize: 18,
-    lineHeight: 30,
+    fontSize: 20,
+    lineHeight: 36,
     color: '#2c3e50',
     textAlign: 'right',
-    marginBottom: 6,
+    marginBottom: 8,
     paddingHorizontal: 5,
   },
   verseNumber: {
-    fontSize: 16,
+    fontSize: 18,
     color: Theme.colors.secondary,
     fontWeight: 'bold',
   },
@@ -444,61 +513,44 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingVertical: 20,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   navButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 25,
     minWidth: 100,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   navButtonDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   navButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     textAlign: 'center',
   },
   navButtonTextDisabled: {
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(255, 255, 255, 0.3)',
   },
   pageIndicator: {
     backgroundColor: Theme.colors.secondary,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   pageIndicatorText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
   },
-  disabledButton: {
-  backgroundColor: '#999',
-  opacity: 0.6,
-},
-comingSoonContainer: {
-  alignItems: 'center',
-  marginTop: 20,
-  marginBottom: 0,
-},
-comingSoonText: {
-  fontSize: 18,
-  color: '#d4af37',
-  textAlign: 'center',
-  fontWeight: 'bold',
-  marginBottom: 8,
-},
-comingSoonSubtext: {
-  fontSize: 14,
-  color: 'rgba(255, 255, 255, 0.8)',
-  textAlign: 'center',
-  paddingHorizontal: 20,
-  lineHeight: 20,
-},
 });

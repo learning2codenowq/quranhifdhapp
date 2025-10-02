@@ -7,8 +7,10 @@ import { NotificationService } from '../services/NotificationService';
 import { TestingUtils } from '../utils/TestingUtils';
 import { Logger } from '../utils/Logger'
 import { Theme } from '../styles/theme';
+import { Icon } from '../components/Icon';
 import CustomTimePicker from '../components/CustomTimePicker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { QuranService } from '../services/QuranService';
 
 
 export default function SettingsScreen({ navigation }) {
@@ -30,6 +32,9 @@ export default function SettingsScreen({ navigation }) {
   const [showDailyTargetModal, setShowDailyTargetModal] = useState(false);
   const [fontPreviewModal, setFontPreviewModal] = useState(false);
   const [previewFontSize, setPreviewFontSize] = useState('Medium');
+  const [reciters, setReciters] = useState([]);
+  const [showReciterModal, setShowReciterModal] = useState(false);
+  const [selectedReciterId, setSelectedReciterId] = useState(null);
   const [notificationSettings, setNotificationSettings] = useState({
   enabled: false,
   morningTime: { hour: 6, minute: 0 },
@@ -53,18 +58,25 @@ const [eveningTimeDate, setEveningTimeDate] = useState(new Date(2024, 0, 1, 18, 
   try {
     const state = await StorageService.getState();
     if (state && state.settings) {
-      setSettings(prev => ({
-        ...prev,
+      const newSettings = {
         dailyGoal: state.settings.dailyGoal || 10,
         userName: state.settings.userName || 'Student',
         autoPlayNext: state.settings.autoPlayNext || false,
         showTranslations: state.settings.showTranslations !== false,
         arabicFontSize: state.settings.arabicFontSize || 'Medium',
         translationFontSize: state.settings.translationFontSize || 'Medium',
-      }));
+        selectedReciter: state.settings.selectedReciter || null, // NEW LINE
+      };
+      Logger.log('🎵 Loaded settings:', newSettings);
+      setSettings(newSettings);
+      setSelectedReciterId(newSettings.selectedReciter); // NEW LINE
     }
     
-    // Load notification settings properly
+
+    const recitersList = await QuranService.getReciters();
+    setReciters(recitersList);
+    
+
     const notifSettings = await NotificationService.getNotificationSettings();
     setNotificationSettings(notifSettings);
     
@@ -347,10 +359,19 @@ const formatTime = (timeObj) => {
         subtitle: 'Automatically play the next ayah when current finishes',
         value: settings.autoPlayNext,
         onValueChange: (value) => updateSetting('autoPlayNext', value)
+      },
+      // NEW ITEM - Add this entire block
+      {
+        type: 'button',
+        title: 'Reciter',
+        subtitle: selectedReciterId 
+          ? reciters.find(r => r.id === selectedReciterId)?.name || 'Mishary Alafasy'
+          : 'Mishary Alafasy (Default)',
+        icon: { name: 'mic', type: 'Ionicons' },
+        onPress: () => setShowReciterModal(true)
       }
     ]
   },
-  // ... rest of existing sections remain the same
   {
     title: '🎨 Display Settings', 
     icon: { name: 'color-palette', type: 'Ionicons' },
@@ -723,6 +744,68 @@ const formatTime = (timeObj) => {
     </View>
   </View>
 </Modal>
+{/* Reciter Selection Modal */}
+<Modal visible={showReciterModal} transparent={true} animationType="slide">
+  <View style={styles.modalOverlay}>
+    <View style={styles.reciterModal}>
+      <View style={styles.modalHeader}>
+        <Text style={styles.modalTitle}>Choose Reciter</Text>
+        <TouchableOpacity onPress={() => setShowReciterModal(false)}>
+          <Icon name="close" type="Ionicons" size={24} color={Theme.colors.textMuted} />
+        </TouchableOpacity>
+      </View>
+      
+      <ScrollView style={styles.reciterList}>
+        {/* Default Option */}
+        <TouchableOpacity
+          style={[
+            styles.reciterItem,
+            !selectedReciterId && styles.selectedReciterItem
+          ]}
+          onPress={() => {
+            setSelectedReciterId(null);
+            updateSetting('selectedReciter', null);
+            setShowReciterModal(false);
+          }}
+        >
+          <View style={styles.reciterInfo}>
+            <Text style={styles.reciterName}>Mishary Alafasy (Default)</Text>
+            <Text style={styles.reciterStyle}>Hafs</Text>
+          </View>
+          {!selectedReciterId && (
+            <Icon name="checkmark-circle" type="Ionicons" size={24} color={Theme.colors.success} />
+          )}
+        </TouchableOpacity>
+        
+        {/* Reciters List */}
+        {reciters.map((reciter) => (
+          <TouchableOpacity
+            key={reciter.id}
+            style={[
+              styles.reciterItem,
+              selectedReciterId === reciter.id && styles.selectedReciterItem
+            ]}
+            onPress={() => {
+              setSelectedReciterId(reciter.id);
+              updateSetting('selectedReciter', reciter.id);
+              setShowReciterModal(false);
+            }}
+          >
+            <View style={styles.reciterInfo}>
+              <Text style={styles.reciterName}>{reciter.name}</Text>
+              {reciter.style && (
+                <Text style={styles.reciterStyle}>{reciter.style}</Text>
+              )}
+            </View>
+            {selectedReciterId === reciter.id && (
+              <Icon name="checkmark-circle" type="Ionicons" size={24} color={Theme.colors.success} />
+            )}
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  </View>
+</Modal>
         </SafeAreaView>
       </LinearGradient>
     </SafeAreaProvider>
@@ -1058,6 +1141,42 @@ dailyTargetModalCancelText: {
   color: '#666',
   fontSize: 16,
   fontWeight: '600',
+},
+reciterModal: {
+  backgroundColor: 'white',
+  borderRadius: 20,
+  padding: 0,
+  width: '90%',
+  maxWidth: 400,
+  maxHeight: '70%',
+},
+reciterList: {
+  maxHeight: 400,
+},
+reciterItem: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingVertical: 16,
+  paddingHorizontal: 20,
+  borderBottomWidth: 1,
+  borderBottomColor: Theme.colors.gray200,
+},
+selectedReciterItem: {
+  backgroundColor: Theme.colors.successLight,
+},
+reciterInfo: {
+  flex: 1,
+},
+reciterName: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: Theme.colors.primary,
+  marginBottom: 4,
+},
+reciterStyle: {
+  fontSize: 14,
+  color: Theme.colors.textMuted,
 },
 modernTimePickerOverlay: {
   flex: 1,

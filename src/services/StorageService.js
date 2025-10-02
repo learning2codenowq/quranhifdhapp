@@ -72,6 +72,7 @@ export class StorageService {
         showTranslations: true,
         arabicFontSize: 'Medium',
         translationFontSize: 'Medium',
+        selectedReciter: userSettings.selectedReciter || null, // NEW LINE
         // Add notification settings to main settings
         notificationsEnabled: userSettings.notificationsEnabled || false,
         morningTime: userSettings.morningTime || { hour: 6, minute: 0 },

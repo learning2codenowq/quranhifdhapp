@@ -21,7 +21,7 @@ import { StorageService } from '../services/StorageService';
 import { AudioService } from '../services/AudioService';
 import { cleanArabicText } from '../utils/TextCleaner';
 import { Logger } from '../utils/Logger';
-import { Theme } from '../styles/theme';
+import { Theme } from '../styles/theme'; 
 import { Icon, AppIcons } from '../components/Icon';
 
 export default function QuranReaderScreen({ route, navigation }) {
@@ -43,6 +43,7 @@ export default function QuranReaderScreen({ route, navigation }) {
     translationFontSize: 'Medium',
     autoPlayNext: true 
   });
+  const [selectedReciterId, setSelectedReciterId] = useState(null);
   
   // Replay segment states
   const [showReplayModal, setShowReplayModal] = useState(false);
@@ -72,7 +73,7 @@ export default function QuranReaderScreen({ route, navigation }) {
   // Cleanup on component unmount
   // Cleanup on component unmount
   useEffect(() => {
-    console.log('🔥 useEffect triggered with surahId:', surahId);
+    console.log('🔥 useEffect triggered with surahId:', surahId, 'reciter:', selectedReciterId);
     
     if (surahId) {
       console.log('✅ surahId exists, calling functions...');
@@ -88,7 +89,7 @@ export default function QuranReaderScreen({ route, navigation }) {
     return () => {
       AudioService.stopAudio();
     };
-  }, [surahId]);
+  }, [surahId, selectedReciterId]); 
 
   const loadSettings = async () => {
     try {
@@ -102,9 +103,23 @@ export default function QuranReaderScreen({ route, navigation }) {
         };
         Logger.log('🎵 Loaded settings:', newSettings);
         setSettings(newSettings);
+        setSelectedReciterId(state.settings.selectedReciter || null); // NEW LINE
       }
     } catch (error) {
       Logger.error('Error loading settings:', error);
+    }
+  };
+  const getDefaultReciterId = async () => {
+    try {
+      const reciters = await QuranService.getReciters();
+      const alafasy = reciters.find(r => 
+        r.name?.toLowerCase().includes('alafasy') || 
+        r.name?.toLowerCase().includes('afasy')
+      );
+      return alafasy?.id || (reciters[0]?.id || 7); // Default to Alafasy or first reciter
+    } catch (error) {
+      console.error('Error getting default reciter:', error);
+      return 7; // Fallback to Alafasy's typical ID
     }
   };
 
@@ -118,9 +133,10 @@ export default function QuranReaderScreen({ route, navigation }) {
         setTimeout(() => reject(new Error('Request timeout')), 15000)
       );
       
-      const apiPromise = QuranService.getSurahWithTranslation(surahId);
+      // Pass selected reciter to API - NEW!
+      const apiPromise = QuranService.getSurahWithTranslation(surahId, selectedReciterId);
       
-      console.log('🔄 Making API call...');
+      console.log('🔄 Making API call with reciter:', selectedReciterId || 'default');
       const data = await Promise.race([apiPromise, timeoutPromise]);
       console.log('✅ API call succeeded, got data:', data);
       
