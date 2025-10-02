@@ -1,4 +1,3 @@
-// src/screens/ClassicMushafScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
@@ -30,37 +29,35 @@ export default function ClassicMushafScreen({ navigation }) {
   const [showJumpModal, setShowJumpModal] = useState(false);
   const [jumpToPage, setJumpToPage] = useState('');
   const flatListRef = useRef(null);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   useEffect(() => {
     loadLastReadPage();
   }, []);
 
-  useEffect(() => {
-    if (lastReadPage > 0) {
-      loadPagesAround(lastReadPage);
-    }
-  }, [lastReadPage]);
-
   const loadLastReadPage = async () => {
     try {
       const savedPage = await AsyncStorage.getItem('lastReadPage');
-      if (savedPage) {
-        const pageNum = parseInt(savedPage);
-        setLastReadPage(pageNum);
-        setCurrentPage(pageNum);
-        
-        // Scroll to saved page after a short delay
-        setTimeout(() => {
-          if (flatListRef.current) {
-            flatListRef.current.scrollToIndex({
-              index: pageNum - 1,
-              animated: false
-            });
-          }
-        }, 500);
-      }
+      const pageNum = savedPage ? parseInt(savedPage) : 1;
+      setLastReadPage(pageNum);
+      setCurrentPage(pageNum);
+      
+      // Load initial pages
+      await loadPagesAround(pageNum);
+      setInitialLoadComplete(true);
+      
+      // Scroll to saved page after loading
+      setTimeout(() => {
+        if (flatListRef.current && pageNum > 1) {
+          flatListRef.current.scrollToIndex({
+            index: pageNum - 1,
+            animated: false
+          });
+        }
+      }, 300);
     } catch (error) {
       console.error('Error loading last read page:', error);
+      setInitialLoadComplete(true);
     }
   };
 
@@ -74,7 +71,7 @@ export default function ClassicMushafScreen({ navigation }) {
 
   const loadPagesAround = async (centerPage) => {
     const pagesToLoad = [];
-    const range = 5;
+    const range = 2; // Reduced from 5 to 2 for faster loading
     
     for (let i = Math.max(1, centerPage - range); i <= Math.min(604, centerPage + range); i++) {
       if (!pages[i]) {
@@ -119,11 +116,13 @@ export default function ClassicMushafScreen({ navigation }) {
     saveLastReadPage(pageNumber);
     
     const loadedPages = Object.keys(pages).map(Number);
-    const minLoaded = Math.min(...loadedPages);
-    const maxLoaded = Math.max(...loadedPages);
-    
-    if (pageNumber <= minLoaded + 2 || pageNumber >= maxLoaded - 2) {
-      loadPagesAround(pageNumber);
+    if (loadedPages.length > 0) {
+      const minLoaded = Math.min(...loadedPages);
+      const maxLoaded = Math.max(...loadedPages);
+      
+      if (pageNumber <= minLoaded + 1 || pageNumber >= maxLoaded - 1) {
+        loadPagesAround(pageNumber);
+      }
     }
   };
 
@@ -149,9 +148,12 @@ export default function ClassicMushafScreen({ navigation }) {
   };
 
   const navigateToPage = (direction) => {
-    const newPage = direction === 'next' ? 
-      Math.min(604, currentPage + 1) : 
-      Math.max(1, currentPage - 1);
+    let newPage;
+    if (direction === 'next') {
+      newPage = Math.min(604, currentPage + 1);
+    } else {
+      newPage = Math.max(1, currentPage - 1);
+    }
     
     if (newPage !== currentPage && flatListRef.current) {
       flatListRef.current.scrollToIndex({
@@ -175,7 +177,6 @@ export default function ClassicMushafScreen({ navigation }) {
       );
     }
 
-    // Check if this page starts with a new surah
     const firstVerse = pageData.verses?.[0];
     const isNewSurah = firstVerse && firstVerse.number === 1;
     const isTawbah = firstVerse && firstVerse.key && firstVerse.key.startsWith('9:');
@@ -184,7 +185,6 @@ export default function ClassicMushafScreen({ navigation }) {
     return (
       <View style={[styles.pageContainer, { width }]}>
         <View style={styles.pageContent}>
-          {/* Page Header with Juz info */}
           {pageData.page && (
             <View style={styles.pageHeader}>
               <View style={styles.pageHeaderContent}>
@@ -195,9 +195,7 @@ export default function ClassicMushafScreen({ navigation }) {
             </View>
           )}
           
-          {/* Verses Container */}
           <View style={styles.versesContainer}>
-            {/* Basmallah for new surahs */}
             {showBasmallah && (
               <Text style={styles.basmalaText}>
                 بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
@@ -227,15 +225,28 @@ export default function ClassicMushafScreen({ navigation }) {
     }
   }).current;
 
-  // Reverse array for RTL swipe behavior (right = next)
-  const pageNumbers = Array.from({ length: 604 }, (_, i) => 604 - i);
+  const pageNumbers = Array.from({ length: 604 }, (_, i) => i + 1);
+
+  if (!initialLoadComplete) {
+    return (
+      <SafeAreaProvider>
+        <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+          <SafeAreaView style={styles.safeArea}>
+            <View style={styles.initialLoadingContainer}>
+              <ActivityIndicator size="large" color={Theme.colors.secondary} />
+              <Text style={styles.initialLoadingText}>Loading Quran...</Text>
+            </View>
+          </SafeAreaView>
+        </LinearGradient>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
       <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           
-          {/* Modern Header */}
           <View style={styles.header}>
             <TouchableOpacity 
               style={styles.headerButton}
@@ -262,14 +273,12 @@ export default function ClassicMushafScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* Page Content */}
           <FlatList
             ref={flatListRef}
             data={pageNumbers}
             renderItem={renderPage}
             keyExtractor={(item) => item.toString()}
             horizontal
-            inverted
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onViewableItemsChanged={onViewableItemsChanged}
@@ -281,30 +290,34 @@ export default function ClassicMushafScreen({ navigation }) {
               offset: width * index,
               index,
             })}
-            initialScrollIndex={604 - currentPage}
+            initialScrollIndex={lastReadPage - 1}
             onScrollToIndexFailed={(info) => {
               const wait = new Promise(resolve => setTimeout(resolve, 500));
               wait.then(() => {
-                flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+                flatListRef.current?.scrollToIndex({ index: info.index, animated: false });
               });
             }}
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={3}
+            windowSize={5}
+            initialNumToRender={3}
           />
 
-          {/* Bottom Navigation */}
           <View style={styles.navigationContainer}>
+            {/* Next button on LEFT for RTL feel */}
             <TouchableOpacity 
-              style={[styles.navButton, currentPage <= 1 && styles.navButtonDisabled]}
-              onPress={() => navigateToPage('previous')}
-              disabled={currentPage <= 1}
+              style={[styles.navButton, currentPage >= 604 && styles.navButtonDisabled]}
+              onPress={() => navigateToPage('next')}
+              disabled={currentPage >= 604}
             >
               <Icon 
-                name="chevron-back" 
+                name="chevron-forward" 
                 type="Ionicons" 
                 size={20} 
-                color={currentPage <= 1 ? 'rgba(255, 255, 255, 0.3)' : 'white'} 
+                color={currentPage >= 604 ? 'rgba(255, 255, 255, 0.3)' : 'white'} 
               />
-              <Text style={[styles.navButtonText, currentPage <= 1 && styles.navButtonTextDisabled]}>
-                Previous
+              <Text style={[styles.navButtonText, currentPage >= 604 && styles.navButtonTextDisabled]}>
+                Next
               </Text>
             </TouchableOpacity>
 
@@ -312,66 +325,78 @@ export default function ClassicMushafScreen({ navigation }) {
               <Text style={styles.pageIndicatorText}>{currentPage} / 604</Text>
             </View>
 
+            {/* Previous button on RIGHT for RTL feel */}
             <TouchableOpacity 
-              style={[styles.navButton, currentPage >= 604 && styles.navButtonDisabled]}
-              onPress={() => navigateToPage('next')}
-              disabled={currentPage >= 604}
+              style={[styles.navButton, currentPage <= 1 && styles.navButtonDisabled]}
+              onPress={() => navigateToPage('previous')}
+              disabled={currentPage <= 1}
             >
-              <Text style={[styles.navButtonText, currentPage >= 604 && styles.navButtonTextDisabled]}>
-                Next
+              <Text style={[styles.navButtonText, currentPage <= 1 && styles.navButtonTextDisabled]}>
+                Previous
               </Text>
               <Icon 
-                name="chevron-forward" 
+                name="chevron-back" 
                 type="Ionicons" 
                 size={20} 
-                color={currentPage >= 604 ? 'rgba(255, 255, 255, 0.3)' : 'white'} 
+                color={currentPage <= 1 ? 'rgba(255, 255, 255, 0.3)' : 'white'} 
               />
             </TouchableOpacity>
           </View>
 
-          {/* Jump to Page Modal */}
           <Modal
             visible={showJumpModal}
             transparent={true}
             animationType="fade"
             onRequestClose={() => setShowJumpModal(false)}
           >
-            <View style={styles.modalOverlay}>
-              <View style={styles.jumpModal}>
-                <Text style={styles.jumpModalTitle}>Jump to Page</Text>
-                <Text style={styles.jumpModalSubtitle}>Enter page number (1-604)</Text>
-                
-                <TextInput
-                  style={styles.jumpInput}
-                  value={jumpToPage}
-                  onChangeText={setJumpToPage}
-                  keyboardType="numeric"
-                  placeholder="Page number"
-                  placeholderTextColor="#999"
-                  autoFocus={true}
-                  maxLength={3}
-                />
-
-                <View style={styles.jumpModalButtons}>
-                  <TouchableOpacity 
-                    style={styles.jumpModalCancelButton}
-                    onPress={() => {
-                      setShowJumpModal(false);
-                      setJumpToPage('');
-                    }}
-                  >
-                    <Text style={styles.jumpModalCancelText}>Cancel</Text>
-                  </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={() => {
+                setShowJumpModal(false);
+                setJumpToPage('');
+              }}
+            >
+              <TouchableOpacity 
+                activeOpacity={1}
+                onPress={(e) => e.stopPropagation()}
+              >
+                <View style={styles.jumpModal}>
+                  <Text style={styles.jumpModalTitle}>Jump to Page</Text>
+                  <Text style={styles.jumpModalSubtitle}>Enter page number (1-604)</Text>
                   
-                  <TouchableOpacity 
-                    style={styles.jumpModalConfirmButton}
-                    onPress={handleJumpToPage}
-                  >
-                    <Text style={styles.jumpModalConfirmText}>Go</Text>
-                  </TouchableOpacity>
+                  <TextInput
+                    style={styles.jumpInput}
+                    value={jumpToPage}
+                    onChangeText={setJumpToPage}
+                    keyboardType="numeric"
+                    placeholder="Page number"
+                    placeholderTextColor="#999"
+                    autoFocus={true}
+                    maxLength={3}
+                  />
+
+                  <View style={styles.jumpModalButtons}>
+                    <TouchableOpacity 
+                      style={styles.jumpModalCancelButton}
+                      onPress={() => {
+                        setShowJumpModal(false);
+                        setJumpToPage('');
+                      }}
+                    >
+                      <Text style={styles.jumpModalCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={styles.jumpModalConfirmButton}
+                      onPress={handleJumpToPage}
+                    >
+                      <Text style={styles.jumpModalConfirmText}>Go</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            </View>
+              </TouchableOpacity>
+            </TouchableOpacity>
           </Modal>
 
         </SafeAreaView>
@@ -386,6 +411,17 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+  initialLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  initialLoadingText: {
+    color: 'white',
+    fontSize: 18,
+    marginTop: 16,
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
@@ -432,7 +468,6 @@ const styles = StyleSheet.create({
   pageContainer: {
     flex: 1,
     backgroundColor: '#FFF9E6',
-    marginHorizontal: 0,
     marginVertical: 10,
   },
   loadingPageContainer: {
@@ -449,7 +484,8 @@ const styles = StyleSheet.create({
   },
   pageContent: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
   pageHeader: {
     marginBottom: 20,
@@ -475,24 +511,24 @@ const styles = StyleSheet.create({
   },
   versesContainer: {
     flex: 1,
-    paddingHorizontal: 10,
+    width: '100%',
   },
   basmalaText: {
     fontFamily: 'UthmanicFont',
-    fontSize: 24,
+    fontSize: 22,
     color: Theme.colors.primary,
     textAlign: 'center',
     marginVertical: 20,
-    lineHeight: 40,
+    lineHeight: 38,
   },
   arabicText: {
     fontFamily: 'UthmanicFont',
     fontSize: 20,
-    lineHeight: 36,
+    lineHeight: 40,
     color: '#2c3e50',
     textAlign: 'right',
     marginBottom: 8,
-    paddingHorizontal: 5,
+    flexWrap: 'wrap',
   },
   verseNumber: {
     fontSize: 18,
@@ -558,8 +594,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 20,
     padding: 30,
-    width: '100%',
-    maxWidth: 350,
+    width: 320,
+    maxWidth: '100%',
     elevation: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 5 },
