@@ -1,337 +1,117 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Dimensions
-} from 'react-native';
+// src/screens/ReadingScreen.js
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { QuranService } from '../services/QuranService';
-import { cleanArabicText } from '../utils/TextCleaner';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Theme } from '../styles/theme';
+import { Icon } from '../components/Icon';
 
-const { width } = Dimensions.get('window');
-
-export default function ReadingScreen() {
-  const [isReading, setIsReading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pages, setPages] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [lastReadPage, setLastReadPage] = useState(1);
-  const flatListRef = useRef(null);
-
-  useEffect(() => {
-    loadLastReadPage();
-  }, []);
-
-  const loadLastReadPage = async () => {
-    try {
-      const savedPage = await AsyncStorage.getItem('lastReadPage');
-      if (savedPage) {
-        setLastReadPage(parseInt(savedPage));
-        setCurrentPage(parseInt(savedPage));
-      }
-    } catch (error) {
-      console.error('Error loading last read page:', error);
+export default function ReadingScreen({ navigation }) {
+  const readingModes = [
+    {
+      id: 'classic',
+      title: 'Classic Mushaf',
+      subtitle: 'Traditional page-by-page reading',
+      description: '604 pages • Uthmani script',
+      icon: 'book',
+      color: Theme.colors.primary,
+      gradient: ['#22575D', '#55BAC6'],
+      screen: 'ClassicMushaf'
+    },
+    {
+      id: 'wordbyword',
+      title: 'Word by Word',
+      subtitle: 'Interlinear translation',
+      description: 'Coming soon',
+      icon: 'language',
+      color: Theme.colors.secondary,
+      gradient: ['#B8947D', '#D4C4B0'],
+      screen: null,
+      disabled: true
     }
-  };
+  ];
 
-  const saveLastReadPage = async (pageNumber) => {
-    try {
-      await AsyncStorage.setItem('lastReadPage', pageNumber.toString());
-    } catch (error) {
-      console.error('Error saving last read page:', error);
+  const handleModePress = (mode) => {
+    if (mode.disabled) {
+      return;
     }
+    navigation.navigate(mode.screen);
   };
-
-  const startReading = async () => {
-    setIsReading(true);
-    await loadPagesAround(lastReadPage);
-    
-    setTimeout(() => {
-      if (flatListRef.current) {
-        flatListRef.current.scrollToIndex({
-          index: lastReadPage - 1,
-          animated: false
-        });
-      }
-    }, 100);
-  };
-
-  const loadPagesAround = async (centerPage) => {
-    const pagesToLoad = [];
-    const range = 5;
-    
-    for (let i = Math.max(1, centerPage - range); i <= Math.min(604, centerPage + range); i++) {
-      if (!pages[i]) {
-        pagesToLoad.push(i);
-      }
-    }
-
-    if (pagesToLoad.length === 0) return;
-
-    setLoading(true);
-    
-    try {
-      const loadPromises = pagesToLoad.map(async (pageNum) => {
-        try {
-          const data = await QuranService.getPageData(pageNum);
-          return { pageNum, data };
-        } catch (error) {
-          console.error(`Error loading page ${pageNum}:`, error);
-          return { pageNum, data: null };
-        }
-      });
-
-      const results = await Promise.all(loadPromises);
-      
-      const newPages = { ...pages };
-      results.forEach(({ pageNum, data }) => {
-        if (data) {
-          newPages[pageNum] = data;
-        }
-      });
-      
-      setPages(newPages);
-    } catch (error) {
-      console.error('Error loading pages:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-    saveLastReadPage(pageNumber);
-    
-    const loadedPages = Object.keys(pages).map(Number);
-    const minLoaded = Math.min(...loadedPages);
-    const maxLoaded = Math.max(...loadedPages);
-    
-    if (pageNumber <= minLoaded + 2 || pageNumber >= maxLoaded - 2) {
-      loadPagesAround(pageNumber);
-    }
-  };
-
-  const goToPage = () => {
-    Alert.prompt(
-      'Go to Page',
-      'Enter page number (1-604):',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Go',
-          onPress: async (pageNum) => {
-            const num = parseInt(pageNum);
-            if (num >= 1 && num <= 604) {
-              setCurrentPage(num);
-              await loadPagesAround(num);
-              
-              if (flatListRef.current) {
-                flatListRef.current.scrollToIndex({
-                  index: num - 1,
-                  animated: true
-                });
-              }
-            } else {
-              Alert.alert('Invalid Page', 'Please enter a page number between 1 and 604');
-            }
-          }
-        }
-      ],
-      'plain-text',
-      currentPage.toString()
-    );
-  };
-
-  const navigateToPage = (direction) => {
-    const newPage = direction === 'next' ? 
-      Math.min(604, currentPage + 1) : 
-      Math.max(1, currentPage - 1);
-    
-    if (newPage !== currentPage && flatListRef.current) {
-      flatListRef.current.scrollToIndex({
-        index: newPage - 1,
-        animated: true
-      });
-    }
-  };
-
-  const renderPage = ({ item: pageNumber }) => {
-    const pageData = pages[pageNumber];
-    
-    if (!pageData) {
-      return (
-        <View style={[styles.pageContainer, { width }]}>
-          <View style={styles.loadingPageContainer}>
-            <ActivityIndicator size="large" color="#d4af37" />
-            <Text style={styles.loadingPageText}>Loading Page {pageNumber}...</Text>
-          </View>
-        </View>
-      );
-    }
-
-    return (
-      <View style={[styles.pageContainer, { width }]}>
-        <View style={styles.pageContent}>
-          {/* Page Header with Juz info */}
-          {pageData.page && (
-            <View style={styles.pageHeader}>
-              <View style={styles.pageHeaderContent}>
-                <Text style={styles.pageInfo}>
-                  Page {pageData.page.number}
-                </Text>
-                <View style={styles.juzBadge}>
-                  <Text style={styles.juzText}>Juz {pageData.page.juz_number}</Text>
-                </View>
-              </View>
-            </View>
-          )}
-          
-          {/* Verses Container */}
-          <View style={styles.versesContainer}>
-            {pageData.verses?.map((verse, index) => {
-              // Check if this is a new surah (verse number 1)
-              const isNewSurah = verse.number === 1 && verse.key !== '1:1'; // Not Al-Fatihah
-              
-              return (
-                <View key={verse.key || index}>
-                  {/* Basmala for new surahs (except At-Tawbah) */}
-                  {isNewSurah && !verse.key.startsWith('9:') && (
-                    <Text style={styles.basmalaText}>
-                      بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
-                    </Text>
-                  )}
-                  
-                  {/* Ayah text */}
-                  <Text style={styles.arabicText}>
-                    {cleanArabicText(verse.text)}
-                    {verse.number && (
-                      <Text style={styles.verseNumber}> ﴿{verse.number}﴾ </Text>
-                    )}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-      </View>
-    );
-  };
-
-  const onViewableItemsChanged = useRef(({ viewableItems }) => {
-    if (viewableItems.length > 0) {
-      const visiblePage = viewableItems[0].item;
-      handlePageChange(visiblePage);
-    }
-  }).current;
-
-  if (!isReading) {
-    return (
-      <SafeAreaProvider>
-        <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
-          <SafeAreaView style={styles.safeArea}>
-            <View style={styles.welcomeContainer}>
-              <Text style={styles.welcomeTitle}>Quran Reading</Text>
-              <Text style={styles.welcomeSubtitle}>Classic Mushaf-style page reading</Text>
-              
-              <View style={styles.infoCard}>
-                <Text style={styles.infoText}>📖 Read the Quran page by page</Text>
-                <Text style={styles.infoText}>🔖 Resume from your last page</Text>
-                <Text style={styles.infoText}>📱 Authentic Mushaf layout</Text>
-              </View>
-              
-              <TouchableOpacity 
-                style={styles.startButton}
-                onPress={startReading}
-              >
-                <Text style={styles.startButtonText}>Start Reading</Text>
-              </TouchableOpacity>
-              
-              <Text style={styles.lastReadText}>
-                Last read: Page {lastReadPage} of 604
-              </Text>
-            </View>
-          </SafeAreaView>
-        </LinearGradient>
-      </SafeAreaProvider>
-    );
-  }
-
-  const pageNumbers = Array.from({ length: 604 }, (_, i) => i + 1);
 
   return (
     <SafeAreaProvider>
       <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => setIsReading(false)}>
-              <Text style={styles.backText}>← Stop Reading</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.pageButton} onPress={goToPage}>
-              <Text style={styles.pageButtonText}>Page {currentPage} of 604</Text>
-            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Quran Reading</Text>
+            <Text style={styles.headerSubtitle}>Choose your reading mode</Text>
           </View>
 
-          <FlatList
-            ref={flatListRef}
-            data={pageNumbers}
-            renderItem={renderPage}
-            keyExtractor={(item) => item.toString()}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onViewableItemsChanged={onViewableItemsChanged}
-            viewabilityConfig={{
-              itemVisiblePercentThreshold: 50
-            }}
-            getItemLayout={(data, index) => ({
-              length: width,
-              offset: width * index,
-              index,
-            })}
-            initialScrollIndex={currentPage - 1}
-            onScrollToIndexFailed={(info) => {
-              const wait = new Promise(resolve => setTimeout(resolve, 500));
-              wait.then(() => {
-                flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
-              });
-            }}
-          />
+          <ScrollView 
+            style={styles.content} 
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            {readingModes.map((mode) => (
+              <TouchableOpacity
+                key={mode.id}
+                style={styles.modeCardWrapper}
+                onPress={() => handleModePress(mode)}
+                activeOpacity={mode.disabled ? 1 : 0.8}
+                disabled={mode.disabled}
+              >
+                <LinearGradient
+                  colors={mode.gradient}
+                  style={[styles.modeCard, mode.disabled && styles.disabledCard]}
+                >
+                  <View style={styles.modeIconContainer}>
+                    <Icon 
+                      name={mode.icon} 
+                      type="Ionicons" 
+                      size={48} 
+                      color="white" 
+                    />
+                  </View>
+                  
+                  <View style={styles.modeContent}>
+                    <Text style={styles.modeTitle}>{mode.title}</Text>
+                    <Text style={styles.modeSubtitle}>{mode.subtitle}</Text>
+                    <Text style={styles.modeDescription}>{mode.description}</Text>
+                  </View>
 
-          <View style={styles.navigationContainer}>
-            <TouchableOpacity 
-              style={[styles.navButton, currentPage >= 604 && styles.navButtonDisabled]}
-              onPress={() => navigateToPage('next')}
-              disabled={currentPage >= 604}
-            >
-              <Text style={[styles.navButtonText, currentPage >= 604 && styles.navButtonTextDisabled]}>
-                Next
+                  {!mode.disabled && (
+                    <View style={styles.modeArrow}>
+                      <Icon 
+                        name="chevron-forward" 
+                        type="Ionicons" 
+                        size={24} 
+                        color="rgba(255, 255, 255, 0.8)" 
+                      />
+                    </View>
+                  )}
+
+                  {mode.disabled && (
+                    <View style={styles.comingSoonBadge}>
+                      <Text style={styles.comingSoonText}>Coming Soon</Text>
+                    </View>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            ))}
+
+            <View style={styles.infoCard}>
+              <Icon 
+                name="information-circle" 
+                type="Ionicons" 
+                size={24} 
+                color={Theme.colors.secondary} 
+                style={styles.infoIcon}
+              />
+              <Text style={styles.infoText}>
+                Choose a reading mode to begin your Quran journey. Each mode offers a unique way to engage with the sacred text.
               </Text>
-            </TouchableOpacity>
-
-            <View style={styles.pageIndicator}>
-              <Text style={styles.pageIndicatorText}>{currentPage} / 604</Text>
             </View>
-
-            <TouchableOpacity 
-              style={[styles.navButton, currentPage <= 1 && styles.navButtonDisabled]}
-              onPress={() => navigateToPage('previous')}
-              disabled={currentPage <= 1}
-            >
-              <Text style={[styles.navButtonText, currentPage <= 1 && styles.navButtonTextDisabled]}>
-                Previous
-              </Text>
-            </TouchableOpacity>
-          </View>
-
+          </ScrollView>
         </SafeAreaView>
       </LinearGradient>
     </SafeAreaProvider>
@@ -345,212 +125,108 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  welcomeContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 30,
     alignItems: 'center',
-    paddingHorizontal: 30,
   },
-  welcomeTitle: {
-    fontSize: 36,
+  headerTitle: {
+    fontSize: 32,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 10,
-    textAlign: 'center',
+    marginBottom: 8,
   },
-  welcomeSubtitle: {
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 40,
-    textAlign: 'center',
-  },
-  infoCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 20,
-    padding: 25,
-    marginBottom: 40,
-    width: '100%',
-    maxWidth: 350,
-  },
-  infoText: {
+  headerSubtitle: {
     fontSize: 16,
-    color: 'white',
-    marginBottom: 15,
-    textAlign: 'center',
-    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
   },
-  startButton: {
-    backgroundColor: Theme.colors.secondary,
-    borderRadius: 30,
-    paddingVertical: 18,
-    paddingHorizontal: 60,
-    elevation: 5,
+  content: {
+    flex: 1,
+  },
+  contentContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+  },
+  modeCardWrapper: {
+    marginBottom: 20,
+  },
+  modeCard: {
+    borderRadius: 20,
+    padding: 24,
+    minHeight: 140,
+    elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 5,
-    marginBottom: 20,
+    shadowRadius: 8,
+    position: 'relative',
   },
-  startButtonText: {
-    color: 'white',
-    fontSize: 20,
+  disabledCard: {
+    opacity: 0.6,
+  },
+  modeIconContainer: {
+    position: 'absolute',
+    top: 24,
+    right: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+    padding: 16,
+  },
+  modeContent: {
+    flex: 1,
+    paddingRight: 100,
+  },
+  modeTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
-    textAlign: 'center',
+    color: 'white',
+    marginBottom: 8,
   },
-  lastReadText: {
+  modeSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 8,
+  },
+  modeDescription: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
-    fontStyle: 'italic',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  modeArrow: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
   },
-  backText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  pageButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  pageButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  pageContainer: {
-    flex: 1,
-    backgroundColor: '#FFF9E6', // Cream/beige like real Mushaf
-    marginHorizontal: 5,
-    marginVertical: 10,
-    borderRadius: 15,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  loadingPageContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFF9E6',
-  },
-  loadingPageText: {
-    color: Theme.colors.primary,
-    fontSize: 16,
-    marginTop: 15,
-    fontWeight: '500',
-  },
-  pageContent: {
-    flex: 1,
-    padding: 20,
-  },
-  pageHeader: {
-    marginBottom: 20,
-    paddingBottom: 15,
-    borderBottomWidth: 2,
-    borderBottomColor: '#d4af37',
-  },
-  pageHeaderContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  pageInfo: {
-    fontSize: 16,
-    color: Theme.colors.primary,
-    fontWeight: '700',
-  },
-  juzBadge: {
-    backgroundColor: Theme.colors.secondary,
+  comingSoonBadge: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
   },
-  juzText: {
+  comingSoonText: {
     fontSize: 12,
-    color: 'white',
-    fontWeight: '600',
-  },
-  versesContainer: {
-    flex: 1,
-    paddingHorizontal: 10,
-  },
-  basmalaText: {
-    fontFamily: 'UthmanicFont',
-    fontSize: 24,
-    color: Theme.colors.primary,
-    textAlign: 'center',
-    marginVertical: 20,
-    lineHeight: 40,
-  },
-  arabicText: {
-    fontFamily: 'UthmanicFont',
-    fontSize: 20,
-    lineHeight: 36,
-    color: '#2c3e50',
-    textAlign: 'right',
-    marginBottom: 8,
-    paddingHorizontal: 5,
-  },
-  verseNumber: {
-    fontSize: 18,
-    color: Theme.colors.secondary,
     fontWeight: 'bold',
+    color: 'white',
   },
-  navigationContainer: {
+  infoCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 15,
+    padding: 20,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    alignItems: 'flex-start',
+    marginTop: 10,
   },
-  navButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 25,
-    minWidth: 100,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+  infoIcon: {
+    marginRight: 12,
+    marginTop: 2,
   },
-  navButtonDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  navButtonText: {
+  infoText: {
+    flex: 1,
+    fontSize: 14,
     color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  navButtonTextDisabled: {
-    color: 'rgba(255, 255, 255, 0.3)',
-  },
-  pageIndicator: {
-    backgroundColor: Theme.colors.secondary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  pageIndicatorText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+    lineHeight: 20,
   },
 });

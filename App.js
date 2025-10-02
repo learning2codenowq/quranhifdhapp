@@ -14,6 +14,7 @@ import AnalyticsScreen from './src/screens/AnalyticsScreen';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import SurahListScreen from './src/screens/SurahListScreen';
 import ReadingScreen from './src/screens/ReadingScreen';
+import ClassicMushafScreen from './src/screens/ClassicMushafScreen';
 import BottomNavigation from './src/components/BottomNavigation';
 import PrivacyPolicyScreen from './src/screens/PrivacyPolicyScreen';
 import TermsOfServiceScreen from './src/screens/TermsOfServiceScreen';
@@ -124,6 +125,7 @@ export default function App() {
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
             <Stack.Screen name="Reading" component={ReadingScreen} />
+            <Stack.Screen name="ClassicMushaf" component={ClassicMushafScreen} />
             <Stack.Screen name="QuranReader" component={QuranReaderScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="TikrarActivity" component={TikrarActivityScreen} />
