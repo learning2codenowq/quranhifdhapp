@@ -425,13 +425,6 @@ const formatTime = (timeObj) => {
       onValueChange: (value) => updateSetting('showTranslations', value)
     },
     {
-      type: 'switch',
-      title: 'Tajweed Highlighting',
-      subtitle: 'Color-code tajweed rules for proper pronunciation',
-      value: settings.tajweedHighlighting,
-      onValueChange: (value) => updateSetting('tajweedHighlighting', value)
-    },
-    {
   type: 'button',
   title: 'Arabic Script Type',
   subtitle: `Current: ${settings.scriptType.charAt(0).toUpperCase() + settings.scriptType.slice(1)}`,

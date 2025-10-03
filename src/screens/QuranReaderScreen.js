@@ -21,6 +21,7 @@ import { QuranUtils } from '../utils/QuranUtils';
 import { StorageService } from '../services/StorageService';
 import { AudioService } from '../services/AudioService';
 import { cleanArabicText } from '../utils/TextCleaner';
+import { Logger } from '../utils/Logger'
 import { parseTajweedText, hasTajweedMarkup } from '../utils/TajweedParser';
 import { Theme } from '../styles/theme'; 
 import { getThemedColors } from '../styles/theme';
@@ -36,8 +37,11 @@ export default function QuranReaderScreen({ route, navigation }) {
   const [memorizedAyahs, setMemorizedAyahs] = useState([]);
   const [audioStatus, setAudioStatus] = useState({ isPlaying: false, hasSound: false });
   const [playingAyah, setPlayingAyah] = useState(null);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
   const [ayahAudioUrls, setAyahAudioUrls] = useState({});
   const [ayahCounters, setAyahCounters] = useState({});
+  const [isInitialized, setIsInitialized] = useState(false);
+
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -45,9 +49,8 @@ export default function QuranReaderScreen({ route, navigation }) {
   arabicFontSize: 'Medium',
   translationFontSize: 'Medium',
   autoPlayNext: true,
-  darkMode: false,  // NEW
-  tajweedHighlighting: false,  // NEW
-  scriptType: 'uthmani',  // NEW
+  darkMode: false, 
+  scriptType: 'uthmani',  
 });
 
   const themedColors = getThemedColors(settings.darkMode);
@@ -79,26 +82,45 @@ export default function QuranReaderScreen({ route, navigation }) {
   console.log('🔢 surahId from params:', surahId);
   console.log('📦 route.params:', route?.params);
 
-  // Cleanup on component unmount
-  // Cleanup on component unmount
-  useEffect(() => {
-    console.log('🔥 useEffect triggered with surahId:', surahId, 'reciter:', selectedReciterId);
-    
-    if (surahId) {
-      console.log('✅ surahId exists, calling functions...');
-      loadSettings();
-      console.log('📞 About to call loadSurahData...');
-      loadSurahData();
+useEffect(() => {
+  console.log('🔥 Component effect', { surahId, isInitialized });
+  
+  if (!surahId) {
+    console.log('❌ No surahId');
+    return;
+  }
+  
+  // Reset initialization when surahId changes
+  setIsInitialized(false);
+  
+  const loadEverything = async () => {
+    try {
+      console.log('📥 Loading settings...');
+      await loadSettings();
+      console.log('✅ Settings loaded');
+      
+      console.log('📥 Loading surah data...');
+      await loadSurahData();
+      console.log('✅ Surah data loaded');
+      
       loadMemorizedAyahs();
       AudioService.setupAudio();
-    } else {
-      console.log('❌ No surahId found!');
+      
+      setIsInitialized(true);
+      console.log('✅ Everything initialized');
+    } catch (error) {
+      console.error('❌ Error during initialization:', error);
+      setLoading(false); // Make sure to stop loading on error
     }
-    
-    return () => {
-      AudioService.stopAudio();
-    };
-  }, [surahId, selectedReciterId]); 
+  };
+  
+  loadEverything();
+  
+  return () => {
+    console.log('🧹 Cleanup');
+    AudioService.stopAudio();
+  };
+}, [surahId, selectedReciterId]); 
 
   const loadSettings = async () => {
   try {
@@ -109,9 +131,8 @@ export default function QuranReaderScreen({ route, navigation }) {
         arabicFontSize: state.settings.arabicFontSize || 'Medium',
         translationFontSize: state.settings.translationFontSize || 'Medium',
         autoPlayNext: state.settings.autoPlayNext !== false,
-        darkMode: state.settings.darkMode || false,  // NEW
-        tajweedHighlighting: state.settings.tajweedHighlighting || false,  // NEW
-        scriptType: state.settings.scriptType || 'uthmani',  // NEW
+        darkMode: state.settings.darkMode || false,
+        scriptType: state.settings.scriptType || 'uthmani',
       };
       Logger.log('🎵 Loaded settings:', newSettings);
       setSettings(newSettings);
@@ -812,7 +833,7 @@ const TajweedHelpModal = () => (
       : 'System',
   }
 ]}>
-  {settings.scriptType === 'tajweed' && settings.tajweedHighlighting && hasTajweedMarkup(item.text) ? (
+  {settings.scriptType === 'tajweed' && hasTajweedMarkup(item.text) ? (
     // Render Tajweed with colors
     parseTajweedText(item.text).map((segment, idx) => (
       <Text key={idx} style={segment.color ? { color: segment.color } : {}}>
@@ -825,7 +846,7 @@ const TajweedHelpModal = () => (
     item.text
   )}
 </Text>
-    {settings.tajweedHighlighting && settings.scriptType === 'tajweed' && (
+    {settings.scriptType === 'tajweed' && (
       <Text style={styles.tajweedNote}>
         ℹ️ Tajweed text loaded
       </Text>
@@ -987,7 +1008,7 @@ const TajweedHelpModal = () => (
   </View>
 
   {/* ADD THIS HELP BUTTON */}
-  {settings.tajweedHighlighting && settings.scriptType === 'tajweed' && (
+  {settings.scriptType === 'tajweed' && (
     <TouchableOpacity 
       style={styles.backButtonModern}
       onPress={() => setShowTajweedHelp(true)}
