@@ -2,7 +2,7 @@ export const cleanArabicText = (text) => {
   if (!text) return text;
   
   return text
-    .replace(/[●○◯]/g, '') 
+   // .replace(/[●○◯]/g, '') 
    // .replace(/[۩۞]/g, '') 
    // .replace(/[\u06D6-\u06DC]/g, '') 
     .replace(/[\u06DF-\u06E8]/g, '') 
