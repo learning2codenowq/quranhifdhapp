@@ -76,6 +76,12 @@ export class QuranService {
   if (verse.number === 1) {
     console.log('📝 First verse text sample:', verse.text?.substring(0, 100));
     console.log('📝 Script type being used:', scriptType);
+    
+    // Check for Tajweed markup
+    if (scriptType === 'tajweed') {
+      console.log('🎨 Has Tajweed markup:', verse.text?.includes('<span class='));
+      console.log('🎨 Tajweed sample:', verse.text?.substring(0, 200));
+    }
   }
   
   return {

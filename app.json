@@ -74,8 +74,9 @@
         "expo-font",
         {
           "fonts": [
-            "./assets/fonts/KFGQPC_Uthmanic_Script_HAFS_Regular.otf"
-          ]
+      "./assets/fonts/KFGQPC_Uthmanic_Script_HAFS_Regular.otf",
+      "./assets/fonts/IndoPak.ttf"
+    ]
         }
       ],
       [

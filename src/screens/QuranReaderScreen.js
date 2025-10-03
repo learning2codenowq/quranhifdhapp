@@ -21,7 +21,7 @@ import { QuranUtils } from '../utils/QuranUtils';
 import { StorageService } from '../services/StorageService';
 import { AudioService } from '../services/AudioService';
 import { cleanArabicText } from '../utils/TextCleaner';
-import { Logger } from '../utils/Logger';
+import { parseTajweedText, hasTajweedMarkup } from '../utils/TajweedParser';
 import { Theme } from '../styles/theme'; 
 import { getThemedColors } from '../styles/theme';
 import { Icon, AppIcons } from '../components/Icon';
@@ -806,14 +806,24 @@ const TajweedHelpModal = () => (
     lineHeight: getFontSize(settings.arabicFontSize) * 1.8,
     color: settings.darkMode ? themedColors.textPrimary : Theme.colors.primary,
     fontFamily: settings.scriptType === 'uthmani' || settings.scriptType === 'tajweed' 
-      ? 'UthmanicFont'  // Use Uthmani font for Uthmani and Tajweed
-      : 'System',  // Use system font for IndoPak and Imlaei
+      ? 'UthmanicFont'
+      : settings.scriptType === 'indopak'
+      ? 'IndoPakFont'
+      : 'System',
   }
 ]}>
-  {settings.scriptType === 'uthmani' 
-    ? cleanArabicText(item.text)
-    : item.text
-  }
+  {settings.scriptType === 'tajweed' && settings.tajweedHighlighting && hasTajweedMarkup(item.text) ? (
+    // Render Tajweed with colors
+    parseTajweedText(item.text).map((segment, idx) => (
+      <Text key={idx} style={segment.color ? { color: segment.color } : {}}>
+        {segment.text}
+      </Text>
+    ))
+  ) : settings.scriptType === 'uthmani' ? (
+    cleanArabicText(item.text)
+  ) : (
+    item.text
+  )}
 </Text>
     {settings.tajweedHighlighting && settings.scriptType === 'tajweed' && (
       <Text style={styles.tajweedNote}>

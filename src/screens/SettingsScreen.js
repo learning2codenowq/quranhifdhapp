@@ -432,36 +432,32 @@ const formatTime = (timeObj) => {
       onValueChange: (value) => updateSetting('tajweedHighlighting', value)
     },
     {
-      type: 'button',
-      title: 'Arabic Script Type',
-      subtitle: `Current: ${settings.scriptType.charAt(0).toUpperCase() + settings.scriptType.slice(1)}`,
-      icon: { name: 'text', type: 'Ionicons' },
-      onPress: () => {
-        Alert.alert(
-          'Arabic Script Type',
-          'Choose your preferred Quran script style',
-          [
-            { 
-              text: 'Uthmani (Madina)', 
-              onPress: () => updateSetting('scriptType', 'uthmani')
-            },
-            { 
-              text: 'IndoPak', 
-              onPress: () => updateSetting('scriptType', 'indopak')
-            },
-            { 
-              text: 'Imlaei (Simplified)', 
-              onPress: () => updateSetting('scriptType', 'imlaei')
-            },
-            { 
-              text: 'Tajweed (Color-coded)', 
-              onPress: () => updateSetting('scriptType', 'tajweed')
-            },
-            { text: 'Cancel', style: 'cancel' }
-          ]
-        );
-      }
-    },
+  type: 'button',
+  title: 'Arabic Script Type',
+  subtitle: `Current: ${settings.scriptType.charAt(0).toUpperCase() + settings.scriptType.slice(1)}`,
+  icon: { name: 'text', type: 'Ionicons' },
+  onPress: () => {
+    Alert.alert(
+      'Arabic Script Type',
+      'Choose your preferred Quran script style',
+      [
+        { 
+          text: 'Uthmani (Madina)', 
+          onPress: () => updateSetting('scriptType', 'uthmani')
+        },
+        { 
+          text: 'IndoPak', 
+          onPress: () => updateSetting('scriptType', 'indopak')
+        },
+        { 
+          text: 'Tajweed (Color-coded)', 
+          onPress: () => updateSetting('scriptType', 'tajweed')
+        },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  }
+},
     {
       type: 'button',
       title: 'Arabic Font Size',
