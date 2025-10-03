@@ -164,47 +164,15 @@ const TajweedHelpModal = () => (
             styles.tajweedDescription,
             settings.darkMode && { color: themedColors.textSecondary }
           ]}>
-            Tajweed rules help you pronounce the Quran correctly. Enable "Tajweed Highlighting" in Settings and select "Tajweed" script type.
+            Tajweed rules help you pronounce the Quran correctly. Each color represents a specific pronunciation rule.
           </Text>
           
           <View style={styles.tajweedRule}>
-            <View style={[styles.colorBox, { backgroundColor: '#AAAAAA' }]} />
+            <View style={[styles.colorBox, { backgroundColor: '#169777' }]} />
             <Text style={[
               styles.ruleText,
               settings.darkMode && { color: themedColors.textPrimary }
-            ]}>Ghunnah (Nasal sound)</Text>
-          </View>
-          
-          <View style={styles.tajweedRule}>
-            <View style={[styles.colorBox, { backgroundColor: '#537FFF' }]} />
-            <Text style={[
-              styles.ruleText,
-              settings.darkMode && { color: themedColors.textPrimary }
-            ]}>Qalqalah (Echoing)</Text>
-          </View>
-          
-          <View style={styles.tajweedRule}>
-            <View style={[styles.colorBox, { backgroundColor: '#4050FF' }]} />
-            <Text style={[
-              styles.ruleText,
-              settings.darkMode && { color: themedColors.textPrimary }
-            ]}>Madd (Prolonging)</Text>
-          </View>
-          
-          <View style={styles.tajweedRule}>
-            <View style={[styles.colorBox, { backgroundColor: '#000000' }]} />
-            <Text style={[
-              styles.ruleText,
-              settings.darkMode && { color: themedColors.textPrimary }
-            ]}>Idgham (Merging)</Text>
-          </View>
-          
-          <View style={styles.tajweedRule}>
-            <View style={[styles.colorBox, { backgroundColor: '#DD0008' }]} />
-            <Text style={[
-              styles.ruleText,
-              settings.darkMode && { color: themedColors.textPrimary }
-            ]}>Iqlab (Changing)</Text>
+            ]}>Ghunnah (غُنَّة) - Nasal sound held for 2 counts</Text>
           </View>
           
           <View style={styles.tajweedRule}>
@@ -212,7 +180,39 @@ const TajweedHelpModal = () => (
             <Text style={[
               styles.ruleText,
               settings.darkMode && { color: themedColors.textPrimary }
-            ]}>Ikhfa (Hiding)</Text>
+            ]}>Ikhfa (إخْفَاء) - Hiding the sound</Text>
+          </View>
+          
+          <View style={styles.tajweedRule}>
+            <View style={[styles.colorBox, { backgroundColor: '#095d42' }]} />
+            <Text style={[
+              styles.ruleText,
+              settings.darkMode && { color: themedColors.textPrimary }
+            ]}>Idgham without Ghunnah (إدْغَام بلا غُنَّة)</Text>
+          </View>
+          
+          <View style={styles.tajweedRule}>
+            <View style={[styles.colorBox, { backgroundColor: '#DD0008' }]} />
+            <Text style={[
+              styles.ruleText,
+              settings.darkMode && { color: themedColors.textPrimary }
+            ]}>Qalqalah (قَلْقَلَة) - Echoing/bouncing sound</Text>
+          </View>
+          
+          <View style={styles.tajweedRule}>
+            <View style={[styles.colorBox, { backgroundColor: '#7B1FA2' }]} />
+            <Text style={[
+              styles.ruleText,
+              settings.darkMode && { color: themedColors.textPrimary }
+            ]}>Madd (مَدّ) - Prolongation for 4-6 counts</Text>
+          </View>
+          
+          <View style={styles.tajweedRule}>
+            <View style={[styles.colorBox, { backgroundColor: '#AAAAAA' }]} />
+            <Text style={[
+              styles.ruleText,
+              settings.darkMode && { color: themedColors.textPrimary }
+            ]}>Silent letters (Hamzat al-Wasl, Lam Shamsiyyah)</Text>
           </View>
         </ScrollView>
         
@@ -820,38 +820,35 @@ const TajweedHelpModal = () => (
   settings.darkMode && { backgroundColor: themedColors.cardBackground }
 ]}>
   <View style={styles.arabicTextWrapper}>
-    <Text style={[
-  styles.modernArabicText, 
-  { 
-    fontSize: getFontSize(settings.arabicFontSize),
-    lineHeight: getFontSize(settings.arabicFontSize) * 1.8,
-    color: settings.darkMode ? themedColors.textPrimary : Theme.colors.primary,
-    fontFamily: settings.scriptType === 'uthmani' || settings.scriptType === 'tajweed' 
-      ? 'UthmanicFont'
-      : settings.scriptType === 'indopak'
-      ? 'IndoPakFont'
-      : 'System',
-  }
-]}>
-  {settings.scriptType === 'tajweed' && hasTajweedMarkup(item.text) ? (
-    // Render Tajweed with colors
-    parseTajweedText(item.text).map((segment, idx) => (
-      <Text key={idx} style={segment.color ? { color: segment.color } : {}}>
-        {segment.text}
-      </Text>
-    ))
-  ) : settings.scriptType === 'uthmani' ? (
-    cleanArabicText(item.text)
-  ) : (
-    item.text
-  )}
-</Text>
-    {settings.scriptType === 'tajweed' && (
-      <Text style={styles.tajweedNote}>
-        ℹ️ Tajweed text loaded
-      </Text>
+  <Text style={[
+    styles.modernArabicText, 
+    { 
+      fontSize: getFontSize(settings.arabicFontSize),
+      lineHeight: getFontSize(settings.arabicFontSize) * 1.8,
+      color: settings.darkMode ? themedColors.textPrimary : Theme.colors.primary,
+      fontFamily: settings.scriptType === 'uthmani' || settings.scriptType === 'tajweed' 
+        ? 'UthmanicFont'
+        : settings.scriptType === 'indopak'
+        ? 'IndoPakFont'
+        : 'System',
+    }
+  ]}>
+    {settings.scriptType === 'tajweed' && hasTajweedMarkup(item.text) ? (
+      <>
+        {parseTajweedText(item.text).map((segment, idx) => (
+          <Text key={idx} style={segment.color ? { color: segment.color } : {}}>
+            {segment.text}
+          </Text>
+        ))}
+        <Text style={styles.verseNumber}> ﴿{item.verse_number}﴾ </Text>
+      </>
+    ) : settings.scriptType === 'uthmani' ? (
+      cleanArabicText(item.text)
+    ) : (
+      item.text
     )}
-  </View>
+  </Text>
+</View>
 </View>
         
         {/* Translation Card */}

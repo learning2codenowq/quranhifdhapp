@@ -1,65 +1,98 @@
-// Tajweed color mapping based on Quran.com standard
 export const TAJWEED_COLORS = {
-  'ham_wasl': '#AAAAAA',        // Hamzat ul Wasl - Grey
-  'slnt': '#AAAAAA',            // Silent - Grey  
-  'laam_shamsiyah': '#AAAAAA',  // Lam Shamsiyyah - Grey
-  'madda_normal': '#4050FF',    // Normal Madd - Blue
-  'madda_permissible': '#4050FF', // Permissible Madd - Blue
-  'madda_necessary': '#4050FF',  // Necessary Madd - Blue
-  'qalaqah': '#DD0008',         // Qalqalah - Red
-  'madda_obligatory': '#2144C1', // Obligatory Madd - Dark Blue
-  'ikhafa_shafawi': '#169777',  // Ikhafa Shafawi - Green
-  'ikhafa': '#169777',          // Ikhafa - Green
-  'idgham_shafawi': '#169777',  // Idgham Shafawi - Green
-  'iqlab': '#169777',           // Iqlab - Green
-  'idgham_w_ghunnah': '#169777', // Idgham with Ghunnah - Green
-  'idgham_wo_ghunnah': '#169777', // Idgham without Ghunnah - Green
-  'idgham_mutajanisayn': '#169777', // Idgham Mutajanisayn - Green
-  'idgham_mutaqaribayn': '#169777', // Idgham Mutaqaribayn - Green
-  'ghunnah': '#AAAAAA',         // Ghunnah - Grey
+  // Ghunnah (Nasal sound) - GREEN
+  'ghunnah': '#169777',
+  'idgham_w_ghunnah': '#169777',
+  
+  // Ikhfa/Iqlab (Hiding/Changing) - GREEN (same family as Ghunnah)
+  'ikhafa_shafawi': '#169777',
+  'ikhafa': '#169777',
+  'idgham_shafawi': '#169777',
+  'iqlab': '#169777',
+  'idgham_mutajanisayn': '#169777',
+  'idgham_mutaqaribayn': '#169777',
+  
+  // Idgham without Ghunnah - DARK GREEN
+  'idgham_wo_ghunnah': '#095d42',
+  
+  // Qalqalah (Echoing/Bouncing) - RED
+  'qalaqah': '#DD0008',
+  
+  // Madd (Prolongation) - PURPLE/VIOLET
+  'madda_normal': '#7B1FA2',
+  'madda_permissible': '#9C27B0',
+  'madda_necessary': '#6A1B9A',
+  'madda_obligatory': '#4A148C',
+  
+  // Silent/Lam Shamsiyyah - GREY
+  'ham_wasl': '#AAAAAA',
+  'slnt': '#AAAAAA',
+  'laam_shamsiyah': '#AAAAAA',
+  
+  // Verse end markers
+  'end': null,
 };
 
 // Parse Tajweed HTML to extract text and colors
 export const parseTajweedText = (htmlText) => {
   if (!htmlText) return [{ text: '', color: null }];
 
+  // Clean specific problematic Tajweed characters
+  let cleanedText = htmlText
+    // Replace Alef with Wavy Hamza (has blue circle) with regular Alef
+    .replace(/ٲ/g, 'ا')  // U+0672 -> U+0627
+    // Remove Quranic annotation marks
+    .replace(/[\u06D6-\u06DC]/g, '')  // Small high ligatures
+    .replace(/[\u06DF-\u06E4]/g, '')  // Small high signs (keep some)
+    .replace(/[\u06E7-\u06E8]/g, '')  // Small high signs
+    .replace(/[\u06EA-\u06ED]/g, '')  // Empty centre signs
+    .replace(/[\u08F0-\u08FF]/g, '');  // Extended Arabic annotations
+
   const segments = [];
   
-  // FIXED: Look for <tajweed> tags instead of <span> tags
-  const tajweedRegex = /<tajweed class=([a-z_]+)>([^<]+)<\/tajweed>/g;
+  const tajweedRegex = /<(?:tajweed|span)\s+class="?([a-z_]+)"?>([^<]*)<\/(?:tajweed|span)>/g;
   let lastIndex = 0;
   let match;
 
-  while ((match = tajweedRegex.exec(htmlText)) !== null) {
+  while ((match = tajweedRegex.exec(cleanedText)) !== null) {
     // Add text before this match (normal text)
     if (match.index > lastIndex) {
-      const beforeText = htmlText.substring(lastIndex, match.index);
-      if (beforeText) {
+      const beforeText = cleanedText.substring(lastIndex, match.index);
+      if (beforeText.trim()) {
         segments.push({ text: beforeText, color: null });
       }
     }
 
     // Add colored segment
     const className = match[1];
-    const text = match[2];
+    let text = match[2];
+    
+    // Skip the 'end' class (verse markers)
+    if (className === 'end') {
+      lastIndex = match.index + match[0].length;
+      continue;
+    }
+    
     const color = TAJWEED_COLORS[className] || null;
     
-    segments.push({ text, color });
+    if (text.trim()) {
+      segments.push({ text, color });
+    }
+    
     lastIndex = match.index + match[0].length;
   }
 
   // Add remaining text after last match
-  if (lastIndex < htmlText.length) {
-    const remainingText = htmlText.substring(lastIndex);
-    if (remainingText) {
-      segments.push({ text: remainingText, color: null });
+  if (lastIndex < cleanedText.length) {
+    const remainingText = cleanedText.substring(lastIndex);
+    const cleanedRemaining = remainingText.replace(/<[^>]+>/g, '').trim();
+    if (cleanedRemaining) {
+      segments.push({ text: cleanedRemaining, color: null });
     }
   }
 
   return segments.length > 0 ? segments : [{ text: htmlText, color: null }];
 };
 
-// Check if text contains Tajweed markup
 export const hasTajweedMarkup = (text) => {
-  return text && text.includes('<tajweed class=');
+  return text && (text.includes('<tajweed class=') || text.includes('<span class='));
 };
