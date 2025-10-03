@@ -800,18 +800,21 @@ const TajweedHelpModal = () => (
 ]}>
   <View style={styles.arabicTextWrapper}>
     <Text style={[
-      styles.modernArabicText, 
-      { 
-        fontSize: getFontSize(settings.arabicFontSize),
-        lineHeight: getFontSize(settings.arabicFontSize) * 1.8,
-        color: settings.darkMode ? themedColors.textPrimary : Theme.colors.primary,
-      }
-    ]}>
-      {settings.tajweedHighlighting && settings.scriptType === 'tajweed' 
-        ? cleanArabicText(item.text) // For now, show text without HTML tags
-        : cleanArabicText(item.text)
-      }
-    </Text>
+  styles.modernArabicText, 
+  { 
+    fontSize: getFontSize(settings.arabicFontSize),
+    lineHeight: getFontSize(settings.arabicFontSize) * 1.8,
+    color: settings.darkMode ? themedColors.textPrimary : Theme.colors.primary,
+    fontFamily: settings.scriptType === 'uthmani' || settings.scriptType === 'tajweed' 
+      ? 'UthmanicFont'  // Use Uthmani font for Uthmani and Tajweed
+      : 'System',  // Use system font for IndoPak and Imlaei
+  }
+]}>
+  {settings.scriptType === 'uthmani' 
+    ? cleanArabicText(item.text)
+    : item.text
+  }
+</Text>
     {settings.tajweedHighlighting && settings.scriptType === 'tajweed' && (
       <Text style={styles.tajweedNote}>
         ℹ️ Tajweed text loaded

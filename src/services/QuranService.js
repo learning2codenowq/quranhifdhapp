@@ -71,13 +71,21 @@ export class QuranService {
     // Retry with exponential backoff
     const data = await NetworkUtils.retryWithExponentialBackoff(apiCall, 2);
     
-    const combinedAyahs = data.verses.map(verse => ({
-      verse_number: verse.number,
-      text: verse.text,
-      translation: verse.translationHtml || '',
-      translationHtml: verse.translationHtml || '',
-      audioUrl: verse.audioUrl
-    }));
+    const combinedAyahs = data.verses.map(verse => {
+  // Log first verse to see what we're getting
+  if (verse.number === 1) {
+    console.log('📝 First verse text sample:', verse.text?.substring(0, 100));
+    console.log('📝 Script type being used:', scriptType);
+  }
+  
+  return {
+    verse_number: verse.number,
+    text: verse.text,
+    translation: verse.translationHtml || '',
+    translationHtml: verse.translationHtml || '',
+    audioUrl: verse.audioUrl
+  };
+});
 
     Logger.log(`✅ Final result: ${combinedAyahs.length} ayahs processed`);
     
