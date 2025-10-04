@@ -183,19 +183,19 @@ export class QuranService {
     }
   }
   static async getReciters() {
-    try {
-      const response = await fetch(`${this.BASE_URL}/api/qf/reciters`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch reciters');
-      }
-      
-      const data = await response.json();
-      
-      return data.reciters || [];
-    } catch (error) {
-      console.error('Error fetching reciters:', error);
-      return [];
+  try {
+    const response = await fetch(`${this.BASE_URL}/api/qf/reciters`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch reciters');
     }
+    
+    const data = await response.json();
+    
+    return data.reciters || [];
+  } catch (error) {
+    console.error('Error fetching reciters:', error);
+    return [];
   }
+}
 }

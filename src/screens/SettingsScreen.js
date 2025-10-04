@@ -84,19 +84,24 @@ useEffect(() => {
     // Load and filter reciters
     const recitersList = await QuranService.getReciters();
     console.log('📢 Raw reciters from API:', recitersList.length);
-    console.log('📢 First 3 reciters:', recitersList.slice(0, 3));
+    
+    // FIXED: Validate reciter data
+    const validReciters = recitersList.filter(r => r && r.name && r.id);
+    console.log('📢 Valid reciters after filtering:', validReciters.length);
     
     // Remove duplicates based on reciter name
-    const uniqueReciters = recitersList.filter((reciter, index, self) => 
+    const uniqueReciters = validReciters.filter((reciter, index, self) => 
       index === self.findIndex((r) => r.name === reciter.name)
     );
     
-    console.log('📢 Unique reciters after filtering:', uniqueReciters.length);
+    console.log('📢 Unique reciters after filtering:', uniqueReciters.length); // FIXED: uniqueReciters not uniqueciters
     
     setReciters(uniqueReciters);
     Logger.log('🎙️ Loaded reciters:', uniqueReciters.length);
   } catch (error) {
     console.error('❌ Error loading settings:', error);
+    // Set empty array as fallback to prevent crashes
+    setReciters([]);
   }
 };
 
@@ -861,7 +866,7 @@ return (
           style={styles.peacefulCloseButton}
           onPress={() => setShowReciterModal(false)}
         >
-          <Icon name="close" type="Ionicons" size={24} color={Theme.colors.textMuted} />
+          <Icon name="close" type="Ionicons" size={24} color={settings.darkMode ? themedColors.textMuted : Theme.colors.textMuted} />
         </TouchableOpacity>
       </View>
 
@@ -913,7 +918,7 @@ return (
                 <Text style={[
                   styles.reciterCardDetails,
                   settings.darkMode && { color: themedColors.textMuted }
-                ]}>Default Reciter • Warsh</Text>
+                ]}>Murattal • Hafs</Text>
                 <View style={styles.reciterBadge}>
                   <Text style={styles.reciterBadgeText}>APP DEFAULT</Text>
                 </View>
@@ -951,75 +956,100 @@ return (
             </View>
           )}
           
-          {/* Reciters List */}
-          {reciters.map((reciter, index) => (
-            <TouchableOpacity
-              key={reciter.id || index}
-              style={[
-                styles.peacefulReciterCard,
-                selectedReciterId === reciter.id && styles.selectedPeacefulCard,
-                settings.darkMode && { backgroundColor: themedColors.surface }
-              ]}
-              onPress={() => {
-                setSelectedReciterId(reciter.id);
-                updateSetting('selectedReciter', reciter.id);
-                setShowReciterModal(false);
-              }}
-            >
-              <View style={styles.reciterCardContent}>
-                <View style={[
-                  styles.reciterAvatar,
-                  selectedReciterId === reciter.id && styles.selectedAvatar
-                ]}>
-                  <Text style={[
-                    styles.reciterInitial,
-                    selectedReciterId === reciter.id && { color: Theme.colors.textOnPrimary }
+          {/* Reciters List - FIXED */}
+          {reciters.map((reciter, index) => {
+            // CRITICAL: Validate reciter object before rendering
+            if (!reciter || !reciter.id || !reciter.name) {
+              console.warn('Invalid reciter data at index', index, reciter);
+              return null;
+            }
+
+            // Safely extract values with defaults
+            const reciterName = String(reciter.name || 'Unknown Reciter');
+            const reciterInitial = reciterName.charAt(0).toUpperCase();
+            const translatedName = reciter.translated_name ? String(reciter.translated_name) : null;
+            
+            // Safely build style text
+            let styleText = '';
+            if (reciter.style && typeof reciter.style === 'string') {
+              styleText = reciter.style;
+            }
+            if (reciter.qirat && typeof reciter.qirat === 'string') {
+              styleText = styleText ? `${styleText} • ${reciter.qirat}` : reciter.qirat;
+            }
+            if (!styleText) {
+              styleText = 'Murattal';
+            }
+
+            return (
+              <TouchableOpacity
+                key={`reciter-${reciter.id}-${index}`}
+                style={[
+                  styles.peacefulReciterCard,
+                  selectedReciterId === reciter.id && styles.selectedPeacefulCard,
+                  settings.darkMode && { backgroundColor: themedColors.surface }
+                ]}
+                onPress={() => {
+                  setSelectedReciterId(reciter.id);
+                  updateSetting('selectedReciter', reciter.id);
+                  setShowReciterModal(false);
+                }}
+              >
+                <View style={styles.reciterCardContent}>
+                  <View style={[
+                    styles.reciterAvatar,
+                    selectedReciterId === reciter.id && styles.selectedAvatar
                   ]}>
-                    {reciter.name.charAt(0)}
-                  </Text>
-                </View>
-                
-                <View style={styles.reciterCardInfo}>
-                  <Text style={[
-                    styles.reciterCardName,
-                    selectedReciterId === reciter.id && styles.selectedReciterName,
-                    settings.darkMode && selectedReciterId !== reciter.id && { color: themedColors.textPrimary }
-                  ]}>{reciter.name}</Text>
-                  
-                  {reciter.translated_name && (
                     <Text style={[
-                      styles.reciterCardTranslated,
-                      selectedReciterId === reciter.id && styles.selectedReciterDetails,
-                      settings.darkMode && { color: themedColors.textMuted }
+                      styles.reciterInitial,
+                      selectedReciterId === reciter.id && { color: Theme.colors.textOnPrimary }
                     ]}>
-                      {reciter.translated_name}
+                      {reciterInitial}
                     </Text>
-                  )}
+                  </View>
                   
-                  {reciter.style && (
+                  <View style={styles.reciterCardInfo}>
+                    <Text style={[
+                      styles.reciterCardName,
+                      selectedReciterId === reciter.id && styles.selectedReciterName,
+                      settings.darkMode && selectedReciterId !== reciter.id && { color: themedColors.textPrimary }
+                    ]}>
+                      {reciterName}
+                    </Text>
+                    
+                    {translatedName && (
+                      <Text style={[
+                        styles.reciterCardTranslated,
+                        selectedReciterId === reciter.id && styles.selectedReciterDetails,
+                        settings.darkMode && { color: themedColors.textMuted }
+                      ]}>
+                        {translatedName}
+                      </Text>
+                    )}
+                    
                     <Text style={[
                       styles.reciterCardDetails,
                       selectedReciterId === reciter.id && styles.selectedReciterDetails,
                       settings.darkMode && { color: themedColors.textMuted }
                     ]}>
-                      {reciter.style}
+                      {styleText}
                     </Text>
+                  </View>
+
+                  {selectedReciterId === reciter.id && (
+                    <View style={styles.checkmarkCircle}>
+                      <Icon 
+                        name="checkmark" 
+                        type="Ionicons" 
+                        size={20} 
+                        color={Theme.colors.textOnPrimary} 
+                      />
+                    </View>
                   )}
                 </View>
-
-                {selectedReciterId === reciter.id && (
-                  <View style={styles.checkmarkCircle}>
-                    <Icon 
-                      name="checkmark" 
-                      type="Ionicons" 
-                      size={20} 
-                      color={Theme.colors.textOnPrimary} 
-                    />
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
     </View>
