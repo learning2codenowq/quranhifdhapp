@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch, Modal, TextInput } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch, Modal, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../services/StorageService';
@@ -57,39 +57,46 @@ const [eveningTimeDate, setEveningTimeDate] = useState(new Date(2024, 0, 1, 18, 
     setTempUserName(settings.userName);
   }
 }, [showNameModal, settings.userName]);
+useEffect(() => {
+  if (showReciterModal && reciters.length === 0) {
+    console.log('🎭 Modal opened, loading reciters...');
+    loadSettings();
+  }
+}, [showReciterModal]);
 
   const loadSettings = async () => {
   try {
     const state = await StorageService.getState();
     if (state?.settings) {
       const newSettings = {
-        dailyGoal: state.settings.dailyGoal || 10,
-        userName: state.settings.userName || 'Student',
-        autoPlayNext: state.settings.autoPlayNext || false,
         showTranslations: state.settings.showTranslations !== false,
         arabicFontSize: state.settings.arabicFontSize || 'Medium',
         translationFontSize: state.settings.translationFontSize || 'Medium',
-        selectedReciter: state.settings.selectedReciter || null,
+        autoPlayNext: state.settings.autoPlayNext !== false,
         darkMode: state.settings.darkMode || false,
         scriptType: state.settings.scriptType || 'uthmani',
       };
       Logger.log('🎵 Loaded settings:', newSettings);
       setSettings(newSettings);
-      setSelectedReciterId(newSettings.selectedReciter);
+      setSelectedReciterId(state.settings.selectedReciter || null);
     }
     
     // Load and filter reciters
     const recitersList = await QuranService.getReciters();
+    console.log('📢 Raw reciters from API:', recitersList.length);
+    console.log('📢 First 3 reciters:', recitersList.slice(0, 3));
     
     // Remove duplicates based on reciter name
     const uniqueReciters = recitersList.filter((reciter, index, self) => 
       index === self.findIndex((r) => r.name === reciter.name)
     );
     
+    console.log('📢 Unique reciters after filtering:', uniqueReciters.length);
+    
     setReciters(uniqueReciters);
     Logger.log('🎙️ Loaded reciters:', uniqueReciters.length);
   } catch (error) {
-    console.error('Error loading settings:', error);
+    console.error('❌ Error loading settings:', error);
   }
 };
 
@@ -832,74 +839,188 @@ return (
 </Modal>
 {/* Reciter Selection Modal */}
 <Modal visible={showReciterModal} transparent={true} animationType="slide">
-  <View style={styles.modalOverlay}>
+  <View style={styles.reciterModalOverlay}>
     <View style={[
-      styles.reciterModal,
+      styles.peacefulReciterModal,
       settings.darkMode && { backgroundColor: themedColors.cardBackground }
     ]}>
-      <View style={styles.modalHeader}>
-        <Text style={[
-          styles.modalTitle,
-          settings.darkMode && { color: themedColors.textPrimary }
-        ]}>Choose Reciter</Text>
-        <TouchableOpacity onPress={() => setShowReciterModal(false)}>
+      
+      {/* Header */}
+      <View style={styles.peacefulModalHeader}>
+        <View>
+          <Text style={[
+            styles.peacefulModalTitle,
+            settings.darkMode && { color: themedColors.textPrimary }
+          ]}>Choose Your Reciter</Text>
+          <Text style={[
+            styles.peacefulModalSubtitle,
+            settings.darkMode && { color: themedColors.textSecondary }
+          ]}>Select your preferred Quran recitation</Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.peacefulCloseButton}
+          onPress={() => setShowReciterModal(false)}
+        >
           <Icon name="close" type="Ionicons" size={24} color={Theme.colors.textMuted} />
         </TouchableOpacity>
       </View>
-      
-      <ScrollView style={styles.reciterList}>
-        {/* Default Option */}
-        <TouchableOpacity
-          style={[
-            styles.reciterItem,
-            !selectedReciterId && styles.selectedReciterItem
-          ]}
-          onPress={() => {
-            setSelectedReciterId(null);
-            updateSetting('selectedReciter', null);
-            setShowReciterModal(false);
-          }}
-        >
-          <View style={styles.reciterInfo}>
-            <Text style={styles.reciterName}>Mishary Alafasy</Text>
-            <Text style={styles.reciterStyle}>Default • Recommended</Text>
-          </View>
-          {!selectedReciterId && (
-            <Icon name="checkmark-circle" type="Ionicons" size={24} color={Theme.colors.success} />
-          )}
-        </TouchableOpacity>
-        
-        {/* Reciters List */}
-        {reciters.length === 0 && (
-          <View style={styles.loadingReciters}>
-            <Text style={styles.loadingText}>Loading reciters...</Text>
-          </View>
-        )}
-        
-        {reciters.map((reciter) => (
+
+      {/* Reciters List */}
+      <ScrollView 
+        style={styles.peacefulReciterList}
+        contentContainerStyle={styles.peacefulReciterListContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Default/Recommended Reciter */}
+        <View style={styles.featuredSection}>
+          <Text style={[
+            styles.sectionLabel,
+            settings.darkMode && { color: themedColors.textSecondary }
+          ]}>RECOMMENDED</Text>
+          
           <TouchableOpacity
-            key={reciter.id}
             style={[
-              styles.reciterItem,
-              selectedReciterId === reciter.id && styles.selectedReciterItem
+              styles.peacefulReciterCard,
+              !selectedReciterId && styles.selectedPeacefulCard,
+              settings.darkMode && { backgroundColor: themedColors.surface }
             ]}
             onPress={() => {
-              setSelectedReciterId(reciter.id);
-              updateSetting('selectedReciter', reciter.id);
+              setSelectedReciterId(null);
+              updateSetting('selectedReciter', null);
               setShowReciterModal(false);
             }}
           >
-            <View style={styles.reciterInfo}>
-              <Text style={styles.reciterName}>{reciter.name}</Text>
-              {reciter.style && (
-                <Text style={styles.reciterStyle}>{reciter.style}</Text>
+            <View style={styles.reciterCardContent}>
+              <View style={[
+                styles.reciterAvatar,
+                !selectedReciterId && styles.selectedAvatar
+              ]}>
+                <Icon 
+                  name="star" 
+                  type="Ionicons" 
+                  size={24} 
+                  color={!selectedReciterId ? Theme.colors.textOnPrimary : Theme.colors.secondary} 
+                />
+              </View>
+              
+              <View style={styles.reciterCardInfo}>
+                <Text style={[
+                  styles.reciterCardName,
+                  !selectedReciterId && styles.selectedReciterName,
+                  settings.darkMode && !selectedReciterId && { color: Theme.colors.primary },
+                  settings.darkMode && selectedReciterId && { color: themedColors.textPrimary }
+                ]}>Mishary Rashid Alafasy</Text>
+                <Text style={[
+                  styles.reciterCardDetails,
+                  settings.darkMode && { color: themedColors.textMuted }
+                ]}>Default Reciter • Warsh</Text>
+                <View style={styles.reciterBadge}>
+                  <Text style={styles.reciterBadgeText}>APP DEFAULT</Text>
+                </View>
+              </View>
+
+              {!selectedReciterId && (
+                <View style={styles.checkmarkCircle}>
+                  <Icon 
+                    name="checkmark" 
+                    type="Ionicons" 
+                    size={20} 
+                    color={Theme.colors.textOnPrimary} 
+                  />
+                </View>
               )}
             </View>
-            {selectedReciterId === reciter.id && (
-              <Icon name="checkmark-circle" type="Ionicons" size={24} color={Theme.colors.success} />
-            )}
           </TouchableOpacity>
-        ))}
+        </View>
+        
+        {/* All Reciters */}
+        <View style={styles.allRecitersSection}>
+          <Text style={[
+            styles.sectionLabel,
+            settings.darkMode && { color: themedColors.textSecondary }
+          ]}>ALL RECITERS ({reciters.length})</Text>
+          
+          {/* Loading State */}
+          {reciters.length === 0 && (
+            <View style={styles.loadingRecitersContainer}>
+              <ActivityIndicator size="small" color={Theme.colors.secondary} />
+              <Text style={[
+                styles.loadingRecitersText,
+                settings.darkMode && { color: themedColors.textSecondary }
+              ]}>Loading reciters...</Text>
+            </View>
+          )}
+          
+          {/* Reciters List */}
+          {reciters.map((reciter, index) => (
+            <TouchableOpacity
+              key={reciter.id || index}
+              style={[
+                styles.peacefulReciterCard,
+                selectedReciterId === reciter.id && styles.selectedPeacefulCard,
+                settings.darkMode && { backgroundColor: themedColors.surface }
+              ]}
+              onPress={() => {
+                setSelectedReciterId(reciter.id);
+                updateSetting('selectedReciter', reciter.id);
+                setShowReciterModal(false);
+              }}
+            >
+              <View style={styles.reciterCardContent}>
+                <View style={[
+                  styles.reciterAvatar,
+                  selectedReciterId === reciter.id && styles.selectedAvatar
+                ]}>
+                  <Text style={[
+                    styles.reciterInitial,
+                    selectedReciterId === reciter.id && { color: Theme.colors.textOnPrimary }
+                  ]}>
+                    {reciter.name.charAt(0)}
+                  </Text>
+                </View>
+                
+                <View style={styles.reciterCardInfo}>
+                  <Text style={[
+                    styles.reciterCardName,
+                    selectedReciterId === reciter.id && styles.selectedReciterName,
+                    settings.darkMode && selectedReciterId !== reciter.id && { color: themedColors.textPrimary }
+                  ]}>{reciter.name}</Text>
+                  
+                  {reciter.translated_name && (
+                    <Text style={[
+                      styles.reciterCardTranslated,
+                      selectedReciterId === reciter.id && styles.selectedReciterDetails,
+                      settings.darkMode && { color: themedColors.textMuted }
+                    ]}>
+                      {reciter.translated_name}
+                    </Text>
+                  )}
+                  
+                  {reciter.style && (
+                    <Text style={[
+                      styles.reciterCardDetails,
+                      selectedReciterId === reciter.id && styles.selectedReciterDetails,
+                      settings.darkMode && { color: themedColors.textMuted }
+                    ]}>
+                      {reciter.style}
+                    </Text>
+                  )}
+                </View>
+
+                {selectedReciterId === reciter.id && (
+                  <View style={styles.checkmarkCircle}>
+                    <Icon 
+                      name="checkmark" 
+                      type="Ionicons" 
+                      size={20} 
+                      color={Theme.colors.textOnPrimary} 
+                    />
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
     </View>
   </View>
@@ -1409,5 +1530,181 @@ reciterNote: {
   color: Theme.colors.textMuted,
   marginTop: 4,
   fontStyle: 'italic',
+},
+reciterModalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0, 0, 0, 0.75)',
+  justifyContent: 'flex-end',
+},
+peacefulReciterModal: {
+  backgroundColor: 'white',
+  borderTopLeftRadius: 24,
+  borderTopRightRadius: 24,
+  height: '80%', // CRITICAL: Fixed height
+  paddingBottom: 20,
+},
+peacefulModalHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'flex-start',
+  paddingHorizontal: 24,
+  paddingTop: 24,
+  paddingBottom: 16,
+  borderBottomWidth: 1,
+  borderBottomColor: Theme.colors.gray200,
+},
+peacefulModalTitle: {
+  fontSize: 24,
+  fontWeight: 'bold',
+  color: Theme.colors.primary,
+  marginBottom: 4,
+},
+peacefulModalSubtitle: {
+  fontSize: 14,
+  color: Theme.colors.textSecondary,
+},
+peacefulCloseButton: {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  backgroundColor: Theme.colors.gray100,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+peacefulReciterList: {
+  flex: 1, // CRITICAL: Takes remaining space
+},
+peacefulReciterListContent: {
+  paddingHorizontal: 24,
+  paddingVertical: 16,
+  paddingBottom: 40, // Extra bottom padding
+},
+featuredSection: {
+  marginBottom: 24,
+},
+allRecitersSection: {
+  marginBottom: 20,
+},
+sectionLabel: {
+  fontSize: 12,
+  fontWeight: '700',
+  color: Theme.colors.textMuted,
+  letterSpacing: 0.5,
+  marginBottom: 12,
+  marginLeft: 4,
+},
+peacefulReciterCard: {
+  backgroundColor: Theme.colors.white,
+  borderRadius: 16,
+  marginBottom: 12,
+  borderWidth: 2,
+  borderColor: Theme.colors.gray200,
+  ...Theme.shadows.sm,
+},
+selectedPeacefulCard: {
+  borderColor: Theme.colors.secondary,
+  backgroundColor: Theme.colors.successLight,
+  ...Theme.shadows.md,
+},
+reciterCardContent: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  padding: 16,
+},
+reciterAvatar: {
+  width: 56,
+  height: 56,
+  borderRadius: 28,
+  backgroundColor: Theme.colors.gray100,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginRight: 16,
+},
+selectedAvatar: {
+  backgroundColor: Theme.colors.secondary,
+},
+reciterInitial: {
+  fontSize: 24,
+  fontWeight: 'bold',
+  color: Theme.colors.primary,
+},
+reciterCardInfo: {
+  flex: 1,
+},
+reciterCardName: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: Theme.colors.primary,
+  marginBottom: 4,
+},
+selectedReciterName: {
+  color: Theme.colors.primary,
+  fontWeight: '700',
+},
+reciterCardTranslated: {
+  fontSize: 13,
+  color: Theme.colors.textSecondary,
+  marginBottom: 2,
+},
+reciterCardDetails: {
+  fontSize: 12,
+  color: Theme.colors.textMuted,
+  fontStyle: 'italic',
+},
+selectedReciterDetails: {
+  color: Theme.colors.textSecondary,
+},
+reciterBadge: {
+  alignSelf: 'flex-start',
+  backgroundColor: Theme.colors.secondary,
+  paddingHorizontal: 8,
+  paddingVertical: 3,
+  borderRadius: 6,
+  marginTop: 6,
+},
+reciterBadgeText: {
+  fontSize: 10,
+  fontWeight: '700',
+  color: Theme.colors.textOnPrimary,
+  letterSpacing: 0.3,
+},
+checkmarkCircle: {
+  width: 32,
+  height: 32,
+  borderRadius: 16,
+  backgroundColor: Theme.colors.success,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginLeft: 12,
+},
+loadingRecitersContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingVertical: 32,
+  gap: 12,
+},
+loadingRecitersText: {
+  fontSize: 14,
+  color: Theme.colors.textMuted,
+},
+noResultsContainer: {
+  alignItems: 'center',
+  paddingVertical: 48,
+},
+noResultsText: {
+  fontSize: 14,
+  color: Theme.colors.textSecondary,
+  textAlign: 'center',
+  marginTop: 16,
+  lineHeight: 20,
+},
+modalBackdrop: {
+  flex: 1,
+},
+reciterModalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0, 0, 0, 0.75)',
+  justifyContent: 'flex-end',
 },
 });
