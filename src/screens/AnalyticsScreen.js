@@ -393,46 +393,48 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: Theme.spacing.xl,
-    paddingTop: 50,
-    paddingBottom: Theme.spacing.xl,  // CHANGED from 3xl to xl
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Theme.spacing.xl,
-  },
-  backText: {
-    color: Theme.colors.textOnDark,
-    fontSize: Theme.typography.fontSize.base,
-    marginLeft: Theme.spacing.sm,
-    fontWeight: Theme.typography.fontWeight.medium,
-  },
-  headerTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: Theme.typography.fontSize['4xl'],
-    fontWeight: Theme.typography.fontWeight.bold,
-    color: Theme.colors.textOnDark,
-    marginLeft: Theme.spacing.md,
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingHorizontal: Theme.spacing.xl,
-    paddingBottom: Theme.spacing['6xl'],
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: Theme.borderRadius.full,
-    marginBottom: Theme.spacing.xl,
-    padding: 4,
-  },
+  paddingHorizontal: Theme.spacing.xl,
+  paddingTop: 50,
+  paddingBottom: Theme.spacing.xl,  // CHANGED: Less bottom padding
+},
+backButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: Theme.spacing.xl,
+},
+backText: {
+  color: Theme.colors.textOnDark,
+  fontSize: Theme.typography.fontSize.base,
+  marginLeft: Theme.spacing.sm,
+  fontWeight: Theme.typography.fontWeight.medium,
+},
+headerTitleContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginBottom: Theme.spacing.lg,  // CHANGED: Less margin (16px instead of 20px)
+},
+headerTitle: {
+  fontSize: Theme.typography.fontSize['4xl'],
+  fontWeight: Theme.typography.fontWeight.bold,
+  color: Theme.colors.textOnDark,
+  marginLeft: Theme.spacing.md,
+},
+content: {
+  flex: 1,
+},
+contentContainer: {
+  paddingHorizontal: Theme.spacing.xl,
+  paddingBottom: Theme.spacing['6xl'],
+},
+tabContainer: {
+  flexDirection: 'row',
+  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  borderRadius: Theme.borderRadius.full,
+  marginBottom: Theme.spacing.lg,  // CHANGED: Less margin (16px instead of 20px)
+  padding: 4,
+  marginHorizontal: Theme.spacing.xl,  // ADD THIS: Move tabs inside content area
+},
   tab: {
     flex: 1,
     flexDirection: 'row',
