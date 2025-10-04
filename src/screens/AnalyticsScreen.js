@@ -82,29 +82,29 @@ export default function AnalyticsScreen({ navigation }) {
     <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}></SafeAreaView>
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Icon 
-            name={AppIcons.back.name} 
-            type={AppIcons.back.type} 
-            size={24} 
-            color={Theme.colors.textOnDark} 
-          />
-          <Text style={styles.backText}>Dashboard</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.headerTitleContainer}>
-          <Icon 
-            name={AppIcons.stats.name} 
-            type={AppIcons.stats.type} 
-            size={32} 
-            color={Theme.colors.secondary} 
-          />
-          <Text style={styles.headerTitle}>Analytics</Text>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Icon 
+              name={AppIcons.back.name} 
+              type={AppIcons.back.type} 
+              size={24} 
+              color={Theme.colors.textOnDark} 
+            />
+            <Text style={styles.backText}>Dashboard</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.headerTitleContainer}>
+            <Icon 
+              name={AppIcons.stats.name} 
+              type={AppIcons.stats.type} 
+              size={32} 
+              color={Theme.colors.secondary} 
+            />
+            <Text style={styles.headerTitle}>Analytics</Text>
+          </View>
         </View>
-      </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         
@@ -389,10 +389,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  safeArea: {
+    flex: 1,
+  },
   header: {
     paddingHorizontal: Theme.spacing.xl,
     paddingTop: 50,
-    paddingBottom: Theme.spacing.xl,
+    paddingBottom: Theme.spacing.xl,  // CHANGED from 3xl to xl
   },
   backButton: {
     flexDirection: 'row',
