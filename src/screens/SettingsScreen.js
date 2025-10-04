@@ -61,7 +61,7 @@ const [eveningTimeDate, setEveningTimeDate] = useState(new Date(2024, 0, 1, 18, 
   const loadSettings = async () => {
   try {
     const state = await StorageService.getState();
-    if (state && state.settings) {
+    if (state?.settings) {
       const newSettings = {
         dailyGoal: state.settings.dailyGoal || 10,
         userName: state.settings.userName || 'Student',
@@ -70,23 +70,24 @@ const [eveningTimeDate, setEveningTimeDate] = useState(new Date(2024, 0, 1, 18, 
         arabicFontSize: state.settings.arabicFontSize || 'Medium',
         translationFontSize: state.settings.translationFontSize || 'Medium',
         selectedReciter: state.settings.selectedReciter || null,
-        darkMode: state.settings.darkMode || false,  // NEW
-        tajweedHighlighting: state.settings.tajweedHighlighting || false,  // NEW
-        scriptType: state.settings.scriptType || 'uthmani',  // NEW
+        darkMode: state.settings.darkMode || false,
+        scriptType: state.settings.scriptType || 'uthmani',
       };
       Logger.log('🎵 Loaded settings:', newSettings);
       setSettings(newSettings);
       setSelectedReciterId(newSettings.selectedReciter);
     }
     
+    // Load and filter reciters
     const recitersList = await QuranService.getReciters();
-    setReciters(recitersList);
     
-    const notifSettings = await NotificationService.getNotificationSettings();
-    setNotificationSettings(notifSettings);
+    // Remove duplicates based on reciter name
+    const uniqueReciters = recitersList.filter((reciter, index, self) => 
+      index === self.findIndex((r) => r.name === reciter.name)
+    );
     
-    setMorningTimeDate(new Date(2024, 0, 1, notifSettings.morningTime.hour, notifSettings.morningTime.minute));
-    setEveningTimeDate(new Date(2024, 0, 1, notifSettings.eveningTime.hour, notifSettings.eveningTime.minute));
+    setReciters(uniqueReciters);
+    Logger.log('🎙️ Loaded reciters:', uniqueReciters.length);
   } catch (error) {
     console.error('Error loading settings:', error);
   }
@@ -833,14 +834,14 @@ return (
 <Modal visible={showReciterModal} transparent={true} animationType="slide">
   <View style={styles.modalOverlay}>
     <View style={[
-  styles.reciterModal,
-  settings.darkMode && { backgroundColor: themedColors.cardBackground }
-]}>
+      styles.reciterModal,
+      settings.darkMode && { backgroundColor: themedColors.cardBackground }
+    ]}>
       <View style={styles.modalHeader}>
         <Text style={[
-  styles.modalTitle,
-  settings.darkMode && { color: themedColors.textPrimary }
-]}>Choose Reciter</Text>
+          styles.modalTitle,
+          settings.darkMode && { color: themedColors.textPrimary }
+        ]}>Choose Reciter</Text>
         <TouchableOpacity onPress={() => setShowReciterModal(false)}>
           <Icon name="close" type="Ionicons" size={24} color={Theme.colors.textMuted} />
         </TouchableOpacity>
@@ -860,8 +861,8 @@ return (
           }}
         >
           <View style={styles.reciterInfo}>
-            <Text style={styles.reciterName}>Mishary Alafasy (Default)</Text>
-            <Text style={styles.reciterStyle}>Hafs</Text>
+            <Text style={styles.reciterName}>Mishary Alafasy</Text>
+            <Text style={styles.reciterStyle}>Default • Recommended</Text>
           </View>
           {!selectedReciterId && (
             <Icon name="checkmark-circle" type="Ionicons" size={24} color={Theme.colors.success} />
@@ -869,6 +870,12 @@ return (
         </TouchableOpacity>
         
         {/* Reciters List */}
+        {reciters.length === 0 && (
+          <View style={styles.loadingReciters}>
+            <Text style={styles.loadingText}>Loading reciters...</Text>
+          </View>
+        )}
+        
         {reciters.map((reciter) => (
           <TouchableOpacity
             key={reciter.id}
@@ -1387,5 +1394,20 @@ modernTimePickerConfirmText: {
   color: 'white',
   fontSize: 16,
   fontWeight: '600',
+},
+loadingReciters: {
+  padding: 20,
+  alignItems: 'center',
+},
+loadingText: {
+  fontSize: 14,
+  color: Theme.colors.textMuted,
+  fontStyle: 'italic',
+},
+reciterNote: {
+  fontSize: 12,
+  color: Theme.colors.textMuted,
+  marginTop: 4,
+  fontStyle: 'italic',
 },
 });

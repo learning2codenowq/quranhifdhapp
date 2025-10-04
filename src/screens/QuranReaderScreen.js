@@ -144,86 +144,125 @@ useEffect(() => {
 };
 const TajweedHelpModal = () => (
   <Modal visible={showTajweedHelp} transparent={true} animationType="fade">
-    <View style={styles.modalOverlay}>
-      <View style={[
-        styles.tajweedHelpModal,
-        settings.darkMode && { backgroundColor: themedColors.cardBackground }
-      ]}>
-        <View style={styles.modalHeader}>
-          <Text style={[
-            styles.modalTitle,
-            settings.darkMode && { color: themedColors.textPrimary }
-          ]}>Tajweed Guide</Text>
-          <TouchableOpacity onPress={() => setShowTajweedHelp(false)}>
-            <Icon name="close" type="Ionicons" size={24} color={settings.darkMode ? themedColors.textMuted : Theme.colors.textMuted} />
+    <TouchableOpacity 
+      style={styles.tajweedModalOverlay}
+      activeOpacity={1}
+      onPress={() => setShowTajweedHelp(false)}
+    >
+      <TouchableOpacity 
+        activeOpacity={1}
+        onPress={(e) => e.stopPropagation()}
+      >
+        <View style={[
+          styles.tajweedHelpModal,
+          settings.darkMode && { backgroundColor: themedColors.cardBackground }
+        ]}>
+          <View style={styles.tajweedModalHeader}>
+            <Text style={[
+              styles.tajweedModalTitle,
+              settings.darkMode && { color: themedColors.textPrimary }
+            ]}>Tajweed Guide</Text>
+            <TouchableOpacity onPress={() => setShowTajweedHelp(false)}>
+              <Icon name="close" type="Ionicons" size={24} color={settings.darkMode ? themedColors.textMuted : Theme.colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.tajweedContent} showsVerticalScrollIndicator={false}>
+            <Text style={[
+              styles.tajweedDescription,
+              settings.darkMode && { color: themedColors.textSecondary }
+            ]}>
+              Tajweed rules help you pronounce the Quran correctly. Each color represents a specific pronunciation rule.
+            </Text>
+            
+            <View style={styles.tajweedRule}>
+              <View style={[styles.colorBox, { backgroundColor: '#169777' }]} />
+              <View style={styles.ruleTextContainer}>
+                <Text style={[
+                  styles.ruleText,
+                  settings.darkMode && { color: themedColors.textPrimary }
+                ]}>Ghunnah (غُنَّة)</Text>
+                <Text style={[styles.ruleDescription, settings.darkMode && { color: themedColors.textMuted }]}>
+                  Nasal sound held for 2 counts
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.tajweedRule}>
+              <View style={[styles.colorBox, { backgroundColor: '#169777' }]} />
+              <View style={styles.ruleTextContainer}>
+                <Text style={[
+                  styles.ruleText,
+                  settings.darkMode && { color: themedColors.textPrimary }
+                ]}>Ikhfa (إخْفَاء)</Text>
+                <Text style={[styles.ruleDescription, settings.darkMode && { color: themedColors.textMuted }]}>
+                  Hiding the sound
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.tajweedRule}>
+              <View style={[styles.colorBox, { backgroundColor: '#095d42' }]} />
+              <View style={styles.ruleTextContainer}>
+                <Text style={[
+                  styles.ruleText,
+                  settings.darkMode && { color: themedColors.textPrimary }
+                ]}>Idgham without Ghunnah</Text>
+                <Text style={[styles.ruleDescription, settings.darkMode && { color: themedColors.textMuted }]}>
+                  Merging without nasal sound
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.tajweedRule}>
+              <View style={[styles.colorBox, { backgroundColor: '#DD0008' }]} />
+              <View style={styles.ruleTextContainer}>
+                <Text style={[
+                  styles.ruleText,
+                  settings.darkMode && { color: themedColors.textPrimary }
+                ]}>Qalqalah (قَلْقَلَة)</Text>
+                <Text style={[styles.ruleDescription, settings.darkMode && { color: themedColors.textMuted }]}>
+                  Echoing/bouncing sound
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.tajweedRule}>
+              <View style={[styles.colorBox, { backgroundColor: '#7B1FA2' }]} />
+              <View style={styles.ruleTextContainer}>
+                <Text style={[
+                  styles.ruleText,
+                  settings.darkMode && { color: themedColors.textPrimary }
+                ]}>Madd (مَدّ)</Text>
+                <Text style={[styles.ruleDescription, settings.darkMode && { color: themedColors.textMuted }]}>
+                  Prolongation for 4-6 counts
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.tajweedRule}>
+              <View style={[styles.colorBox, { backgroundColor: '#AAAAAA' }]} />
+              <View style={styles.ruleTextContainer}>
+                <Text style={[
+                  styles.ruleText,
+                  settings.darkMode && { color: themedColors.textPrimary }
+                ]}>Silent Letters</Text>
+                <Text style={[styles.ruleDescription, settings.darkMode && { color: themedColors.textMuted }]}>
+                  Hamzat al-Wasl, Lam Shamsiyyah
+                </Text>
+              </View>
+            </View>
+          </ScrollView>
+          
+          <TouchableOpacity 
+            style={styles.tajweedCloseButton}
+            onPress={() => setShowTajweedHelp(false)}
+          >
+            <Text style={styles.tajweedCloseText}>Got it!</Text>
           </TouchableOpacity>
         </View>
-        
-        <ScrollView style={styles.tajweedContent}>
-          <Text style={[
-            styles.tajweedDescription,
-            settings.darkMode && { color: themedColors.textSecondary }
-          ]}>
-            Tajweed rules help you pronounce the Quran correctly. Each color represents a specific pronunciation rule.
-          </Text>
-          
-          <View style={styles.tajweedRule}>
-            <View style={[styles.colorBox, { backgroundColor: '#169777' }]} />
-            <Text style={[
-              styles.ruleText,
-              settings.darkMode && { color: themedColors.textPrimary }
-            ]}>Ghunnah (غُنَّة) - Nasal sound held for 2 counts</Text>
-          </View>
-          
-          <View style={styles.tajweedRule}>
-            <View style={[styles.colorBox, { backgroundColor: '#169777' }]} />
-            <Text style={[
-              styles.ruleText,
-              settings.darkMode && { color: themedColors.textPrimary }
-            ]}>Ikhfa (إخْفَاء) - Hiding the sound</Text>
-          </View>
-          
-          <View style={styles.tajweedRule}>
-            <View style={[styles.colorBox, { backgroundColor: '#095d42' }]} />
-            <Text style={[
-              styles.ruleText,
-              settings.darkMode && { color: themedColors.textPrimary }
-            ]}>Idgham without Ghunnah (إدْغَام بلا غُنَّة)</Text>
-          </View>
-          
-          <View style={styles.tajweedRule}>
-            <View style={[styles.colorBox, { backgroundColor: '#DD0008' }]} />
-            <Text style={[
-              styles.ruleText,
-              settings.darkMode && { color: themedColors.textPrimary }
-            ]}>Qalqalah (قَلْقَلَة) - Echoing/bouncing sound</Text>
-          </View>
-          
-          <View style={styles.tajweedRule}>
-            <View style={[styles.colorBox, { backgroundColor: '#7B1FA2' }]} />
-            <Text style={[
-              styles.ruleText,
-              settings.darkMode && { color: themedColors.textPrimary }
-            ]}>Madd (مَدّ) - Prolongation for 4-6 counts</Text>
-          </View>
-          
-          <View style={styles.tajweedRule}>
-            <View style={[styles.colorBox, { backgroundColor: '#AAAAAA' }]} />
-            <Text style={[
-              styles.ruleText,
-              settings.darkMode && { color: themedColors.textPrimary }
-            ]}>Silent letters (Hamzat al-Wasl, Lam Shamsiyyah)</Text>
-          </View>
-        </ScrollView>
-        
-        <TouchableOpacity 
-          style={styles.tajweedCloseButton}
-          onPress={() => setShowTajweedHelp(false)}
-        >
-          <Text style={styles.tajweedCloseText}>Got it!</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      </TouchableOpacity>
+    </TouchableOpacity>
   </Modal>
 );
   const getDefaultReciterId = async () => {
@@ -834,19 +873,16 @@ const TajweedHelpModal = () => (
     }
   ]}>
     {settings.scriptType === 'tajweed' && hasTajweedMarkup(item.text) ? (
-      <>
-        {parseTajweedText(item.text).map((segment, idx) => (
-          <Text key={idx} style={segment.color ? { color: segment.color } : {}}>
-            {segment.text}
-          </Text>
-        ))}
-        <Text style={styles.verseNumber}> ﴿{item.verse_number}﴾ </Text>
-      </>
-    ) : settings.scriptType === 'uthmani' ? (
-      cleanArabicText(item.text)
-    ) : (
-      item.text
-    )}
+  parseTajweedText(item.text).map((segment, idx) => (
+    <Text key={idx} style={segment.color ? { color: segment.color } : {}}>
+      {segment.text}
+    </Text>
+  ))
+) : settings.scriptType === 'uthmani' ? (
+  cleanArabicText(item.text)
+) : (
+  item.text
+)}
   </Text>
 </View>
 </View>
@@ -872,37 +908,36 @@ const TajweedHelpModal = () => (
         {/*Repetition Counter */}
         
         <View style={styles.counterContainer}>
-          <TouchableOpacity
-            style={styles.counterButton}
-            onPress={() => handleCounterTap(item.verse_number)}
-            activeOpacity={0.7}
-            accessible={true}
-            accessibilityLabel={`Repetition counter: ${currentCount} times`}
-            accessibilityHint="Tap to increment repetition count"
-          >
-            <Text style={styles.counterLabel}>Repetitions</Text>
-            <Text style={styles.counterNumber}>{currentCount}</Text>
-          </TouchableOpacity>
-          
-          {/* Reset Button - only show if count > 0 */}
-          {currentCount > 0 && (
-            <TouchableOpacity
-              style={styles.resetButton}
-              onPress={() => handleCounterReset(item.verse_number)}
-              activeOpacity={0.7}
-              accessible={true}
-              accessibilityLabel="Reset counter"
-              accessibilityHint="Reset repetition count to zero"
-            >
-              <Icon 
-                name="refresh" 
-                type="Ionicons" 
-                size={20} 
-                color="white" 
-              />
-            </TouchableOpacity>
-          )}
-        </View>
+  {currentCount > 0 && (
+    <TouchableOpacity
+      style={styles.resetButton}
+      onPress={() => handleCounterReset(item.verse_number)}
+      activeOpacity={0.7}
+      accessible={true}
+      accessibilityLabel="Reset counter"
+      accessibilityHint="Reset repetition count to zero"
+    >
+      <Icon 
+        name="refresh" 
+        type="Ionicons" 
+        size={20} 
+        color="white" 
+      />
+    </TouchableOpacity>
+  )}
+  
+  <TouchableOpacity
+    style={styles.counterButton}
+    onPress={() => handleCounterTap(item.verse_number)}
+    activeOpacity={0.7}
+    accessible={true}
+    accessibilityLabel={`Repetition counter: ${currentCount} times`}
+    accessibilityHint="Tap to increment repetition count"
+  >
+    <Text style={styles.counterLabel}>Repetitions</Text>
+    <Text style={styles.counterNumber}>{currentCount}</Text>
+  </TouchableOpacity>
+</View>
         
         {/* Modern Controls */}
         <View style={styles.modernControls}>
@@ -1607,44 +1642,78 @@ const styles = StyleSheet.create({
   marginTop: 8,
   textAlign: 'center',
 },
+tajweedModalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0, 0, 0, 0.75)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 20,
+},
 tajweedHelpModal: {
   backgroundColor: 'white',
-  borderRadius: 20,
-  padding: 20,
-  width: '90%',
+  borderRadius: 24,
+  width: '100%',
   maxWidth: 400,
   maxHeight: '80%',
+  overflow: 'hidden',
+  ...Theme.shadows.xl,
+},
+tajweedModalHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  paddingHorizontal: 24,
+  paddingVertical: 20,
+  borderBottomWidth: 1,
+  borderBottomColor: Theme.colors.gray200,
+},
+tajweedModalTitle: {
+  fontSize: 22,
+  fontWeight: '700',
+  color: Theme.colors.primary,
 },
 tajweedContent: {
+  paddingHorizontal: 24,
+  paddingVertical: 20,
   maxHeight: 400,
 },
 tajweedDescription: {
   fontSize: 14,
   color: Theme.colors.textSecondary,
-  marginBottom: 20,
-  lineHeight: 20,
+  marginBottom: 24,
+  lineHeight: 22,
 },
 tajweedRule: {
   flexDirection: 'row',
-  alignItems: 'center',
-  marginBottom: 15,
+  alignItems: 'flex-start',
+  marginBottom: 20,
 },
 colorBox: {
-  width: 30,
-  height: 30,
-  borderRadius: 6,
-  marginRight: 15,
+  width: 40,
+  height: 40,
+  borderRadius: 8,
+  marginRight: 16,
+},
+ruleTextContainer: {
+  flex: 1,
 },
 ruleText: {
   fontSize: 16,
   color: Theme.colors.primary,
-  fontWeight: '500',
+  fontWeight: '600',
+  marginBottom: 4,
+},
+ruleDescription: {
+  fontSize: 13,
+  color: Theme.colors.textMuted,
+  lineHeight: 18,
 },
 tajweedCloseButton: {
   backgroundColor: Theme.colors.secondary,
+  marginHorizontal: 24,
+  marginVertical: 20,
+  paddingVertical: 16,
   borderRadius: 12,
-  paddingVertical: 12,
-  marginTop: 15,
   alignItems: 'center',
 },
 tajweedCloseText: {
