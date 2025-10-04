@@ -75,6 +75,9 @@ useEffect(() => {
         autoPlayNext: state.settings.autoPlayNext !== false,
         darkMode: state.settings.darkMode || false,
         scriptType: state.settings.scriptType || 'uthmani',
+        // ADD THESE TWO LINES:
+        userName: state.settings.userName || 'Student',
+        dailyGoal: state.settings.dailyGoal || 10,
       };
       Logger.log('🎵 Loaded settings:', newSettings);
       setSettings(newSettings);
@@ -85,7 +88,7 @@ useEffect(() => {
     const recitersList = await QuranService.getReciters();
     console.log('📢 Raw reciters from API:', recitersList.length);
     
-    // FIXED: Validate reciter data
+    // Validate reciter data
     const validReciters = recitersList.filter(r => r && r.name && r.id);
     console.log('📢 Valid reciters after filtering:', validReciters.length);
     
@@ -94,7 +97,7 @@ useEffect(() => {
       index === self.findIndex((r) => r.name === reciter.name)
     );
     
-    console.log('📢 Unique reciters after filtering:', uniqueReciters.length); // FIXED: uniqueReciters not uniqueciters
+    console.log('📢 Unique reciters after filtering:', uniqueReciters.length);
     
     setReciters(uniqueReciters);
     Logger.log('🎙️ Loaded reciters:', uniqueReciters.length);
