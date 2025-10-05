@@ -199,8 +199,12 @@ return (
     />
   </View>
   <View style={styles.streakInfo}>
-    <Text style={styles.streakNumber}>{currentStreak}</Text>
-    <Text style={styles.streakLabel}>Day Streak</Text>
+    <Text style={[
+  styles.streakNumber,settings.darkMode && { color: themedColors.textSecondary }
+]}>{currentStreak}</Text>
+    <Text style={[
+  styles.streakLabel,settings.darkMode && { color: themedColors.textSecondary }
+]}>Day Streak</Text>
   </View>
 </View>
 

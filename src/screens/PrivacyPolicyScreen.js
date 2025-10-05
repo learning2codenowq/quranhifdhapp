@@ -3,11 +3,27 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } 
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Theme } from '../styles/theme';
+import { getThemedColors } from '../styles/theme';
+import { StorageService } from '../services/StorageService';
 
 export default function PrivacyPolicyScreen({ navigation }) {
-  return (
-    <SafeAreaProvider>
-      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+  const [settings, setSettings] = React.useState({ darkMode: false });
+
+  React.useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    const state = await StorageService.getState();
+    if (state?.settings) {
+      setSettings({ darkMode: state.settings.darkMode || false });
+    }
+  };
+  const themedColors = getThemedColors(settings.darkMode);
+
+return (
+  <SafeAreaProvider>
+    <LinearGradient colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()}>

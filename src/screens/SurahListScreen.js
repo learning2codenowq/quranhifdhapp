@@ -152,8 +152,14 @@ export default function SurahListScreen({ navigation }) {
           </View>
           
           <View style={styles.surahInfo}>
-            <Text style={styles.surahName}>{item.name}</Text>
-            <Text style={styles.surahArabicName}>{item.arabic_name}</Text>
+            <Text style={[
+  styles.surahName,
+  settings.darkMode && { color: themedColors.textPrimary }
+]}>{item.name}</Text>
+            <Text style={[
+  styles.surahArabicName,
+  settings.darkMode && { color: themedColors.textSecondary }
+]}>{item.arabic_name}</Text>
             <View style={styles.surahMeta}>
               <View style={styles.metaItem}>
                 <Icon 

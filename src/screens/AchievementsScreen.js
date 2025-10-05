@@ -7,12 +7,15 @@ import AnimatedCard from '../components/AnimatedCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Icon, AppIcons } from '../components/Icon';
 import { Theme } from '../styles/theme';
+import { getThemedColors } from '../styles/theme';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AchievementsScreen({ navigation }) {
   const [earnedAchievements, setEarnedAchievements] = useState([]);
   const [totalAchievements, setTotalAchievements] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState({ darkMode: false });
+
 
   useEffect(() => {
     loadAchievements();
@@ -21,6 +24,9 @@ export default function AchievementsScreen({ navigation }) {
   const loadAchievements = async () => {
     setLoading(true);
     const state = await StorageService.getState();
+    if (state?.settings) {
+    setSettings({ darkMode: state.settings.darkMode || false });
+  }
     const earned = state?.earnedAchievements || [];
     setEarnedAchievements(earned);
     setTotalAchievements(AchievementSystem.achievements.length);
@@ -156,7 +162,7 @@ export default function AchievementsScreen({ navigation }) {
 
   if (loading) {
     return (
-      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+        <LinearGradient colors={settings.darkMode ? getThemedColors(true).gradients.primary : Theme.gradients.primary} style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}></SafeAreaView>
         <LoadingSpinner message="Loading achievements..." />
       </LinearGradient>
@@ -164,7 +170,7 @@ export default function AchievementsScreen({ navigation }) {
   }
 
   return (
-    <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+      <LinearGradient colors={settings.darkMode ? getThemedColors(true).gradients.primary : Theme.gradients.primary} style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
