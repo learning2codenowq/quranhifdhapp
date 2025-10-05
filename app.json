@@ -42,7 +42,7 @@
     "backgroundColor": "#22575D"
   },
   "package": "com.shayan.quranhifdh",
-  "versionCode": 2.1,
+  "versionCode": 3,
   "compileSdkVersion": 34,
   "targetSdkVersion": 34,
   "minSdkVersion": 23,
