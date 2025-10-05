@@ -22,6 +22,7 @@ import { StorageService } from '../services/StorageService';
 import { AudioService } from '../services/AudioService';
 import { cleanArabicText } from '../utils/TextCleaner';
 import { Logger } from '../utils/Logger'
+import SurahCompletionModal from '../components/SurahCompletionModal';
 import { parseTajweedText, hasTajweedMarkup } from '../utils/TajweedParser';
 import { Theme } from '../styles/theme'; 
 import { getThemedColors } from '../styles/theme';
@@ -41,6 +42,8 @@ export default function QuranReaderScreen({ route, navigation }) {
   const [ayahAudioUrls, setAyahAudioUrls] = useState({});
   const [ayahCounters, setAyahCounters] = useState({});
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completedSurahInfo, setCompletedSurahInfo] = useState(null);
 
 
   // Settings state
@@ -372,6 +375,39 @@ const TajweedHelpModal = () => (
     );
   };
   
+  const checkSurahCompletion = async (surahId) => {
+  try {
+    const state = await StorageService.getState();
+    if (!state?.ayahProgress?.[surahId]) return false;
+    
+    const surahProgress = state.ayahProgress[surahId];
+    const totalAyahs = surahData?.total_ayahs || ayahs.length;
+    
+    // Count memorized ayahs
+    const memorizedCount = Object.values(surahProgress).filter(
+      ayah => ayah.memorized
+    ).length;
+    
+    // Check if surah just became complete
+    const isComplete = memorizedCount >= totalAyahs;
+    
+    if (isComplete) {
+      setCompletedSurahInfo({
+        id: surahId,
+        name: surahData?.name || `Surah ${surahId}`,
+        arabicName: surahData?.arabic_name || '',
+        totalAyahs: totalAyahs
+      });
+      setShowCompletionModal(true);
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error checking surah completion:', error);
+    return false;
+  }
+};
 
   const toggleAyahMemorization = async (currentSurahId, ayahNumber, isCurrentlyMemorized) => {
     try {
@@ -394,6 +430,7 @@ const TajweedHelpModal = () => (
         Alert.alert('✓ Removed', 'Ayah unmarked from memorization', [{ text: 'OK' }]);
       } else {
         await QuranUtils.markAyahMemorized(currentSurahId, ayahNumber, 2);
+        await checkSurahCompletion(currentSurahId);
       }
       
       await loadMemorizedAyahs();
@@ -1203,6 +1240,14 @@ const TajweedHelpModal = () => (
             </View>
           )}
         </SafeAreaView>
+        <SurahCompletionModal
+          visible={showCompletionModal}
+          surahInfo={completedSurahInfo}
+          onClose={() => {
+            setShowCompletionModal(false);
+            setCompletedSurahInfo(null);
+          }}
+        />
       </LinearGradient>
     </SafeAreaProvider>
   );
