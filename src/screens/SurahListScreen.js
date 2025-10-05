@@ -222,9 +222,14 @@ export default function SurahListScreen({ navigation }) {
   };
 
   if (loading) {
+  const themedColors = getThemedColors(settings.darkMode);
+  
   return (
     <SafeAreaProvider>
-      <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
+      <LinearGradient 
+        colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
+        style={styles.container}
+      >
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
           <View style={styles.header}>
             <TouchableOpacity 
@@ -245,47 +250,47 @@ export default function SurahListScreen({ navigation }) {
               <Text style={styles.subtitle}>Choose a surah to memorize</Text>
             </View>
             {/* Search Bar */}
-<View style={styles.searchContainer}>
-  <View style={[
-    styles.searchInputWrapper,
-    settings.darkMode && themedColors?.surface && { backgroundColor: themedColors.surface }
-  ]}>
-    <Icon 
-      name="search" 
-      type="Ionicons" 
-      size={20} 
-      color={settings.darkMode && themedColors?.textMuted ? themedColors.textMuted : Theme.colors.textMuted} 
-      style={styles.searchIcon}
-    />
-    <TextInput
-      style={[
-        styles.searchInput,
-        settings.darkMode && themedColors?.textPrimary && { color: themedColors.textPrimary }
-      ]}
-      placeholder="Search surahs..."
-      placeholderTextColor={settings.darkMode && themedColors?.textMuted ? themedColors.textMuted : Theme.colors.textMuted}
-      value={searchQuery}
-      onChangeText={setSearchQuery}
-      autoCapitalize="none"
-      autoCorrect={false}
-    />
-    {searchQuery.length > 0 && (
-      <TouchableOpacity 
-        onPress={() => setSearchQuery('')}
-        style={styles.clearButton}
-      >
-        <Icon 
-          name="close-circle" 
-          type="Ionicons" 
-          size={20} 
-          color={settings.darkMode && themedColors?.textMuted ? themedColors.textMuted : Theme.colors.textMuted} 
-        />
-      </TouchableOpacity>
-    )}
-  </View>
-</View>
+            <View style={styles.searchContainer}>
+              <View style={[
+                styles.searchInputWrapper,
+                settings.darkMode && themedColors?.surface && { backgroundColor: themedColors.surface }
+              ]}>
+                <Icon 
+                  name="search" 
+                  type="Ionicons" 
+                  size={20} 
+                  color={settings.darkMode && themedColors?.textMuted ? themedColors.textMuted : Theme.colors.textMuted} 
+                  style={styles.searchIcon}
+                />
+                <TextInput
+                  style={[
+                    styles.searchInput,
+                    settings.darkMode && themedColors?.textPrimary && { color: themedColors.textPrimary }
+                  ]}
+                  placeholder="Search surahs..."
+                  placeholderTextColor={settings.darkMode && themedColors?.textMuted ? themedColors.textMuted : Theme.colors.textMuted}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity 
+                    onPress={() => setSearchQuery('')}
+                    style={styles.clearButton}
+                  >
+                    <Icon 
+                      name="close-circle" 
+                      type="Ionicons" 
+                      size={20} 
+                      color={settings.darkMode && themedColors?.textMuted ? themedColors.textMuted : Theme.colors.textMuted} 
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
           </View>
-          <SurahListSkeleton />
+          <SurahListSkeleton darkMode={settings.darkMode} />
         </SafeAreaView>
       </LinearGradient>
     </SafeAreaProvider>

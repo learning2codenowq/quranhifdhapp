@@ -112,13 +112,18 @@ export default function DashboardScreen({ navigation }) {
   };
 
   if (!stats) {
-    return (
-     <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}></SafeAreaView>
-       <DashboardSkeleton />
-     </LinearGradient>
-   );
-  }
+  const themedColors = getThemedColors(settings.darkMode);
+  
+  return (
+   <LinearGradient 
+     colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
+     style={styles.container}
+   >
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}></SafeAreaView>
+     <DashboardSkeleton darkMode={settings.darkMode} />
+   </LinearGradient>
+ );
+}
 
   const displayStats = stats ? {
     percentComplete: Number(stats.percentComplete) || 0,

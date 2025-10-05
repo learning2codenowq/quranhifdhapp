@@ -1,131 +1,180 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
 
-export const SkeletonLine = ({ width = '100%', height = 20, style, borderRadius = 8 }) => {
-  const opacity = useRef(new Animated.Value(0.3)).current;
+export const SkeletonLine = ({ width = '100%', height = 20, style, borderRadius = 8, darkMode = false }) => {
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const animate = () => {
-      Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 0.7,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0.3,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ]).start(() => animate());
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(shimmerAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shimmerAnim, {
+            toValue: 0,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
     };
     
     animate();
   }, []);
 
+  const translateX = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-350, 350],
+  });
+
   return (
-    <Animated.View
+    <View
       style={[
         styles.skeletonLine,
         {
           width,
           height,
-          opacity,
           borderRadius,
+          backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.2)',
+          overflow: 'hidden',
         },
         style,
       ]}
-    />
+    >
+      <Animated.View
+        style={[
+          styles.shimmer,
+          {
+            transform: [{ translateX }],
+            backgroundColor: darkMode 
+              ? 'rgba(255, 255, 255, 0.1)' 
+              : 'rgba(255, 255, 255, 0.4)',
+          },
+        ]}
+      />
+    </View>
   );
 };
 
-export const SkeletonCircle = ({ size = 60 }) => {
-  const opacity = useRef(new Animated.Value(0.3)).current;
+export const SkeletonCircle = ({ size = 60, darkMode = false }) => {
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const animate = () => {
-      Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 0.7,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0.3,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ]).start(() => animate());
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(shimmerAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shimmerAnim, {
+            toValue: 0,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
     };
     
     animate();
   }, []);
 
+  const translateX = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-size * 2, size * 2],
+  });
+
   return (
-    <Animated.View
+    <View
       style={[
         styles.skeletonCircle,
         {
           width: size,
           height: size,
           borderRadius: size / 2,
-          opacity,
+          backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.2)',
+          overflow: 'hidden',
         },
       ]}
-    />
+    >
+      <Animated.View
+        style={[
+          styles.shimmer,
+          {
+            transform: [{ translateX }],
+            backgroundColor: darkMode 
+              ? 'rgba(255, 255, 255, 0.1)' 
+              : 'rgba(255, 255, 255, 0.4)',
+          },
+        ]}
+      />
+    </View>
   );
 };
 
-export const DashboardSkeleton = () => (
+export const DashboardSkeleton = ({ darkMode = false }) => (
   <View style={styles.dashboardSkeleton}>
     {/* Header Skeleton */}
     <View style={styles.headerSkeleton}>
-      <SkeletonLine width="60%" height={20} style={styles.centerSkeleton} />
-      <SkeletonLine width="40%" height={14} style={[styles.centerSkeleton, { marginTop: 8 }]} />
-      <SkeletonLine width="70%" height={32} style={[styles.centerSkeleton, { marginTop: 16 }]} />
+      <SkeletonLine width="60%" height={20} style={styles.centerSkeleton} darkMode={darkMode} />
+      <SkeletonLine width="40%" height={14} style={[styles.centerSkeleton, { marginTop: 8 }]} darkMode={darkMode} />
+      <SkeletonLine width="70%" height={32} style={[styles.centerSkeleton, { marginTop: 16 }]} darkMode={darkMode} />
     </View>
 
     {/* Streak Card Skeleton */}
-    <View style={styles.streakCardSkeleton}>
-      <SkeletonCircle size={48} />
+    <View style={[
+      styles.streakCardSkeleton,
+      darkMode && { backgroundColor: 'rgba(255, 255, 255, 0.05)' }
+    ]}>
+      <SkeletonCircle size={48} darkMode={darkMode} />
       <View style={styles.streakTextSkeleton}>
-        <SkeletonLine width={60} height={24} />
-        <SkeletonLine width={80} height={12} style={{ marginTop: 4 }} />
+        <SkeletonLine width={60} height={24} darkMode={darkMode} />
+        <SkeletonLine width={80} height={12} style={{ marginTop: 4 }} darkMode={darkMode} />
       </View>
     </View>
 
     {/* Progress Ring Skeleton */}
     <View style={styles.progressSkeleton}>
-      <SkeletonCircle size={160} />
-      <SkeletonLine width="50%" height={16} style={{ marginTop: 16, alignSelf: 'center' }} />
+      <SkeletonCircle size={160} darkMode={darkMode} />
+      <SkeletonLine width="50%" height={16} style={{ marginTop: 16, alignSelf: 'center' }} darkMode={darkMode} />
     </View>
 
     {/* Button Skeleton */}
-    <SkeletonLine width="100%" height={56} borderRadius={30} style={{ marginBottom: 32, marginTop: 32 }} />
+    <SkeletonLine width="100%" height={56} borderRadius={30} style={{ marginBottom: 32, marginTop: 32 }} darkMode={darkMode} />
 
     {/* Stats Grid Skeleton */}
     <View style={styles.statsGridSkeleton}>
       {[1, 2, 3, 4].map((i) => (
-        <View key={i} style={styles.statCardSkeleton}>
-          <SkeletonCircle size={48} />
-          <SkeletonLine width="60%" height={28} style={{ marginTop: 12, alignSelf: 'center' }} />
-          <SkeletonLine width="80%" height={14} style={{ marginTop: 8, alignSelf: 'center' }} />
-          <SkeletonLine width="60%" height={12} style={{ marginTop: 4, alignSelf: 'center' }} />
+        <View key={i} style={[
+          styles.statCardSkeleton,
+          darkMode && { backgroundColor: 'rgba(255, 255, 255, 0.05)' }
+        ]}>
+          <SkeletonCircle size={48} darkMode={darkMode} />
+          <SkeletonLine width="60%" height={28} style={{ marginTop: 12, alignSelf: 'center' }} darkMode={darkMode} />
+          <SkeletonLine width="80%" height={14} style={{ marginTop: 8, alignSelf: 'center' }} darkMode={darkMode} />
+          <SkeletonLine width="60%" height={12} style={{ marginTop: 4, alignSelf: 'center' }} darkMode={darkMode} />
         </View>
       ))}
     </View>
   </View>
 );
 
-export const SurahListSkeleton = () => (
+export const SurahListSkeleton = ({ darkMode = false }) => (
   <View style={styles.surahListSkeleton}>
     {[1, 2, 3, 4, 5, 6].map((i) => (
-      <View key={i} style={styles.surahCardSkeleton}>
-        <SkeletonCircle size={48} />
+      <View key={i} style={[
+        styles.surahCardSkeleton,
+        darkMode && { backgroundColor: 'rgba(255, 255, 255, 0.05)' }
+      ]}>
+        <SkeletonCircle size={48} darkMode={darkMode} />
         <View style={styles.surahInfoSkeleton}>
-          <SkeletonLine width="70%" height={18} />
-          <SkeletonLine width="50%" height={14} style={{ marginTop: 8 }} />
-          <SkeletonLine width="40%" height={12} style={{ marginTop: 6 }} />
+          <SkeletonLine width="70%" height={18} darkMode={darkMode} />
+          <SkeletonLine width="50%" height={14} style={{ marginTop: 8 }} darkMode={darkMode} />
+          <SkeletonLine width="40%" height={12} style={{ marginTop: 6 }} darkMode={darkMode} />
         </View>
       </View>
     ))}
@@ -134,10 +183,19 @@ export const SurahListSkeleton = () => (
 
 const styles = StyleSheet.create({
   skeletonLine: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    position: 'relative',
   },
   skeletonCircle: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    position: 'relative',
+  },
+  shimmer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
   },
   dashboardSkeleton: {
     paddingHorizontal: 20,

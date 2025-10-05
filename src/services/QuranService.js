@@ -16,7 +16,7 @@ export class QuranService {
 
     const apiCall = async () => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
       
       // Build URL with optional reciterId and scriptType parameters
       let apiUrl = `${this.BASE_URL}/api/qf/verses?chapter=${surahId}&perPage=300`;

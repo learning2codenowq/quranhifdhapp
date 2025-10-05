@@ -22,6 +22,8 @@ import { StorageService } from '../services/StorageService';
 import { AudioService } from '../services/AudioService';
 import { cleanArabicText } from '../utils/TextCleaner';
 import { Logger } from '../utils/Logger'
+import { NetworkUtils } from '../utils/NetworkUtils';
+import ModernLoadingScreen from '../components/ModernLoadingScreen';
 import SurahCompletionModal from '../components/SurahCompletionModal';
 import { parseTajweedText, hasTajweedMarkup } from '../utils/TajweedParser';
 import { Theme } from '../styles/theme'; 
@@ -42,8 +44,11 @@ export default function QuranReaderScreen({ route, navigation }) {
   const [ayahAudioUrls, setAyahAudioUrls] = useState({});
   const [ayahCounters, setAyahCounters] = useState({});
   const [isInitialized, setIsInitialized] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completedSurahInfo, setCompletedSurahInfo] = useState(null);
+  const [loadingProgress, setLoadingProgress] = useState('');
+
 
 
   // Settings state
@@ -102,9 +107,28 @@ useEffect(() => {
       await loadSettings();
       console.log('✅ Settings loaded');
       
-      console.log('📥 Loading surah data...');
-      await loadSurahData();
-      console.log('✅ Surah data loaded');
+      // Small delay to ensure settings state is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      console.log('🌐 Checking internet connection...');
+    const hasInternet = await NetworkUtils.checkInternetConnection();
+    if (!hasInternet) {
+      setLoading(false);
+      Alert.alert(
+        'No Internet Connection',
+        'Please check your internet connection and try again.',
+        [
+          { text: 'Go Back', onPress: () => navigation.goBack() },
+          { text: 'Retry', onPress: () => loadEverything() }
+        ]
+      );
+      return;
+    }
+    console.log('✅ Internet connected');
+    
+    console.log('📥 Loading surah data...');
+    await loadSurahData();
+    console.log('✅ Surah data loaded');
       
       loadMemorizedAyahs();
       AudioService.setupAudio();
@@ -123,7 +147,7 @@ useEffect(() => {
     console.log('🧹 Cleanup');
     AudioService.stopAudio();
   };
-}, [surahId, selectedReciterId, settings.scriptType]); // ADD settings.scriptType to dependency array
+}, [surahId, selectedReciterId, settings.scriptType]);
 
   const loadSettings = async () => {
   try {
@@ -141,8 +165,10 @@ useEffect(() => {
       setSettings(newSettings);
       setSelectedReciterId(state.settings.selectedReciter || null);
     }
+    setSettingsLoaded(true); // ADD THIS LINE
   } catch (error) {
     Logger.error('Error loading settings:', error);
+    setSettingsLoaded(true); // ADD THIS LINE
   }
 };
 const TajweedHelpModal = () => (
@@ -299,51 +325,74 @@ const TajweedHelpModal = () => (
   };
 
   const loadSurahData = async () => {
-  try {
-    console.log('🚀 Starting loadSurahData for surah:', surahId);
-    setLoading(true);
-    
-    // Force timeout after 15 seconds
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Request timeout')), 15000)
-    );
-    
-    // Pass selected reciter AND script type to API - NEW!
-    const apiPromise = QuranService.getSurahWithTranslation(
-      surahId, 
-      selectedReciterId,
-      settings.scriptType  // NEW - pass script type
-    );
-    
-    console.log('🔄 Making API call with reciter:', selectedReciterId, 'and script:', settings.scriptType);
-    const data = await Promise.race([apiPromise, timeoutPromise]);
-    console.log('✅ API call succeeded, got data:', data);
-    
-    setSurahData(data.surah);
-    setAyahs(data.ayahs || []);
-    
-    // Store audio URLs for each ayah
-    const audioMap = {};
-    (data.ayahs || []).forEach(ayah => {
-      if (ayah.audioUrl) {
-        audioMap[ayah.verse_number] = ayah.audioUrl;
+  let retryCount = 0;
+  const maxRetries = 3;
+  
+  const attemptLoad = async () => {
+    try {if (retryCount > 0) {
+      setLoadingProgress(`Retry attempt ${retryCount}/${maxRetries}`);
+    }
+      console.log(`🚀 Loading surah ${surahId} (Attempt ${retryCount + 1}/${maxRetries})`);
+      setLoading(true);
+      
+      // Increased timeout to 60 seconds
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 60000)
+      );
+      
+      const apiPromise = QuranService.getSurahWithTranslation(
+        surahId, 
+        selectedReciterId,
+        settings.scriptType
+      );
+      
+      console.log('🔄 Making API call with reciter:', selectedReciterId, 'and script:', settings.scriptType);
+      const data = await Promise.race([apiPromise, timeoutPromise]);
+      console.log('✅ API call succeeded, got data:', data);
+      
+      setSurahData(data.surah);
+      setAyahs(data.ayahs || []);
+      
+      // Store audio URLs for each ayah
+      const audioMap = {};
+      (data.ayahs || []).forEach(ayah => {
+        if (ayah.audioUrl) {
+          audioMap[ayah.verse_number] = ayah.audioUrl;
+        }
+      });
+      setAyahAudioUrls(audioMap);
+      
+      console.log('✅ Successfully loaded surah data');
+      
+    } catch (error) {
+      console.error(`❌ Error in loadSurahData (Attempt ${retryCount + 1}):`, error);
+      
+      // Retry logic
+      if (retryCount < maxRetries - 1) {
+        retryCount++;
+        console.log(`🔄 Retrying... (${retryCount}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+        return attemptLoad(); // Recursive retry
       }
-    });
-    setAyahAudioUrls(audioMap);
-    
-    console.log('✅ Successfully loaded surah data');
-    
-  } catch (error) {
-    console.error('❌ Error in loadSurahData:', error);
-    Logger.error('Error loading surah:', error);
-    Alert.alert('Error', 'Failed to load surah data. Please check your internet connection.', [
-      { text: 'Go Back', onPress: () => navigation.goBack() },
-      { text: 'Retry', onPress: () => loadSurahData() }
-    ]);
-  } finally {
-    console.log('🏁 Setting loading to false');
-    setLoading(false);
-  }
+      
+      // All retries failed
+      Logger.error('Error loading surah after retries:', error);
+      Alert.alert(
+        'Connection Error',
+        `Failed to load surah after ${maxRetries} attempts. Please check your internet connection and try again.`,
+        [
+          { text: 'Go Back', onPress: () => navigation.goBack() },
+          { text: 'Retry', onPress: () => loadSurahData() }
+        ]
+      );
+      throw error;
+    } finally {
+      console.log('🏁 Setting loading to false');
+      setLoading(false);
+    }
+  };
+  
+  return attemptLoad();
 };
 
   const loadMemorizedAyahs = async () => {
@@ -1049,22 +1098,16 @@ const TajweedHelpModal = () => (
     );
   };
 
-  if (loading) {
-    return (
-      <SafeAreaProvider>
-        <LinearGradient 
-          colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
-          style={styles.container}
-        >
-          <SafeAreaView style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={Theme.colors.secondary} />
-            <Text style={styles.loadingText}>Loading Surah...</Text>
-            <Text style={styles.loadingSubtext}>Preparing ayahs and audio</Text>
-          </SafeAreaView>
-        </LinearGradient>
-      </SafeAreaProvider>
-    );
-  }
+  if (loading || !settingsLoaded) {
+  return (
+    <ModernLoadingScreen 
+      darkMode={settings.darkMode}
+      message="Loading Surah..."
+      subtitle="Preparing ayahs and audio"
+      progress={loadingProgress}
+    />
+  );
+}
 
   return (
     <SafeAreaProvider>
