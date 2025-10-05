@@ -41,31 +41,27 @@
     "foregroundImage": "./assets/adaptive-icon.png",
     "backgroundColor": "#22575D"
   },
-      "package": "com.shayan.quranhifdh",
-      "versionCode": 2,
-      "navigationBar": {
-    "backgroundColor": "#22575D"
-  },
-  "statusBar": {
-    "backgroundColor": "#22575D",
-    "barStyle": "light-content"
-  },
-      "permissions": [
-        "INTERNET",
-        "ACCESS_NETWORK_STATE",
-        "MODIFY_AUDIO_SETTINGS",
-        "WAKE_LOCK",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE",
-        "android.permission.SCHEDULE_EXACT_ALARM"
-      ],
-      "blockedPermissions": [
-        "CAMERA",
-        "RECORD_AUDIO",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
-      ]
-    },
+  "package": "com.shayan.quranhifdh",
+  "versionCode": 2.1,
+  "compileSdkVersion": 34,
+  "targetSdkVersion": 34,
+  "minSdkVersion": 23,
+  "permissions": [
+    "INTERNET",
+    "ACCESS_NETWORK_STATE",
+    "MODIFY_AUDIO_SETTINGS",
+    "WAKE_LOCK",
+    "RECEIVE_BOOT_COMPLETED",
+    "VIBRATE",
+    "android.permission.SCHEDULE_EXACT_ALARM"
+  ],
+  "blockedPermissions": [
+    "CAMERA",
+    "RECORD_AUDIO",
+    "ACCESS_FINE_LOCATION",
+    "ACCESS_COARSE_LOCATION"
+  ]
+},
     "web": {
       "favicon": "./assets/favicon.png"
     },

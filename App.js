@@ -21,6 +21,9 @@ import TermsOfServiceScreen from './src/screens/TermsOfServiceScreen';
 import AboutScreen from './src/screens/AboutScreen';
 import { StorageService } from './src/services/StorageService';
 import { Logger } from './src/utils/Logger';
+import { StatusBar } from 'expo-status-bar';
+
+
 
 const Stack = createStackNavigator();
 
@@ -116,6 +119,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
+      <StatusBar style="light" />
       <View style={styles.container}>
         <NavigationContainer ref={navigationRef} onStateChange={onStateChange}>
           <Stack.Navigator 
