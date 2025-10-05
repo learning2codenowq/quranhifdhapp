@@ -7,7 +7,8 @@ import {
   TouchableOpacity, 
   ActivityIndicator,
   Dimensions,
-  Alert
+  Alert,
+  TextInput
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +26,8 @@ export default function SurahListScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({ darkMode: false });
   const [memorizedStats, setMemorizedStats] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredSurahs, setFilteredSurahs] = useState([]);
 
   useEffect(() => {
     loadSurahs();
@@ -38,6 +41,37 @@ export default function SurahListScreen({ navigation }) {
     
     return unsubscribe;
   }, [navigation]);
+
+  useEffect(() => {
+  if (!searchQuery.trim()) {
+    // If search is empty, show all surahs
+    setFilteredSurahs(surahs);
+  } else {
+    // Filter surahs based on search query
+    const query = searchQuery.toLowerCase().trim();
+    
+    const filtered = surahs.filter(surah => {
+      // Search by surah number
+      if (surah.id.toString() === query) {
+        return true;
+      }
+      
+      // Search by English name
+      if (surah.name && surah.name.toLowerCase().includes(query)) {
+        return true;
+      }
+      
+      // Search by Arabic name
+      if (surah.arabic_name && surah.arabic_name.includes(query)) {
+        return true;
+      }
+      
+      return false;
+    });
+    
+    setFilteredSurahs(filtered);
+  }
+}, [searchQuery, surahs]);
 
   const loadSurahs = async () => {
   try {
@@ -201,9 +235,49 @@ export default function SurahListScreen({ navigation }) {
             </TouchableOpacity>
             
             <View style={styles.headerTitleContainer}>
-              <Text style={styles.title}>Quran Surahs</Text>
+              <Text style={styles.title}>Surahs</Text>
               <Text style={styles.subtitle}>Choose a surah to memorize</Text>
             </View>
+            {/* Search Bar */}
+<View style={styles.searchContainer}>
+  <View style={[
+    styles.searchInputWrapper,
+    settings.darkMode && themedColors?.surface && { backgroundColor: themedColors.surface }
+  ]}>
+    <Icon 
+      name="search" 
+      type="Ionicons" 
+      size={20} 
+      color={settings.darkMode && themedColors?.textMuted ? themedColors.textMuted : Theme.colors.textMuted} 
+      style={styles.searchIcon}
+    />
+    <TextInput
+      style={[
+        styles.searchInput,
+        settings.darkMode && themedColors?.textPrimary && { color: themedColors.textPrimary }
+      ]}
+      placeholder="Search surahs..."
+      placeholderTextColor={settings.darkMode && themedColors?.textMuted ? themedColors.textMuted : Theme.colors.textMuted}
+      value={searchQuery}
+      onChangeText={setSearchQuery}
+      autoCapitalize="none"
+      autoCorrect={false}
+    />
+    {searchQuery.length > 0 && (
+      <TouchableOpacity 
+        onPress={() => setSearchQuery('')}
+        style={styles.clearButton}
+      >
+        <Icon 
+          name="close-circle" 
+          type="Ionicons" 
+          size={20} 
+          color={settings.darkMode && themedColors?.textMuted ? themedColors.textMuted : Theme.colors.textMuted} 
+        />
+      </TouchableOpacity>
+    )}
+  </View>
+</View>
           </View>
           <SurahListSkeleton />
         </SafeAreaView>
@@ -220,49 +294,100 @@ return (
       colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
       style={styles.container}
     >
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-          <View style={styles.header}>
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Icon 
-                name={AppIcons.back.name} 
-                type={AppIcons.back.type} 
-                size={24} 
-                color={Theme.colors.textOnDark} 
-              />
-              <Text style={styles.backText}>Dashboard</Text>
-            </TouchableOpacity>
-            
-            <View style={styles.headerTitleContainer}>
-              <Text style={styles.title}>Quran Surahs</Text>
-              <Text style={styles.subtitle}>Choose a surah to memorize</Text>
-            </View>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Icon 
+              name={AppIcons.back.name} 
+              type={AppIcons.back.type} 
+              size={24} 
+              color={Theme.colors.textOnDark} 
+            />
+            <Text style={styles.backText}>Dashboard</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.title}>Quran Surahs</Text>
+            <Text style={styles.subtitle}>Choose a surah to memorize</Text>
           </View>
+        </View>
 
-          <FlatList
-  data={surahs}
-  keyExtractor={(item) => item.id.toString()}
-  renderItem={SurahItem}
-  contentContainerStyle={styles.listContent}
-  showsVerticalScrollIndicator={false}
-  ItemSeparatorComponent={() => <View style={{ height: Theme.spacing.sm }} />}
-  removeClippedSubviews={true}
-  maxToRenderPerBatch={10}
-  updateCellsBatchingPeriod={50}
-  initialNumToRender={10}
-  windowSize={10}
-  getItemLayout={(data, index) => ({
-    length: 120, // Estimated height of each surah card
-    offset: 128 * index, // 120 + 8 for separator
-    index,
-  })}
-/>
-        </SafeAreaView>
-      </LinearGradient>
-    </SafeAreaProvider>
-  );
+        {/* Search Bar - SHOULD BE HERE, OUTSIDE FlatList */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputWrapper}>
+            <Icon 
+              name="search" 
+              type="Ionicons" 
+              size={20} 
+              color={Theme.colors.textMuted} 
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search surahs..."
+              placeholderTextColor={Theme.colors.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity 
+                onPress={() => setSearchQuery('')}
+                style={styles.clearButton}
+              >
+                <Icon 
+                  name="close-circle" 
+                  type="Ionicons" 
+                  size={20} 
+                  color={Theme.colors.textMuted} 
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* FlatList - SEPARATE FROM SEARCH */}
+        <FlatList
+          data={filteredSurahs}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={SurahItem}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => <View style={{ height: Theme.spacing.sm }} />}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={10}
+          windowSize={10}
+          getItemLayout={(data, index) => ({
+            length: 120,
+            offset: 128 * index,
+            index,
+          })}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyContainer}>
+              <Icon 
+                name="search-outline" 
+                type="Ionicons" 
+                size={48} 
+                color={Theme.colors.textMuted} 
+              />
+              <Text style={styles.emptyText}>No surahs found</Text>
+              <Text style={styles.emptySubtext}>Try searching with a different keyword</Text>
+            </View>
+          )}
+        />
+        
+      </SafeAreaView>
+    </LinearGradient>
+  </SafeAreaProvider>
+);
 }
 
 const styles = StyleSheet.create({
@@ -275,7 +400,52 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Theme.spacing.xl,
     paddingTop: Theme.spacing.xl,
-    paddingBottom: Theme.spacing['3xl'],
+    paddingBottom: Theme.spacing.md,
+  },
+  searchContainer: {
+    paddingHorizontal: Theme.spacing.xl,
+    paddingBottom: Theme.spacing.lg,
+  },
+  searchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: Theme.borderRadius.xl,
+    paddingHorizontal: Theme.spacing.md,
+    paddingVertical: Theme.spacing.sm,
+    ...Theme.shadows.sm,
+  },
+  searchIcon: {
+    marginRight: Theme.spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: Theme.typography.fontSize.base,
+    color: Theme.colors.textPrimary,
+    paddingVertical: Theme.spacing.sm,
+  },
+  clearButton: {
+    padding: Theme.spacing.xs,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Theme.spacing['6xl'],
+    paddingHorizontal: Theme.spacing.xl,
+  },
+  emptyText: {
+    fontSize: Theme.typography.fontSize.lg,
+    fontWeight: Theme.typography.fontWeight.semibold,
+    color: Theme.colors.textSecondary,
+    marginTop: Theme.spacing.lg,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: Theme.typography.fontSize.sm,
+    color: Theme.colors.textMuted,
+    marginTop: Theme.spacing.sm,
+    textAlign: 'center',
   },
   backButton: {
     flexDirection: 'row',

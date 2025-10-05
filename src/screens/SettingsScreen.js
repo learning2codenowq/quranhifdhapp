@@ -75,7 +75,6 @@ useEffect(() => {
         autoPlayNext: state.settings.autoPlayNext !== false,
         darkMode: state.settings.darkMode || false,
         scriptType: state.settings.scriptType || 'uthmani',
-        // ADD THESE TWO LINES:
         userName: state.settings.userName || 'Student',
         dailyGoal: state.settings.dailyGoal || 10,
       };
@@ -103,7 +102,6 @@ useEffect(() => {
     Logger.log('🎙️ Loaded reciters:', uniqueReciters.length);
   } catch (error) {
     console.error('❌ Error loading settings:', error);
-    // Set empty array as fallback to prevent crashes
     setReciters([]);
   }
 };
