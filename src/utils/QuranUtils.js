@@ -8,36 +8,40 @@ export class QuranUtils {
   }
 
   static async markAyahMemorized(surahId, ayahNumber, difficulty = 2) {
-    try {
-      const state = await StorageService.getState();
-      if (!state.ayahProgress) state.ayahProgress = {};
-      if (!state.ayahProgress[surahId]) state.ayahProgress[surahId] = {};
-      
-      const today = this.localISO();
-      const wasAlreadyMemorized = state.ayahProgress[surahId][ayahNumber]?.memorized;
-      
-      // Store the ayah as memorized with details
-      state.ayahProgress[surahId][ayahNumber] = {
-        memorized: true,
-        dateMemorized: today,
-        difficulty: difficulty
-      };
+  try {
+    const state = await StorageService.getState();
+    if (!state.ayahProgress) state.ayahProgress = {};
+    if (!state.ayahProgress[surahId]) state.ayahProgress[surahId] = {};
+    
+    const today = this.localISO();
+    const wasAlreadyMemorized = state.ayahProgress[surahId][ayahNumber]?.memorized;
+    
+    // Store the ayah as memorized with details
+    state.ayahProgress[surahId][ayahNumber] = {
+      memorized: true,
+      dateMemorized: today,
+      difficulty: difficulty
+    };
 
-      // Only increment daily progress if this ayah wasn't already memorized
-      if (!wasAlreadyMemorized) {
-        if (!state.progress) state.progress = {};
-        state.progress[today] = (state.progress[today] || 0) + 1;
-      }
-
-      // Logger.log('Ayah marked as memorized:', surahId, ayahNumber, 'Total today:', state.progress[today]);
-      
-      await StorageService.saveState(state);
-      return state;
-    } catch (error) {
-      // Logger.error('Error marking ayah as memorized:', error);
-      throw error;
+    // Only increment daily progress if this ayah wasn't already memorized
+    if (!wasAlreadyMemorized) {
+      if (!state.progress) state.progress = {};
+      state.progress[today] = (state.progress[today] || 0) + 1;
     }
+
+    // UPDATE: Track last memorized position
+    state.lastMemorizedPosition = {
+      surahId: parseInt(surahId),
+      ayahNumber: parseInt(ayahNumber),
+      timestamp: new Date().toISOString()
+    };
+
+    await StorageService.saveState(state);
+    return state;
+  } catch (error) {
+    throw error;
   }
+}
 
   static async unmarkAyahMemorized(surahId, ayahNumber) {
     try {
@@ -468,4 +472,38 @@ export class QuranUtils {
     }
     return { updatedState: state, newAchievements: [] };
   }
+  static getNextMemorizationSegment(state) {
+  if (!state) return null;
+  
+  const dailyGoal = state.settings?.dailyGoal || 10;
+  const lastPosition = state.lastMemorizedPosition;
+  
+  // If no previous memorization, suggest starting from Al-Fatihah
+  if (!lastPosition) {
+    return {
+      surahId: 1,
+      surahName: 'Al-Fatihah',
+      startAyah: 1,
+      endAyah: Math.min(7, dailyGoal), // Al-Fatihah has 7 ayahs
+      totalAyahs: Math.min(7, dailyGoal),
+      isNewUser: true
+    };
+  }
+  
+  // Calculate next segment after last memorized position
+  const { surahId, ayahNumber } = lastPosition;
+  const surahName = this.getSurahName(surahId);
+  const startAyah = ayahNumber + 1;
+  const endAyah = ayahNumber + dailyGoal;
+  
+  return {
+    surahId,
+    surahName,
+    startAyah,
+    endAyah,
+    totalAyahs: dailyGoal,
+    isNewUser: false,
+    lastMemorized: ayahNumber
+  };
+}
 }

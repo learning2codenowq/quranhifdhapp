@@ -64,6 +64,7 @@ export class StorageService {
       progress: {},
       revisionProgress: {},
       earnedAchievements: [],
+      lastMemorizedPosition: null,
       settings: {
         dailyGoal: userSettings.dailyGoal || 10,
         userName: userSettings.userName || 'Student',

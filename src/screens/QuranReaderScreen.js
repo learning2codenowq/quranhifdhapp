@@ -30,6 +30,7 @@ import { Theme } from '../styles/theme';
 import { getThemedColors } from '../styles/theme';
 import { Icon, AppIcons } from '../components/Icon';
 
+
 export default function QuranReaderScreen({ route, navigation }) {
   const surahId = route?.params?.surahId || 1;
   
@@ -97,6 +98,23 @@ useEffect(() => {
     console.log('❌ No surahId');
     return;
   }
+  useEffect(() => {
+  if (!route.params?.scrollToAyah || ayahs.length === 0 || !flatListRef.current) {
+    return;
+  }
+  
+  const scrollToAyahNumber = route.params.scrollToAyah;
+  
+  // Wait for FlatList to render and data to load
+  const timer = setTimeout(() => {
+    if (ayahs.length > 0 && flatListRef.current) {
+      console.log('🎯 Auto-scrolling to ayah:', scrollToAyahNumber);
+      scrollToAyah(scrollToAyahNumber);
+    }
+  }, 1000); // Increased delay to ensure everything is loaded
+  
+  return () => clearTimeout(timer);
+}, [route.params?.scrollToAyah, ayahs.length]);
   
   // Reset initialization when surahId OR scriptType changes
   setIsInitialized(false);
@@ -578,9 +596,8 @@ const TajweedHelpModal = () => (
     } catch (error) {
       console.log('📱 ScrollToIndex failed, trying offset method');
       // Fallback: more accurate offset calculation
-      // Account for header (Basmala) + ayah cards with more realistic heights
       const headerHeight = shouldShowBasmala(surahData?.id || surahId) ? 150 : 0;
-      const averageAyahHeight = 200; // More realistic average height
+      const averageAyahHeight = 200;
       const estimatedOffset = headerHeight + (ayahIndex * averageAyahHeight);
       
       flatListRef.current.scrollToOffset({
@@ -888,6 +905,7 @@ const TajweedHelpModal = () => (
   };
 
   const shouldShowBasmala = (surahId) => {
+    if (!surahId) return false;
     return surahId !== 1 && surahId !== 9;
   };
 
@@ -920,35 +938,42 @@ const TajweedHelpModal = () => (
 
   // Modern Basmala Component
   const BasmalaModern = () => {
-    const currentSurahId = surahData?.id || surahId;
-    
-    if (!shouldShowBasmala(currentSurahId)) {
-      return null;
-    }
+  const currentSurahId = surahData?.id || surahId;
+  
+  // Safety check
+  if (!currentSurahId || !shouldShowBasmala(currentSurahId)) {
+    return null;
+  }
 
-    return (
-      <View style={styles.modernBasmalaContainer}>
-        <View style={styles.basmalaCard}>
-          <Text style={styles.modernBasmalaText}>
-            بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
-          </Text>
-        </View>
+  return (
+    <View style={styles.modernBasmalaContainer}>
+      <View style={styles.basmalaCard}>
+        <Text style={styles.modernBasmalaText}>
+          بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
+        </Text>
       </View>
-    );
-  };
+    </View>
+  );
+};
 
   // Modern Ayah Item Component
   const AyahItemModern = ({ item }) => {
-    const currentSurahId = surahData?.id || surahId;
-    const isMemorized = isAyahMemorized(currentSurahId, item.verse_number);
-    const isCurrentlyPlaying = playingAyah && 
-      playingAyah.surahId === currentSurahId && 
-      playingAyah.ayahNumber === item.verse_number;
-    
-    const currentCount = ayahCounters[item.verse_number] || 0;
-    
-    return (
-      <View style={styles.modernAyahContainer}>
+  // Safety checks
+  if (!item || !item.verse_number) {
+    console.warn('Invalid ayah item:', item);
+    return null;
+  }
+  
+  const currentSurahId = surahData?.id || surahId;
+  const isMemorized = isAyahMemorized(currentSurahId, item.verse_number);
+  const isCurrentlyPlaying = playingAyah && 
+    playingAyah.surahId === currentSurahId && 
+    playingAyah.ayahNumber === item.verse_number;
+  
+  const currentCount = ayahCounters[item.verse_number] || 0;
+  
+  return (
+    <View style={styles.modernAyahContainer}>
         {/* Ayah Number Badge */}
         <View style={styles.ayahNumberBadge}>
           <Text style={styles.ayahNumberText}>{item.verse_number}</Text>

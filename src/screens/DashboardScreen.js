@@ -13,6 +13,7 @@ import { Theme } from '../styles/theme';
 import { Logger } from '../utils/Logger';
 import { getThemedColors } from '../styles/theme';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
+import ContinueCard from '../components/ContinueCard';
 
 export default function DashboardScreen({ navigation }) {
   const [stats, setStats] = useState(null);
@@ -26,6 +27,7 @@ export default function DashboardScreen({ navigation }) {
   });
   const [totalAchievements, setTotalAchievements] = useState(0);
   const [userName, setUserName] = useState('Student');
+  const [nextSegment, setNextSegment] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -76,6 +78,8 @@ export default function DashboardScreen({ navigation }) {
       
       const earnedCount = updatedState.earnedAchievements?.length || 0;
       setTotalAchievements(earnedCount);
+      const segment = QuranUtils.getNextMemorizationSegment(updatedState);
+      setNextSegment(segment);
       
       if (newAchievements.length > 0) {
         setAchievementModal({
@@ -110,6 +114,19 @@ export default function DashboardScreen({ navigation }) {
       achievements: []
     });
   };
+  const handleContinueMemorization = () => {
+  if (!nextSegment) {
+    console.warn('No next segment available');
+    return;
+  }
+  
+  console.log('🎯 Navigating to:', nextSegment);
+  
+  navigation.navigate('QuranReader', { 
+    surahId: nextSegment.surahId,
+    scrollToAyah: nextSegment.startAyah
+  });
+};
 
   if (!stats) {
   const themedColors = getThemedColors(settings.darkMode);
@@ -227,14 +244,23 @@ return (
 </Text>
         </View>
 
-        {/* Main Action Button */}
+        {/* Continue Card or Main Action Button */}
+{nextSegment && !nextSegment.isNewUser ? (
+  <ContinueCard 
+    segment={nextSegment}
+    onContinue={handleContinueMemorization}
+    darkMode={settings.darkMode}
+  />
+) : null}
+
+{/* Main Action Button - Always show for browsing other surahs */}
 <TouchableOpacity
   style={styles.memorizeButtonContainer}
   onPress={() => navigation.navigate('SurahList')}
   activeOpacity={0.9}
   accessible={true}
-  accessibilityLabel="Start memorizing the Quran"
-  accessibilityHint="Navigate to surah list to begin memorization"
+  accessibilityLabel="Browse all surahs"
+  accessibilityHint="Navigate to surah list to choose any surah"
   accessibilityRole="button"
 >
   <LinearGradient
@@ -250,7 +276,9 @@ return (
       color="white" 
       style={styles.buttonIcon}
     />
-    <Text style={styles.memorizeButtonText}>Memorize the Quran</Text>
+    <Text style={styles.memorizeButtonText}>
+      {nextSegment && !nextSegment.isNewUser ? 'Browse All Surahs' : 'Start Memorizing'}
+    </Text>
   </LinearGradient>
 </TouchableOpacity>
 
