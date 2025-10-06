@@ -91,6 +91,7 @@ export default function QuranReaderScreen({ route, navigation }) {
   console.log('🔢 surahId from params:', surahId);
   console.log('📦 route.params:', route?.params);
 
+// Main component effect - handles surah loading
 useEffect(() => {
   console.log('🔥 Component effect', { surahId, isInitialized, scriptType: settings.scriptType });
   
@@ -98,23 +99,6 @@ useEffect(() => {
     console.log('❌ No surahId');
     return;
   }
-  useEffect(() => {
-  if (!route.params?.scrollToAyah || ayahs.length === 0 || !flatListRef.current) {
-    return;
-  }
-  
-  const scrollToAyahNumber = route.params.scrollToAyah;
-  
-  // Wait for FlatList to render and data to load
-  const timer = setTimeout(() => {
-    if (ayahs.length > 0 && flatListRef.current) {
-      console.log('🎯 Auto-scrolling to ayah:', scrollToAyahNumber);
-      scrollToAyah(scrollToAyahNumber);
-    }
-  }, 1000); // Increased delay to ensure everything is loaded
-  
-  return () => clearTimeout(timer);
-}, [route.params?.scrollToAyah, ayahs.length]);
   
   // Reset initialization when surahId OR scriptType changes
   setIsInitialized(false);
@@ -129,24 +113,24 @@ useEffect(() => {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       console.log('🌐 Checking internet connection...');
-    const hasInternet = await NetworkUtils.checkInternetConnection();
-    if (!hasInternet) {
-      setLoading(false);
-      Alert.alert(
-        'No Internet Connection',
-        'Please check your internet connection and try again.',
-        [
-          { text: 'Go Back', onPress: () => navigation.goBack() },
-          { text: 'Retry', onPress: () => loadEverything() }
-        ]
-      );
-      return;
-    }
-    console.log('✅ Internet connected');
-    
-    console.log('📥 Loading surah data...');
-    await loadSurahData();
-    console.log('✅ Surah data loaded');
+      const hasInternet = await NetworkUtils.checkInternetConnection();
+      if (!hasInternet) {
+        setLoading(false);
+        Alert.alert(
+          'No Internet Connection',
+          'Please check your internet connection and try again.',
+          [
+            { text: 'Go Back', onPress: () => navigation.goBack() },
+            { text: 'Retry', onPress: () => loadEverything() }
+          ]
+        );
+        return;
+      }
+      console.log('✅ Internet connected');
+      
+      console.log('📥 Loading surah data...');
+      await loadSurahData();
+      console.log('✅ Surah data loaded');
       
       loadMemorizedAyahs();
       AudioService.setupAudio();
@@ -166,6 +150,25 @@ useEffect(() => {
     AudioService.stopAudio();
   };
 }, [surahId, selectedReciterId, settings.scriptType]);
+
+// Separate effect for auto-scrolling to ayah
+useEffect(() => {
+  if (!route.params?.scrollToAyah || ayahs.length === 0 || !flatListRef.current) {
+    return;
+  }
+  
+  const scrollToAyahNumber = route.params.scrollToAyah;
+  
+  // Wait for FlatList to render and data to load
+  const timer = setTimeout(() => {
+    if (ayahs.length > 0 && flatListRef.current) {
+      console.log('🎯 Auto-scrolling to ayah:', scrollToAyahNumber);
+      scrollToAyah(scrollToAyahNumber);
+    }
+  }, 1000);
+  
+  return () => clearTimeout(timer);
+}, [route.params?.scrollToAyah, ayahs.length]);
 
   const loadSettings = async () => {
   try {

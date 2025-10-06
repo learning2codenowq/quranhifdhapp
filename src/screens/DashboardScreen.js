@@ -42,55 +42,50 @@ export default function DashboardScreen({ navigation }) {
 
   const loadData = async () => {
   try {
-    // Logger.log('Loading dashboard data...');
+    console.log('📊 Loading dashboard data...');
     let appState = await StorageService.getState();
     if (!appState) {
       appState = await StorageService.initializeState();
     }
     
-    // Load dark mode setting - ADD THIS SECTION
+    // Load dark mode setting
     if (appState?.settings) {
       setSettings({
         darkMode: appState.settings.darkMode || false
       });
     }
       
-      // Logger.log('App state loaded:', {
-      //  ayahProgressKeys: Object.keys(appState?.ayahProgress || {}),
-      //  progressKeys: Object.keys(appState?.progress || {}),
-      //  userName: appState?.settings?.userName
-      // });
-      
-      const name = appState?.settings?.userName || 'Student';
-      setUserName(name);
-      
-      const { updatedState, newAchievements } = await QuranUtils.checkAndAwardAchievements(appState);
-      setState(updatedState);
-      
-      const computedStats = QuranUtils.computeStats(updatedState);
-      const todaysRevision = QuranUtils.getRevisionPlan(updatedState);
-      
-      // Logger.log('Computed stats:', computedStats);
-      // Logger.log('Revision plan exists:', !!todaysRevision);
-      
-      setStats(computedStats);
-      setRevisionPlan(todaysRevision);
-      
-      const earnedCount = updatedState.earnedAchievements?.length || 0;
-      setTotalAchievements(earnedCount);
-      const segment = QuranUtils.getNextMemorizationSegment(updatedState);
-      setNextSegment(segment);
-      
-      if (newAchievements.length > 0) {
-        setAchievementModal({
-          visible: true,
-          achievements: newAchievements
-        });
-      }
-    } catch (error) {
-      // Logger.error('Error loading dashboard data:', error);
+    const name = appState?.settings?.userName || 'Student';
+    setUserName(name);
+    
+    const { updatedState, newAchievements } = await QuranUtils.checkAndAwardAchievements(appState);
+    setState(updatedState);
+    
+    const computedStats = QuranUtils.computeStats(updatedState);
+    const todaysRevision = QuranUtils.getRevisionPlan(updatedState);
+    
+    setStats(computedStats);
+    setRevisionPlan(todaysRevision);
+    
+    const earnedCount = updatedState.earnedAchievements?.length || 0;
+    setTotalAchievements(earnedCount);
+    
+    // ⭐ Get next segment
+    const segment = QuranUtils.getNextMemorizationSegment(updatedState);
+    console.log('🎯 Next segment:', segment);
+    console.log('📍 Last memorized position:', updatedState.lastMemorizedPosition);
+    setNextSegment(segment);
+    
+    if (newAchievements.length > 0) {
+      setAchievementModal({
+        visible: true,
+        achievements: newAchievements
+      });
     }
-  };
+  } catch (error) {
+    console.error('❌ Error loading dashboard data:', error);
+  }
+};
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -130,6 +125,11 @@ export default function DashboardScreen({ navigation }) {
 
   if (!stats) {
   const themedColors = getThemedColors(settings.darkMode);
+  console.log('🎨 Render check:', {
+  hasNextSegment: !!nextSegment,
+  isNewUser: nextSegment?.isNewUser,
+  willShowCard: nextSegment && !nextSegment.isNewUser
+});
   
   return (
    <LinearGradient 
@@ -244,23 +244,23 @@ return (
 </Text>
         </View>
 
-        {/* Continue Card or Main Action Button */}
-{nextSegment && !nextSegment.isNewUser ? (
+        {/* Continue Card - Shows when user has memorization history */}
+{nextSegment && !nextSegment.isNewUser && (
   <ContinueCard 
     segment={nextSegment}
     onContinue={handleContinueMemorization}
     darkMode={settings.darkMode}
   />
-) : null}
+)}
 
-{/* Main Action Button - Always show for browsing other surahs */}
+{/* Main Action Button */}
 <TouchableOpacity
   style={styles.memorizeButtonContainer}
   onPress={() => navigation.navigate('SurahList')}
   activeOpacity={0.9}
   accessible={true}
-  accessibilityLabel="Browse all surahs"
-  accessibilityHint="Navigate to surah list to choose any surah"
+  accessibilityLabel={nextSegment && !nextSegment.isNewUser ? "Browse all surahs" : "Start memorizing"}
+  accessibilityHint={nextSegment && !nextSegment.isNewUser ? "Navigate to surah list to choose any surah" : "Begin memorizing Al-Fatihah"}
   accessibilityRole="button"
 >
   <LinearGradient
