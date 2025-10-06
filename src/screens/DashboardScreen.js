@@ -277,8 +277,8 @@ return (
       style={styles.buttonIcon}
     />
     <Text style={styles.memorizeButtonText}>
-      {nextSegment && !nextSegment.isNewUser ? 'Browse All Surahs' : 'Start Memorizing'}
-    </Text>
+  {nextSegment && !nextSegment.isNewUser ? 'Browse All Surahs' : 'Start Memorizing'}
+</Text>
   </LinearGradient>
 </TouchableOpacity>
 
