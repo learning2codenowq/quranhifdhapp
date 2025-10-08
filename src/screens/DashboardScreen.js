@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StorageService } from '../services/StorageService';
@@ -14,6 +14,7 @@ import { Logger } from '../utils/Logger';
 import { getThemedColors } from '../styles/theme';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
 import ContinueCard from '../components/ContinueCard';
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 export default function DashboardScreen({ navigation }) {
   const [stats, setStats] = useState(null);
@@ -28,6 +29,8 @@ export default function DashboardScreen({ navigation }) {
   const [totalAchievements, setTotalAchievements] = useState(0);
   const [userName, setUserName] = useState('Student');
   const [nextSegment, setNextSegment] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const confettiRef = useRef(null);
 
   useEffect(() => {
     loadData();
@@ -70,11 +73,27 @@ export default function DashboardScreen({ navigation }) {
     const earnedCount = updatedState.earnedAchievements?.length || 0;
     setTotalAchievements(earnedCount);
     
-    // ⭐ Get next segment
+    // Get next segment
     const segment = QuranUtils.getNextMemorizationSegment(updatedState);
     console.log('🎯 Next segment:', segment);
     console.log('📍 Last memorized position:', updatedState.lastMemorizedPosition);
     setNextSegment(segment);
+    
+    // Check for daily goal completion
+    const today = QuranUtils.localISO();
+    const todayProgress = updatedState?.progress?.[today] || 0;
+    const dailyGoal = updatedState?.settings?.dailyGoal || 10;
+    
+    if (todayProgress >= dailyGoal && !showConfetti) {
+      setShowConfetti(true);
+      setTimeout(() => {
+        confettiRef.current?.start();
+      }, 500);
+      
+      setTimeout(() => {
+        setShowConfetti(false);
+      }, 4000);
+    }
     
     if (newAchievements.length > 0) {
       setAchievementModal({
@@ -117,10 +136,16 @@ export default function DashboardScreen({ navigation }) {
   
   console.log('🎯 Navigating to:', nextSegment);
   
-  navigation.navigate('QuranReader', { 
-    surahId: nextSegment.surahId,
-    scrollToAyah: nextSegment.startAyah
-  });
+  // If new user, go to surah list
+  if (nextSegment.isNewUser) {
+    navigation.navigate('SurahList');
+  } else {
+    // Existing user, go to their last position
+    navigation.navigate('QuranReader', { 
+      surahId: nextSegment.surahId,
+      scrollToAyah: nextSegment.startAyah
+    });
+  }
 };
 
   if (!stats) {
@@ -169,13 +194,25 @@ export default function DashboardScreen({ navigation }) {
 
   const currentStreak = QuranUtils.computeStreak(state?.progress || {});
 
-  const themedColors = getThemedColors(settings.darkMode);
+  // src/screens/DashboardScreen.js - Replace the entire return statement (starting from line 234)
+
+const themedColors = getThemedColors(settings.darkMode);
 
 return (
   <LinearGradient 
     colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
     style={styles.container}
   >
+    {showConfetti && (
+  <ConfettiCannon
+    ref={confettiRef}
+    count={200}
+    origin={{ x: -10, y: 0 }}
+    autoStart={false}
+    fadeOut={true}
+    fallSpeed={3000}
+  />
+)}
     <ScrollView 
       contentContainerStyle={styles.scrollContent} 
       showsVerticalScrollIndicator={false}
@@ -188,685 +225,681 @@ return (
         />
       }
     >
-        
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View style={styles.greetingRow}>
-              <Text style={styles.greeting}>As-salamu alaykum,</Text>
-              <Text style={styles.userName}>{userName}</Text>
-            </View>
-            <Text style={styles.currentDate}>
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                month: 'short', 
-                day: 'numeric',
-                year: 'numeric'
-              })}
-            </Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <View style={styles.greetingRow}>
+            <Text style={styles.greeting}>As-salamu alaykum,</Text>
+            <Text style={styles.userName}>{userName}</Text>
           </View>
-          <Text style={styles.title}>Quran Hifdh</Text>
+          <View style={styles.streakBadge}>
+            <Icon 
+              name="flame" 
+              type="Ionicons" 
+              size={16} 
+              color={Theme.colors.warning} 
+            />
+            <Text style={styles.streakNumber}>{currentStreak}</Text>
+            <Text style={styles.streakLabel}>day streak</Text>
+          </View>
         </View>
+      </View>
 
-        <View style={[
-  styles.modernStreakCard,
-  settings.darkMode && { backgroundColor: themedColors.cardBackground }
-]}>
-  <View style={styles.streakIconContainer}>
-    <Icon 
-      name={AppIcons.book.name} 
-      type={AppIcons.book.type} 
-      size={24} 
-      color={Theme.colors.primary} 
-    />
-  </View>
-  <View style={styles.streakInfo}>
-    <Text style={[
-  styles.streakNumber,settings.darkMode && { color: themedColors.textSecondary }
-]}>{currentStreak}</Text>
-    <Text style={[
-  styles.streakLabel,settings.darkMode && { color: themedColors.textSecondary }
-]}>Day Streak</Text>
-  </View>
-</View>
-
-        {/* Progress Ring */}
-        <View style={styles.progressSection}>
-          <AnimatedProgressRing 
-            percentage={displayStats.percentComplete || 0} 
-            size={200} 
-          />
-          <Text style={styles.progressStats}>
-  {displayStats.memorized.toLocaleString()} / {displayStats.total.toLocaleString()} ayahs
-  {isNewUser && (
-    <Text style={styles.newUserHint}>{'\n'}Start your journey below!</Text>
-  )}
-</Text>
-        </View>
-
-        {/* Continue Card - Shows when user has memorization history */}
-{nextSegment && !nextSegment.isNewUser && (
-  <ContinueCard 
-    segment={nextSegment}
-    onContinue={handleContinueMemorization}
-    darkMode={settings.darkMode}
-  />
-)}
-
-{/* Main Action Button */}
-<TouchableOpacity
-  style={styles.memorizeButtonContainer}
-  onPress={() => navigation.navigate('SurahList')}
-  activeOpacity={0.9}
-  accessible={true}
-  accessibilityLabel={nextSegment && !nextSegment.isNewUser ? "Browse all surahs" : "Start memorizing"}
-  accessibilityHint={nextSegment && !nextSegment.isNewUser ? "Navigate to surah list to choose any surah" : "Begin memorizing Al-Fatihah"}
-  accessibilityRole="button"
->
-  <LinearGradient
-    colors={['#d4af37', '#f4d03f']}
-    start={{ x: 0, y: 0 }}
-    end={{ x: 1, y: 0 }}
-    style={styles.memorizeButton}
-  >
-    <Icon 
-      name={AppIcons.book.name} 
-      type={AppIcons.book.type} 
-      size={24} 
-      color="white" 
-      style={styles.buttonIcon}
-    />
-    <Text style={styles.memorizeButtonText}>
-  {nextSegment && !nextSegment.isNewUser ? 'Browse All Surahs' : 'Start Memorizing'}
-</Text>
-  </LinearGradient>
-</TouchableOpacity>
-
-        {/* Revision Plan */}
-        {revisionPlan && (
-          <TikrarPlan 
-            revisionPlan={revisionPlan}
-            state={state}
-            onCategoryPress={handleCategoryPress}
-          />
-        )}
-
-        {/* Today's Progress */}
-        <View style={styles.todaySection}>
-          <Text style={styles.sectionTitle}>Today's Progress</Text>
-          <View style={[
-  styles.todayCard,
-  settings.darkMode && { backgroundColor: themedColors.cardBackground }
-]}>
-            <View style={styles.todayContent}>
-              <View style={styles.todayStats}>
-                <View style={styles.todayStatsHeader}>
+      {/* Hero Action Card */}
+      {nextSegment && (
+        <View style={styles.heroSection}>
+          <TouchableOpacity
+            style={styles.heroCard}
+            onPress={handleContinueMemorization}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={['#6B9B7C', '#8FBC9F']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.heroGradient}
+            >
+              <View style={styles.heroContent}>
+                <Text style={styles.heroLabel}>
+                  {nextSegment.isNewUser ? 'NEXT UP' : 'CONTINUE'}
+                </Text>
+                <Text style={styles.heroTitle}>
+                  {nextSegment.isNewUser ? 'Start Memorizing' : nextSegment.surahName}
+                </Text>
+                {!nextSegment.isNewUser && (
+                  <Text style={styles.heroSubtitle}>
+                    From Ayah {nextSegment.startAyah}
+                  </Text>
+                )}
+                <View style={styles.heroButton}>
+                  <Text style={styles.heroButtonText}>Start Session</Text>
                   <Icon 
-                    name={AppIcons.checkmark.name} 
-                    type={AppIcons.checkmark.type} 
+                    name="arrow-forward" 
+                    type="Ionicons" 
+                    size={20} 
+                    color="white" 
+                  />
+                </View>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* Browse All Surahs - Small Button */}
+          <TouchableOpacity
+            style={styles.browseButton}
+            onPress={() => navigation.navigate('SurahList')}
+          >
+            <Text style={styles.browseButtonText}>Browse All Surahs</Text>
+            <Icon 
+              name="chevron-forward" 
+              type="Ionicons" 
+              size={16} 
+              color={Theme.colors.secondary} 
+            />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Today's Progress Bar */}
+      <View style={styles.todayProgressSection}>
+        <View style={styles.todayProgressHeader}>
+          <Text style={styles.todayProgressLabel}>Today's Progress</Text>
+          <Text style={styles.todayProgressNumbers}>
+            {todayProgress}/{displayStats.daily}
+          </Text>
+        </View>
+        <View style={styles.todayProgressBarContainer}>
+          <View 
+            style={[
+              styles.todayProgressBarFill, 
+              { width: `${Math.min(100, (todayProgress / displayStats.daily) * 100)}%` }
+            ]} 
+          />
+        </View>
+      </View>
+
+      {/* Today's Plan */}
+      {revisionPlan && (
+        <View style={styles.todayPlanSection}>
+          <Text style={styles.sectionTitle}>Today's Plan</Text>
+          
+          {/* New Memorization Card */}
+          <TouchableOpacity
+            style={[
+              styles.planCard,
+              styles.planCardNew,
+              todayProgress >= displayStats.daily && styles.planCardCompleted
+            ]}
+            onPress={() => navigation.navigate('SurahList')}
+          >
+            <View style={styles.planCardContent}>
+              <View style={styles.planCardLeft}>
+                <View style={[styles.planIcon, styles.planIconNew]}>
+                  <Icon 
+                    name="book" 
+                    type="Ionicons" 
+                    size={20} 
+                    color={Theme.colors.success} 
+                  />
+                </View>
+                <View style={styles.planCardText}>
+                  <Text style={styles.planCardTitle}>New Memorization</Text>
+                  <Text style={styles.planCardSubtitle}>
+                    Memorize {displayStats.daily} new ayahs
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.planCardRight}>
+                <Text style={styles.planCardProgress}>
+                  {todayProgress}/{displayStats.daily}
+                </Text>
+                {todayProgress >= displayStats.daily && (
+                  <Icon 
+                    name="checkmark-circle" 
+                    type="Ionicons" 
                     size={24} 
                     color={Theme.colors.success} 
                   />
-                  <Text style={styles.todayNumber}>{todayProgress}</Text>
-                </View>
-                <Text style={styles.todayLabel}>ayahs memorized</Text>
-              </View>
-              
-              <View style={styles.todayProgressWrapper}>
-                <View style={styles.todayProgressBarContainer}>
-                  <View 
-                    style={[
-                      styles.todayProgressBarFill, 
-                      { width: `${Math.min(100, (todayProgress / displayStats.daily) * 100)}%` }
-                    ]} 
-                  />
-                </View>
-                <Text style={styles.todayGoal}>Goal: {displayStats.daily}</Text>
+                )}
               </View>
             </View>
+          </TouchableOpacity>
+
+          {/* Revision Card */}
+          <TouchableOpacity
+            style={[
+              styles.planCard,
+              styles.planCardRevision,
+              !revisionPlan.revision.target && styles.planCardInactive
+            ]}
+            onPress={() => handleCategoryPress('revision')}
+            disabled={!revisionPlan.revision.target}
+          >
+            <View style={styles.planCardContent}>
+              <View style={styles.planCardLeft}>
+                <View style={[styles.planIcon, styles.planIconRevision]}>
+                  <Icon 
+                    name="refresh" 
+                    type="Ionicons" 
+                    size={20} 
+                    color={Theme.colors.primary} 
+                  />
+                </View>
+                <View style={styles.planCardText}>
+                  <Text style={styles.planCardTitle}>Revision</Text>
+                  <Text style={styles.planCardSubtitle}>
+                    {revisionPlan.revision.target > 0 
+                      ? revisionPlan.revision.displayText 
+                      : 'Come back tomorrow'}
+                  </Text>
+                </View>
+              </View>
+              {revisionPlan.revision.target > 0 && (
+                <View style={styles.planCardRight}>
+                  <Text style={styles.planCardProgress}>0/3</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* This Week Section */}
+      <View style={styles.weekSection}>
+        <Text style={styles.sectionTitle}>This Week</Text>
+        <View style={styles.weekCard}>
+          <View style={styles.weekDays}>
+            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
+              <View key={index} style={styles.weekDayItem}>
+                <Text style={styles.weekDayLabel}>{day}</Text>
+                <View style={[
+                  styles.weekDayDot,
+                  index < 4 && styles.weekDayDotActive
+                ]} />
+              </View>
+            ))}
           </View>
         </View>
-
-        {/* Stats Grid */}
-<View style={styles.statsGrid}>
-  {/* Remaining Ayahs */}
-  <View style={[
-  styles.statCard, 
-  styles.statCardBlue,
-  settings.darkMode && { backgroundColor: themedColors.cardBackground }
-]}>
-    <View style={[styles.statIconContainer, styles.statIconBlue]}>
-      <Icon 
-        name={AppIcons.trending.name} 
-        type={AppIcons.trending.type} 
-        size={24} 
-        color={Theme.colors.info} 
-      />
-    </View>
-    <Text style={[styles.statValue, styles.statValueBlue]}>
-      {displayStats.remaining.toLocaleString()}
-    </Text>
-    <Text style={styles.statTitle}>Remaining</Text>
-    <Text style={styles.statSubtitle}>Ayahs left</Text>
-  </View>
-
-  {/* Daily Target */}
-  <View style={[
-  styles.statCard, 
-  styles.statCardGold,
-  settings.darkMode && { backgroundColor: themedColors.cardBackground }
-]}>
-    <View style={[styles.statIconContainer, styles.statIconGold]}>
-      <Icon 
-        name={AppIcons.calendar.name} 
-        type={AppIcons.calendar.type} 
-        size={24} 
-        color={Theme.colors.secondary} 
-      />
-    </View>
-    <Text style={[styles.statValue, styles.statValueGold]}>
-      {displayStats.daily}
-    </Text>
-    <Text style={styles.statTitle}>Daily Target</Text>
-    <Text style={styles.statSubtitle}>Ayahs/day</Text>
-  </View>
-
-  {/* Days to Hafidh */}
-  <View style={[
-  styles.statCard, 
-  styles.statCardOrange,
-  settings.darkMode && { backgroundColor: themedColors.cardBackground }
-]}>
-    <View style={[styles.statIconContainer, styles.statIconOrange]}>
-      <Icon 
-        name={AppIcons.trophy.name} 
-        type={AppIcons.trophy.type} 
-        size={24} 
-        color={Theme.colors.warning} 
-      />
-    </View>
-    <Text style={[styles.statValue, styles.statValueOrange]}>
-      {daysLeftTillHafidh}
-    </Text>
-    <Text style={styles.statTitle}>Days to Hafidh</Text>
-    <Text style={styles.statSubtitle}>At current pace</Text>
-  </View>
-
-  {/* Expected Date */}
-  <View style={[
-  styles.statCard, 
-  styles.statCardGreen,
-  settings.darkMode && { backgroundColor: themedColors.cardBackground }
-]}>
-    <View style={[styles.statIconContainer, styles.statIconGreen]}>
-      <Icon 
-        name={AppIcons.star.name} 
-        type={AppIcons.star.type} 
-        size={24} 
-        color={Theme.colors.success} 
-      />
-    </View>
-    <Text style={[styles.statValue, styles.statValueGreen]}>
-      {hafidhhETA.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-    </Text>
-    <Text style={styles.statTitle}>Expected Date</Text>
-    <Text style={styles.statSubtitle}>{hafidhhETA.getFullYear()}</Text>
-  </View>
-</View>
-
-        {/* Analytics Card */}
-<TouchableOpacity 
-  style={[
-    styles.analyticsCard,
-    settings.darkMode && { backgroundColor: themedColors.cardBackground }
-  ]}
-  onPress={() => navigation.navigate('Analytics')}
-  activeOpacity={0.85}
->
-  <View style={styles.cardContent}>
-    <View style={styles.cardIconContainer}>
-      <Icon 
-        name={AppIcons.stats.name} 
-        type={AppIcons.stats.type} 
-        size={28} 
-        color={Theme.colors.info} 
-      />
-    </View>
-    <View style={styles.cardTextContent}>
-      <Text style={styles.cardTitle}>Analytics</Text>
-      <Text style={styles.cardSubtitle}>View detailed progress insights</Text>
-    </View>
-    <Icon 
-      name="chevron-forward" 
-      type="Ionicons" 
-      size={20} 
-      color={Theme.colors.secondary} 
-    />
-  </View>
-</TouchableOpacity>
-
-        {/* Achievements Card */}
-{totalAchievements > 0 && (
-  <TouchableOpacity 
-  style={[
-    styles.achievementCard,
-    settings.darkMode && { backgroundColor: themedColors.cardBackground }
-  ]}
-  onPress={() => navigation.navigate('Achievements')}
-  activeOpacity={0.85}
->
-    <View style={styles.cardContent}>
-      <View style={styles.cardIconContainer}>
-        <Icon 
-          name={AppIcons.medal.name} 
-          type={AppIcons.medal.type} 
-          size={28} 
-          color={Theme.colors.warning} 
-        />
       </View>
-      <View style={styles.cardTextContent}>
-        <Text style={styles.cardTitle}>Achievements</Text>
-        <Text style={styles.cardSubtitle}>{totalAchievements} earned</Text>
+
+      {/* Progress Overview Card with Ring */}
+      <View style={styles.progressOverviewSection}>
+        <Text style={styles.sectionTitle}>Progress Overview</Text>
+        <View style={styles.progressOverviewCard}>
+          <View style={styles.progressRingContainer}>
+            <AnimatedProgressRing 
+              percentage={displayStats.percentComplete || 0} 
+              size={140} 
+            />
+          </View>
+          
+          <View style={styles.progressStatsGrid}>
+            <View style={styles.progressStatItem}>
+              <Text style={styles.progressStatValue}>
+                {displayStats.memorized.toLocaleString()}
+              </Text>
+              <Text style={styles.progressStatLabel}>Memorized</Text>
+            </View>
+            <View style={styles.progressStatDivider} />
+            <View style={styles.progressStatItem}>
+              <Text style={styles.progressStatValue}>
+                {displayStats.remaining.toLocaleString()}
+              </Text>
+              <Text style={styles.progressStatLabel}>Remaining</Text>
+            </View>
+            <View style={styles.progressStatDivider} />
+            <View style={styles.progressStatItem}>
+              <Text style={styles.progressStatValue}>
+                {daysLeftTillHafidh}
+              </Text>
+              <Text style={styles.progressStatLabel}>Days Left</Text>
+            </View>
+          </View>
+
+          <View style={styles.milestoneSection}>
+            <Text style={styles.milestoneLabel}>Expected Completion</Text>
+            <Text style={styles.milestoneDate}>
+              {hafidhhETA.toLocaleDateString('en-US', { 
+                month: 'long', 
+                day: 'numeric', 
+                year: 'numeric' 
+              })}
+            </Text>
+          </View>
+        </View>
       </View>
-      <Icon 
-        name="chevron-forward" 
-        type="Ionicons" 
-        size={20} 
-        color={Theme.colors.secondary} 
+
+      {/* Analytics Card */}
+      <TouchableOpacity 
+        style={styles.actionCard}
+        onPress={() => navigation.navigate('Analytics')}
+      >
+        <View style={styles.actionCardContent}>
+          <View style={styles.actionCardLeft}>
+            <View style={styles.actionCardIcon}>
+              <Icon 
+                name="stats-chart" 
+                type="Ionicons" 
+                size={24} 
+                color={Theme.colors.info} 
+              />
+            </View>
+            <View>
+              <Text style={styles.actionCardTitle}>Analytics</Text>
+              <Text style={styles.actionCardSubtitle}>View detailed insights</Text>
+            </View>
+          </View>
+          <Icon 
+            name="chevron-forward" 
+            type="Ionicons" 
+            size={20} 
+            color={Theme.colors.textMuted} 
+          />
+        </View>
+      </TouchableOpacity>
+
+      {/* Achievements Card */}
+      {totalAchievements > 0 && (
+        <TouchableOpacity 
+          style={styles.actionCard}
+          onPress={() => navigation.navigate('Achievements')}
+        >
+          <View style={styles.actionCardContent}>
+            <View style={styles.actionCardLeft}>
+              <View style={styles.actionCardIcon}>
+                <Icon 
+                  name="trophy" 
+                  type="Ionicons" 
+                  size={24} 
+                  color={Theme.colors.warning} 
+                />
+              </View>
+              <View>
+                <Text style={styles.actionCardTitle}>Achievements</Text>
+                <Text style={styles.actionCardSubtitle}>
+                  {totalAchievements} earned
+                </Text>
+              </View>
+            </View>
+            <Icon 
+              name="chevron-forward" 
+              type="Ionicons" 
+              size={20} 
+              color={Theme.colors.textMuted} 
+            />
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {/* Achievement Modal */}
+      <AchievementModal 
+        visible={achievementModal.visible}
+        achievements={achievementModal.achievements}
+        onClose={handleCloseAchievements}
       />
-    </View>
-  </TouchableOpacity>
-)}
-
-        {/* Achievement Modal */}
-        <AchievementModal 
-          visible={achievementModal.visible}
-          achievements={achievementModal.achievements}
-          onClose={handleCloseAchievements}
-        />
-
-      </ScrollView>
-    </LinearGradient>
-  );
+    </ScrollView>
+  </LinearGradient>
+);
 }
 
 const styles = StyleSheet.create({
   container: {
-  flex: 1,
-  },
-  safeArea: {
     flex: 1,
-    paddingBottom: 20, 
   },
   scrollContent: {
-  paddingTop: 50,
-  paddingHorizontal: 20,
-  paddingBottom: 100,
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 120,
   },
+  
+  // Header
   header: {
-  alignItems: 'center',
-  marginBottom: 36,
-  paddingHorizontal: 4,
+    marginBottom: 24,
   },
   headerContent: {
-  alignItems: 'center',
-  marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   greetingRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginBottom: 8,
+    flexDirection: 'column',
   },
   greeting: {
-  fontSize: 16,
-  color: 'rgba(255, 255, 255, 0.85)',
-  marginRight: Theme.spacing.xs,
-  fontWeight: '400',
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '400',
   },
   userName: {
-  fontSize: 16,
-  color: Theme.colors.textOnDark,
-  fontWeight: Theme.typography.fontWeight.bold,
+    fontSize: 24,
+    color: Theme.colors.textOnDark,
+    fontWeight: Theme.typography.fontWeight.bold,
+    marginTop: 2,
   },
-  currentDate: {
-  fontSize: 13,
-  color: 'rgba(255, 255, 255, 0.75)',
-  textAlign: 'center',
-  backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  paddingHorizontal: 16,
-  paddingVertical: 6,
-  borderRadius: Theme.borderRadius.full,
-  overflow: 'hidden',
-  marginTop: 4,
-  },
-  title: {
-  fontSize: 36,
-  fontWeight: Theme.typography.fontWeight.bold,
-  color: Theme.colors.textOnDark,
-  textAlign: 'center',
-  letterSpacing: 0.5,
-  marginTop: 12,
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
   },
   streakNumber: {
-    fontSize: Theme.typography.fontSize['3xl'],
-    fontWeight: Theme.typography.fontWeight.bold,
-    color: Theme.colors.primary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: Theme.colors.textOnDark,
   },
   streakLabel: {
-    fontSize: Theme.typography.fontSize.sm,
-    color: Theme.colors.textSecondary,
-    fontWeight: Theme.typography.fontWeight.medium,
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
   },
-  progressSection: {
-  alignItems: 'center',
-  marginBottom: 36,
-  marginTop: 8,
+
+  // Hero Section
+  heroSection: {
+    marginBottom: 24,
   },
-  cardIconContainer: {
-  borderRadius: 12,
-  padding: 10,
-  marginRight: 16,
+  heroCard: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    ...Theme.shadows.xl,
+    marginBottom: 12,
   },
-  progressStats: {
-  fontSize: 17,
-  color: Theme.colors.textOnDark,
-  fontWeight: Theme.typography.fontWeight.semibold,
-  marginTop: 16,
-  letterSpacing: 0.3,
+  heroGradient: {
+    padding: 32,
   },
-  memorizeButtonContainer: {
-  marginBottom: 36,
-  marginTop: 4,
-  shadowColor: '#d4af37',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.3,
-  shadowRadius: 8,
-  elevation: 8,
+  heroContent: {
+    alignItems: 'flex-start',
   },
-  buttonIcon: {
-  marginRight: 12,
+  heroLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.9)',
+    letterSpacing: 1.5,
+    marginBottom: 12,
   },
-  memorizeButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  borderRadius: 30,
-  paddingVertical: 20,
-  paddingHorizontal: 32,
+  heroTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: 'white',
+    marginBottom: 8,
+    letterSpacing: -0.5,
   },
-  memorizeButtonText: {
-  color: 'white',
-  fontSize: 18,
-  fontWeight: 'bold',
-  letterSpacing: 0.5,
+  heroSubtitle: {
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.95)',
+    marginBottom: 24,
+    fontWeight: '500',
   },
-  todaySection: {
-  marginBottom: 36,
+  heroButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    gap: 8,
   },
-  sectionTitle: {
-  fontSize: 22,
-  fontWeight: Theme.typography.fontWeight.bold,
-  color: Theme.colors.textOnDark,
-  marginBottom: 16,
-  letterSpacing: 0.3,
+  heroButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: 'white',
   },
-  todayCard: {
-  backgroundColor: 'rgba(255, 255, 255, 0.98)',
-  borderRadius: 20,
-  padding: 24,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.15,
-  shadowRadius: 8,
-  elevation: 6,
-  borderLeftWidth: 4,
-  borderLeftColor: Theme.colors.success,
+  browseButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 6,
   },
-  todayContent: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 20,
+  browseButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Theme.colors.primary,
   },
-  todayStats: {
-  alignItems: 'center',
-  minWidth: 100,
+
+  // Today's Progress Bar
+  todayProgressSection: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 24,
+    ...Theme.shadows.sm,
   },
-  todayStatsHeader: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginBottom: 4,
+  todayProgressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  todayNumber: {
-  fontSize: 40,
-  fontWeight: Theme.typography.fontWeight.bold,
-  color: Theme.colors.primary,
-  marginLeft: Theme.spacing.sm,
-  letterSpacing: -0.5,
+  todayProgressLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Theme.colors.textPrimary,
   },
-  todayLabel: {
-  fontSize: 13,
-  color: Theme.colors.textSecondary,
-  textAlign: 'center',
-  fontWeight: Theme.typography.fontWeight.medium,
-  marginTop: 2,
-  },
-  todayProgressWrapper: {
-  flex: 1,
+  todayProgressNumbers: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Theme.colors.success,
   },
   todayProgressBarContainer: {
-  height: 8,
-  backgroundColor: Theme.colors.gray200,
-  borderRadius: Theme.borderRadius.sm,
-  overflow: 'hidden',
-  marginBottom: 8,
+    height: 8,
+    backgroundColor: Theme.colors.gray200,
+    borderRadius: 4,
+    overflow: 'hidden',
   },
   todayProgressBarFill: {
     height: '100%',
     backgroundColor: Theme.colors.success,
-    borderRadius: Theme.borderRadius.sm,
+    borderRadius: 4,
   },
-  todayGoal: {
-  fontSize: 13,
-  color: Theme.colors.textSecondary,
-  textAlign: 'right',
-  fontWeight: Theme.typography.fontWeight.semibold,
+
+  // Today's Plan
+  todayPlanSection: {
+    marginBottom: 24,
   },
-  statsGrid: {
-  flexDirection: 'row',
-  flexWrap: 'wrap',
-  justifyContent: 'space-between',
-  marginBottom: 36,
-  gap: 12,
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Theme.colors.textOnDark,
+    marginBottom: 16,
+    letterSpacing: -0.3,
   },
-  statCard: {
-  width: (Theme.layout.screenWidth - 20 * 2 - 12) / 2,
-  backgroundColor: 'rgba(255, 255, 255, 0.98)',
-  borderRadius: 20,
-  padding: 20,
-  alignItems: 'center',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.15,
-  shadowRadius: 8,
-  elevation: 6,
+  planCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 12,
+    ...Theme.shadows.sm,
   },
-  statCardBlue: {
-  borderTopWidth: 3,
-  borderTopColor: '#3498db',
+  planCardNew: {
+    borderLeftWidth: 4,
+    borderLeftColor: Theme.colors.success,
   },
-  statCardGold: {
-  borderTopWidth: 3,
-  borderTopColor: '#d4af37',
+  planCardRevision: {
+    borderLeftWidth: 4,
+    borderLeftColor: Theme.colors.primary,
   },
-  statCardOrange: {
-  borderTopWidth: 3,
-  borderTopColor: '#ffc107',
+  planCardCompleted: {
+    backgroundColor: Theme.colors.successLight,
   },
-  statCardGreen: {
-  borderTopWidth: 3,
-  borderTopColor: '#009c4a',
+  planCardInactive: {
+    opacity: 0.6,
   },
-  statIconContainer: {
-  borderRadius: 16,
-  padding: 14,
-  marginBottom: 12,
+  planCardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  statIconBlue: {
-  backgroundColor: 'rgba(52, 152, 219, 0.1)',
+  planCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
-  statIconGold: {
-  backgroundColor: 'rgba(212, 175, 55, 0.1)',
+  planIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
-  statIconOrange: {
-  backgroundColor: 'rgba(255, 193, 7, 0.1)',
+  planIconNew: {
+    backgroundColor: 'rgba(107, 155, 124, 0.15)',
   },
-  statIconGreen: {
-  backgroundColor: 'rgba(0, 156, 74, 0.1)',
+  planIconRevision: {
+    backgroundColor: 'rgba(34, 87, 93, 0.15)',
   },
-  statValue: {
-  fontSize: 32,
-  fontWeight: '800',
-  marginBottom: Theme.spacing.xs,
-  letterSpacing: -0.5,
+  planCardText: {
+    flex: 1,
   },
-  statValueBlue: {
-  color: '#3498db',
+  planCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Theme.colors.textPrimary,
+    marginBottom: 4,
   },
-  statValueGold: {
-  color: '#d4af37',
-  },
-  statValueOrange: {
-  color: '#ffc107',
-  },
-  statValueGreen: {
-  color: '#009c4a',
-  },
-  statTitle: {
-  fontSize: 13,
-  color: Theme.colors.textSecondary,
-  textAlign: 'center',
-  fontWeight: Theme.typography.fontWeight.bold,
-  marginBottom: 4,
-  letterSpacing: 0.3,
-  },
-  statSubtitle: {
-  fontSize: 11,
-  color: Theme.colors.textMuted,
-  textAlign: 'center',
-  fontWeight: '500',
-  },
-  statValue: {
-    fontSize: Theme.typography.fontSize['2xl'],
-    fontWeight: Theme.typography.fontWeight.bold,
-    color: Theme.colors.primary,
-    marginBottom: Theme.spacing.xs,
-  },
-  statTitle: {
-    fontSize: Theme.typography.fontSize.sm,
+  planCardSubtitle: {
+    fontSize: 13,
     color: Theme.colors.textSecondary,
-    textAlign: 'center',
-    fontWeight: Theme.typography.fontWeight.semibold,
+    lineHeight: 18,
   },
-  statSubtitle: {
-    fontSize: Theme.typography.fontSize.xs,
-    color: Theme.colors.textMuted,
-    textAlign: 'center',
-    marginTop: Theme.spacing.xs,
+  planCardRight: {
+    alignItems: 'flex-end',
   },
-  analyticsCard: {
-  backgroundColor: 'rgba(255, 255, 255, 0.98)',
-  borderRadius: 20,
-  padding: 22,
-  marginBottom: 16,
-  shadowColor: '#3498db',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.2,
-  shadowRadius: 8,
-  elevation: 6,
-  borderLeftWidth: 4,
-  borderLeftColor: Theme.colors.info,
+  planCardProgress: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Theme.colors.textPrimary,
   },
-  achievementCard: {
-  backgroundColor: 'rgba(255, 255, 255, 0.98)',
-  borderRadius: 20,
-  padding: 22,
-  marginBottom: 16,
-  shadowColor: '#ffc107',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.2,
-  shadowRadius: 8,
-  elevation: 6,
-  borderLeftWidth: 4,
-  borderLeftColor: Theme.colors.warning,
+
+  // This Week Section
+  weekSection: {
+    marginBottom: 24,
   },
-  cardContent: {
-  flexDirection: 'row',
-  alignItems: 'center',
+  weekCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 20,
+    ...Theme.shadows.sm,
   },
-  cardTextContent: {
-  flex: 1,
-  marginRight: 8,
+  weekDays: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  cardTitle: {
-  fontSize: 18,
-  fontWeight: Theme.typography.fontWeight.bold,
-  color: Theme.colors.primary,
-  marginBottom: 4,
-  letterSpacing: 0.2,
+  weekDayItem: {
+    alignItems: 'center',
+    gap: 8,
   },
-  cardSubtitle: {
-  fontSize: 14,
-  color: Theme.colors.textSecondary,
-  fontWeight: '500',
+  weekDayLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Theme.colors.textSecondary,
   },
-  modernStreakCard: {
-  backgroundColor: 'rgba(255, 255, 255, 0.98)',
-  borderRadius: 20,
-  paddingVertical: 18,
-  paddingHorizontal: 24,
-  marginBottom: 32,
-  alignSelf: 'center',
-  minWidth: 180,
-  maxWidth: 240,
-  flexDirection: 'row',
-  alignItems: 'center',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.15,
-  shadowRadius: 8,
-  elevation: 6,
-  borderLeftWidth: 4,
-  borderLeftColor: Theme.colors.primary,
+  weekDayDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Theme.colors.gray300,
   },
-  streakIconContainer: {
-  backgroundColor: 'rgba(5, 40, 21, 0.1)',
-  borderRadius: 12,
-  padding: 12,
-  marginRight: 16,
+  weekDayDotActive: {
+    backgroundColor: Theme.colors.success,
   },
-  streakInfo: {
-  flex: 1,
-  alignItems: 'flex-start',
+
+  // Progress Overview Section with Ring
+  progressOverviewSection: {
+    marginBottom: 24,
   },
-  streakNumber: {
-  fontSize: 32,
-  fontWeight: 'bold',
-  color: Theme.colors.primary,
-  lineHeight: 36,
-  letterSpacing: -0.5,
+  progressOverviewCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 24,
+    padding: 24,
+    ...Theme.shadows.md,
   },
-  streakLabel: {
-  fontSize: 12,
-  color: Theme.colors.textSecondary,
-  fontWeight: '600',
-  marginTop: 2,
-  letterSpacing: 0.3,
+  progressRingContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
   },
-  newUserHint: {
-  fontSize: 14,
-  color: 'rgba(255, 255, 255, 0.8)',
-  fontWeight: 'normal',
-  fontStyle: 'italic',
+  progressStatsGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    marginBottom: 24,
+  },
+  progressStatItem: {
+    alignItems: 'center',
+  },
+  progressStatValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: Theme.colors.primary,
+    marginBottom: 4,
+  },
+  progressStatLabel: {
+    fontSize: 12,
+    color: Theme.colors.textSecondary,
+    fontWeight: '600',
+  },
+  progressStatDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: Theme.colors.gray200,
+  },
+  milestoneSection: {
+    backgroundColor: Theme.colors.successLight,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+  },
+  milestoneLabel: {
+    fontSize: 13,
+    color: Theme.colors.textSecondary,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  milestoneDate: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Theme.colors.primary,
+  },
+
+  // Action Cards
+  actionCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 12,
+    ...Theme.shadows.sm,
+  },
+  actionCardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  actionCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  actionCardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: Theme.colors.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Theme.colors.textPrimary,
+    marginBottom: 2,
+  },
+  actionCardSubtitle: {
+    fontSize: 13,
+    color: Theme.colors.textSecondary,
   },
 });
