@@ -1035,7 +1035,7 @@ const TajweedHelpModal = () => (
   </View>
 )}
         
-        {/*Repetition Counter */}
+        {/*Counter */}
         
         <View style={styles.counterContainer}>
   {currentCount > 0 && (
@@ -1064,7 +1064,7 @@ const TajweedHelpModal = () => (
     accessibilityLabel={`Repetition counter: ${currentCount} times`}
     accessibilityHint="Tap to increment repetition count"
   >
-    <Text style={styles.counterLabel}>Repetitions</Text>
+    <Text style={styles.counterLabel}>Counter</Text>
     <Text style={styles.counterNumber}>{currentCount}</Text>
   </TouchableOpacity>
 </View>
