@@ -30,6 +30,7 @@ export default function DashboardScreen({ navigation }) {
   const [userName, setUserName] = useState('Student');
   const [nextSegment, setNextSegment] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [confettiShownToday, setConfettiShownToday] = useState(false);
   const confettiRef = useRef(null);
 
   useEffect(() => {
@@ -79,13 +80,41 @@ export default function DashboardScreen({ navigation }) {
     console.log('📍 Last memorized position:', updatedState.lastMemorizedPosition);
     setNextSegment(segment);
     
-    // Check for daily goal completion
+    // FIXED: Check for BOTH daily goal AND revision completion
     const today = QuranUtils.localISO();
     const todayProgress = updatedState?.progress?.[today] || 0;
     const dailyGoal = updatedState?.settings?.dailyGoal || 10;
     
-    if (todayProgress >= dailyGoal && !showConfetti) {
+    // Check if revision is complete
+    const todayTikrarProgress = QuranUtils.getTikrarProgress(updatedState);
+    const revisionTarget = todaysRevision?.revision?.target || 0;
+    const revisionCompleted = todayTikrarProgress.revision >= revisionTarget;
+    
+    // Check if confetti was already shown today
+    const lastConfettiDate = updatedState?.lastConfettiDate;
+    const confettiAlreadyShown = lastConfettiDate === today;
+    
+    console.log('🎊 Confetti check:', {
+      todayProgress,
+      dailyGoal,
+      newMemCompleted: todayProgress >= dailyGoal,
+      revisionTarget,
+      revisionCompleted,
+      confettiAlreadyShown,
+      lastConfettiDate
+    });
+    
+    // FIXED: Only show confetti if BOTH tasks complete AND not shown today yet
+    const bothTasksComplete = todayProgress >= dailyGoal && revisionCompleted;
+    
+    if (bothTasksComplete && !confettiAlreadyShown && !showConfetti) {
+      console.log('🎊 TRIGGERING CONFETTI - Both tasks complete!');
       setShowConfetti(true);
+      
+      // Mark confetti as shown today
+      updatedState.lastConfettiDate = today;
+      await StorageService.saveState(updatedState);
+      
       setTimeout(() => {
         confettiRef.current?.start();
       }, 500);
@@ -423,51 +452,88 @@ return (
       </View>
 
       {/* Progress Overview Card with Ring */}
-      <View style={styles.progressOverviewSection}>
-        <Text style={styles.sectionTitle}>Progress Overview</Text>
-        <View style={styles.progressOverviewCard}>
-          <View style={styles.progressRingContainer}>
-            <AnimatedProgressRing 
-              percentage={displayStats.percentComplete || 0} 
-              size={140} 
-            />
-          </View>
-          
-          <View style={styles.progressStatsGrid}>
-            <View style={styles.progressStatItem}>
-              <Text style={styles.progressStatValue}>
-                {displayStats.memorized.toLocaleString()}
-              </Text>
-              <Text style={styles.progressStatLabel}>Memorized</Text>
-            </View>
-            <View style={styles.progressStatDivider} />
-            <View style={styles.progressStatItem}>
-              <Text style={styles.progressStatValue}>
-                {displayStats.remaining.toLocaleString()}
-              </Text>
-              <Text style={styles.progressStatLabel}>Remaining</Text>
-            </View>
-            <View style={styles.progressStatDivider} />
-            <View style={styles.progressStatItem}>
-              <Text style={styles.progressStatValue}>
-                {daysLeftTillHafidh}
-              </Text>
-              <Text style={styles.progressStatLabel}>Days Left</Text>
-            </View>
-          </View>
-
-          <View style={styles.milestoneSection}>
-            <Text style={styles.milestoneLabel}>Expected Completion</Text>
-            <Text style={styles.milestoneDate}>
-              {hafidhhETA.toLocaleDateString('en-US', { 
-                month: 'long', 
-                day: 'numeric', 
-                year: 'numeric' 
-              })}
-            </Text>
-          </View>
-        </View>
+<View style={styles.progressOverviewSection}>
+  <Text style={styles.sectionTitle}>Progress Overview</Text>
+  <View style={[
+    styles.progressOverviewCard,
+    settings.darkMode && { backgroundColor: themedColors.cardBackground }
+  ]}>
+    <View style={styles.progressRingContainer}>
+      <AnimatedProgressRing 
+  percentage={displayStats.percentComplete || 0} 
+  size={140}
+  darkMode={settings.darkMode}
+/>
+    </View>
+    
+    <View style={styles.progressStatsGrid}>
+      <View style={styles.progressStatItem}>
+        <Text style={[
+          styles.progressStatValue,
+          settings.darkMode && { color: themedColors.textPrimary }
+        ]}>
+          {displayStats.memorized.toLocaleString()}
+        </Text>
+        <Text style={[
+          styles.progressStatLabel,
+          settings.darkMode && { color: themedColors.textSecondary }
+        ]}>Memorized</Text>
       </View>
+      <View style={[
+        styles.progressStatDivider,
+        settings.darkMode && { backgroundColor: themedColors.border }
+      ]} />
+      <View style={styles.progressStatItem}>
+        <Text style={[
+          styles.progressStatValue,
+          settings.darkMode && { color: themedColors.textPrimary }
+        ]}>
+          {displayStats.remaining.toLocaleString()}
+        </Text>
+        <Text style={[
+          styles.progressStatLabel,
+          settings.darkMode && { color: themedColors.textSecondary }
+        ]}>Remaining</Text>
+      </View>
+      <View style={[
+        styles.progressStatDivider,
+        settings.darkMode && { backgroundColor: themedColors.border }
+      ]} />
+      <View style={styles.progressStatItem}>
+        <Text style={[
+          styles.progressStatValue,
+          settings.darkMode && { color: themedColors.textPrimary }
+        ]}>
+          {daysLeftTillHafidh}
+        </Text>
+        <Text style={[
+          styles.progressStatLabel,
+          settings.darkMode && { color: themedColors.textSecondary }
+        ]}>Days Left</Text>
+      </View>
+    </View>
+
+    <View style={[
+      styles.milestoneSection,
+      settings.darkMode && { backgroundColor: themedColors.surface }
+    ]}>
+      <Text style={[
+        styles.milestoneLabel,
+        settings.darkMode && { color: themedColors.textSecondary }
+      ]}>Expected Completion</Text>
+      <Text style={[
+        styles.milestoneDate,
+        settings.darkMode && { color: themedColors.primary }
+      ]}>
+        {hafidhhETA.toLocaleDateString('en-US', { 
+          month: 'long', 
+          day: 'numeric', 
+          year: 'numeric' 
+        })}
+      </Text>
+    </View>
+  </View>
+</View>
 
       {/* Analytics Card */}
       <TouchableOpacity 
@@ -810,61 +876,61 @@ const styles = StyleSheet.create({
   },
 
   // Progress Overview Section with Ring
-  progressOverviewSection: {
-    marginBottom: 24,
-  },
-  progressOverviewCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 24,
-    padding: 24,
-    ...Theme.shadows.md,
-  },
-  progressRingContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  progressStatsGrid: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    marginBottom: 24,
-  },
-  progressStatItem: {
-    alignItems: 'center',
-  },
-  progressStatValue: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Theme.colors.primary,
-    marginBottom: 4,
-  },
-  progressStatLabel: {
-    fontSize: 12,
-    color: Theme.colors.textSecondary,
-    fontWeight: '600',
-  },
-  progressStatDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: Theme.colors.gray200,
-  },
-  milestoneSection: {
-    backgroundColor: Theme.colors.successLight,
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-  },
-  milestoneLabel: {
-    fontSize: 13,
-    color: Theme.colors.textSecondary,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  milestoneDate: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Theme.colors.primary,
-  },
+progressOverviewSection: {
+  marginBottom: 24,
+},
+progressOverviewCard: {
+  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  borderRadius: 24,
+  padding: 24,
+  ...Theme.shadows.md,
+},
+progressRingContainer: {
+  alignItems: 'center',
+  marginBottom: 24,
+},
+progressStatsGrid: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-around',
+  marginBottom: 24,
+},
+progressStatItem: {
+  alignItems: 'center',
+},
+progressStatValue: {
+  fontSize: 24,
+  fontWeight: '800',
+  color: Theme.colors.primary,
+  marginBottom: 4,
+},
+progressStatLabel: {
+  fontSize: 12,
+  color: Theme.colors.textSecondary,
+  fontWeight: '600',
+},
+progressStatDivider: {
+  width: 1,
+  height: 40,
+  backgroundColor: Theme.colors.gray200,
+},
+milestoneSection: {
+  backgroundColor: Theme.colors.successLight,
+  borderRadius: 16,
+  padding: 16,
+  alignItems: 'center',
+},
+milestoneLabel: {
+  fontSize: 13,
+  color: Theme.colors.textSecondary,
+  fontWeight: '600',
+  marginBottom: 4,
+},
+milestoneDate: {
+  fontSize: 18,
+  fontWeight: '700',
+  color: Theme.colors.primary,
+},
 
   // Action Cards
   actionCard: {

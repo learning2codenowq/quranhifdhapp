@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Theme } from '../styles/theme';
 
-export default function AnimatedProgressRing({ percentage, size = 160 }) {
+export default function AnimatedProgressRing({ percentage, size = 160, darkMode = false }) {
   const safePercentage = Number(percentage) || 0;
   
   // Circle calculations
@@ -21,7 +21,7 @@ export default function AnimatedProgressRing({ percentage, size = 160 }) {
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="rgba(255, 255, 255, 0.2)"
+          stroke={darkMode ? "rgba(255, 255, 255, 0.2)" : "rgba(34, 87, 93, 0.15)"}
           strokeWidth={strokeWidth}
           fill="transparent"
         />
@@ -31,7 +31,7 @@ export default function AnimatedProgressRing({ percentage, size = 160 }) {
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#d4af37"
+          stroke={darkMode ? "#55BAC6" : "#d4af37"}
           strokeWidth={strokeWidth}
           fill="transparent"
           strokeDasharray={circumference}
@@ -42,10 +42,18 @@ export default function AnimatedProgressRing({ percentage, size = 160 }) {
       </Svg>
       
       <View style={styles.textContainer}>
-        <Text style={styles.percentageText}>
+        <Text style={[
+          styles.percentageText,
+          darkMode && { color: '#E8ECEC' }
+        ]}>
           {safePercentage.toFixed(1)}%
         </Text>
-        <Text style={styles.labelText}>Complete</Text>
+        <Text style={[
+          styles.labelText,
+          darkMode && { color: 'rgba(255, 255, 255, 0.8)' }
+        ]}>
+          Complete
+        </Text>
       </View>
     </View>
   );
@@ -68,12 +76,12 @@ const styles = StyleSheet.create({
   percentageText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: 'white',
+    color: Theme.colors.primary,
     marginBottom: 4,
   },
   labelText: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: Theme.colors.textSecondary,
     fontWeight: '500',
   },
 });
