@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Theme } from '../styles/theme';
 
 export default function CustomTimePicker({ 
@@ -10,44 +11,35 @@ export default function CustomTimePicker({
   title, 
   subtitle 
 }) {
-  const [hour, setHour] = useState(initialTime.hour);
-  const [minute, setMinute] = useState(initialTime.minute);
+  const [selectedTime, setSelectedTime] = useState(
+    new Date(2024, 0, 1, initialTime.hour, initialTime.minute)
+  );
 
-  const adjustHour = (increment) => {
-    if (increment) {
-      setHour((prev) => (prev + 1) % 24);
-    } else {
-      setHour((prev) => (prev - 1 + 24) % 24);
+  const handleTimeChange = (event, time) => {
+    if (time) {
+      setSelectedTime(time);
     }
-  };
-
-  const adjustMinute = (increment) => {
-    if (increment) {
-      setMinute((prev) => (prev + 15) % 60);
-    } else {
-      setMinute((prev) => (prev - 15 + 60) % 60);
-    }
-  };
-
-  const formatTime = () => {
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-    return `${displayHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} ${period}`;
   };
 
   const handleSave = () => {
-    onSave({ hour, minute });
+    const timeObj = {
+      hour: selectedTime.getHours(),
+      minute: selectedTime.getMinutes()
+    };
+    onSave(timeObj);
     onClose();
   };
 
-  const handleCancel = () => {
-    setHour(initialTime.hour);
-    setMinute(initialTime.minute);
-    onClose();
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
   };
 
   return (
-    <Modal visible={visible} transparent={true} animationType="slide">
+    <Modal visible={visible} transparent={true} animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.modal}>
           <View style={styles.header}>
@@ -55,62 +47,25 @@ export default function CustomTimePicker({
             {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
           </View>
           
-          <View style={styles.timeDisplay}>
-            <Text style={styles.timeText}>{formatTime()}</Text>
+          <View style={styles.timeDisplayContainer}>
+            <Text style={styles.timeDisplay}>{formatTime(selectedTime)}</Text>
           </View>
 
-          <View style={styles.controls}>
-            <View style={styles.controlGroup}>
-              <Text style={styles.controlLabel}>Hour</Text>
-              <View style={styles.controlButtons}>
-                <TouchableOpacity 
-                  style={styles.controlButton}
-                  onPress={() => adjustHour(false)}
-                >
-                  <Text style={styles.controlButtonText}>−</Text>
-                </TouchableOpacity>
-                
-                <Text style={styles.controlValue}>
-                  {hour.toString().padStart(2, '0')}
-                </Text>
-                
-                <TouchableOpacity 
-                  style={styles.controlButton}
-                  onPress={() => adjustHour(true)}
-                >
-                  <Text style={styles.controlButtonText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.controlGroup}>
-              <Text style={styles.controlLabel}>Minute</Text>
-              <View style={styles.controlButtons}>
-                <TouchableOpacity 
-                  style={styles.controlButton}
-                  onPress={() => adjustMinute(false)}
-                >
-                  <Text style={styles.controlButtonText}>−</Text>
-                </TouchableOpacity>
-                
-                <Text style={styles.controlValue}>
-                  {minute.toString().padStart(2, '0')}
-                </Text>
-                
-                <TouchableOpacity 
-                  style={styles.controlButton}
-                  onPress={() => adjustMinute(true)}
-                >
-                  <Text style={styles.controlButtonText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+          <View style={styles.pickerContainer}>
+            <DateTimePicker
+              value={selectedTime}
+              mode="time"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={handleTimeChange}
+              style={styles.picker}
+              textColor={Theme.colors.primary}
+            />
           </View>
           
           <View style={styles.buttons}>
             <TouchableOpacity 
               style={styles.cancelButton}
-              onPress={handleCancel}
+              onPress={onClose}
             >
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
@@ -138,9 +93,9 @@ const styles = StyleSheet.create({
   modal: {
     backgroundColor: 'white',
     borderRadius: 24,
-    padding: 30,
+    padding: 24,
     width: '100%',
-    maxWidth: 350,
+    maxWidth: 400,
     alignItems: 'center',
     elevation: 10,
     shadowColor: '#000',
@@ -150,7 +105,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 20,
   },
   title: {
     fontSize: 22,
@@ -165,61 +120,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
   },
-  timeDisplay: {
+  timeDisplayContainer: {
     backgroundColor: Theme.colors.gray100,
     borderRadius: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 30,
-    marginBottom: 30,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    marginBottom: 24,
+    minWidth: 200,
   },
-  timeText: {
-    fontSize: 32,
+  timeDisplay: {
+    fontSize: 36,
     fontWeight: 'bold',
     color: Theme.colors.primary,
     textAlign: 'center',
   },
-  controls: {
-    flexDirection: 'row',
-    gap: 40,
-    marginBottom: 30,
-  },
-  controlGroup: {
+  pickerContainer: {
+    width: '100%',
     alignItems: 'center',
+    marginBottom: 24,
   },
-  controlLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
-    fontWeight: '600',
-  },
-  controlButtons: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  controlButton: {
-    backgroundColor: Theme.colors.secondary,
-    borderRadius: 12,
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  controlButtonText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  controlValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Theme.colors.primary,
-    minWidth: 40,
-    textAlign: 'center',
+  picker: {
+    width: '100%',
+    height: 200,
   },
   buttons: {
     flexDirection: 'row',
