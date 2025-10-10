@@ -15,6 +15,7 @@ import { getThemedColors } from '../styles/theme';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
 import ContinueCard from '../components/ContinueCard';
 import ConfettiCannon from 'react-native-confetti-cannon';
+import WeeklyProgress from '../components/WeeklyProgress';
 
 export default function DashboardScreen({ navigation }) {
   const [stats, setStats] = useState(null);
@@ -434,22 +435,7 @@ return (
       )}
 
       {/* This Week Section */}
-      <View style={styles.weekSection}>
-        <Text style={styles.sectionTitle}>This Week</Text>
-        <View style={styles.weekCard}>
-          <View style={styles.weekDays}>
-            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
-              <View key={index} style={styles.weekDayItem}>
-                <Text style={styles.weekDayLabel}>{day}</Text>
-                <View style={[
-                  styles.weekDayDot,
-                  index < 4 && styles.weekDayDotActive
-                ]} />
-              </View>
-            ))}
-          </View>
-        </View>
-      </View>
+<WeeklyProgress state={state} darkMode={settings.darkMode} />
 
       {/* Progress Overview Card with Ring */}
 <View style={styles.progressOverviewSection}>
@@ -841,40 +827,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Theme.colors.textPrimary,
   },
-
-  // This Week Section
-  weekSection: {
-    marginBottom: 24,
-  },
-  weekCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 20,
-    ...Theme.shadows.sm,
-  },
-  weekDays: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  weekDayItem: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  weekDayLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Theme.colors.textSecondary,
-  },
-  weekDayDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Theme.colors.gray300,
-  },
-  weekDayDotActive: {
-    backgroundColor: Theme.colors.success,
-  },
-
   // Progress Overview Section with Ring
 progressOverviewSection: {
   marginBottom: 24,
