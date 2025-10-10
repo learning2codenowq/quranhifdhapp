@@ -164,6 +164,66 @@ colors: {
       elevation: 8,
     },
   },
+  shadows: {
+  sm: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  md: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  lg: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  xl: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  dark: {
+    sm: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.3,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    md: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.4,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    lg: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 8,
+      elevation: 5,
+    },
+    xl: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.6,
+      shadowRadius: 16,
+      elevation: 8,
+    },
+  }
+},
   
   // Layout
   layout: {
@@ -207,7 +267,9 @@ export const getThemedColors = (isDarkMode) => {
       gradients: {
         primary: [Theme.colors.dark.gradient1, Theme.colors.dark.gradient2],
         secondary: [Theme.colors.dark.surface, Theme.colors.dark.cardBackground],
-      }
+      },
+      // ADD SHADOWS FOR DARK MODE
+      shadows: Theme.shadows.dark,
     };
   }
   return {
@@ -221,7 +283,8 @@ export const getThemedColors = (isDarkMode) => {
     textMuted: Theme.colors.textMuted,
     border: Theme.colors.gray200,
     overlay: Theme.colors.overlay,
-    gradients: Theme.gradients
+    gradients: Theme.gradients,
+    shadows: Theme.shadows,
   };
 };
 

@@ -12,6 +12,7 @@ import CustomTimePicker from '../components/CustomTimePicker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getThemedColors } from '../styles/theme';
 import { QuranService } from '../services/QuranService';
+import { Animated, Easing } from 'react-native';
 
 
 export default function SettingsScreen({ navigation }) {
@@ -37,6 +38,7 @@ export default function SettingsScreen({ navigation }) {
   const [fontPreviewModal, setFontPreviewModal] = useState(false);
   const [previewFontSize, setPreviewFontSize] = useState('Medium');
   const [reciters, setReciters] = useState([]);
+  const [darkModeAnim] = useState(new Animated.Value(settings.darkMode ? 1 : 0));
   const [showReciterModal, setShowReciterModal] = useState(false);
   const [selectedReciterId, setSelectedReciterId] = useState(null);
   const [notificationSettings, setNotificationSettings] = useState({
@@ -63,6 +65,14 @@ useEffect(() => {
     loadSettings();
   }
 }, [showReciterModal]);
+const animateDarkModeToggle = (value) => {
+  Animated.timing(darkModeAnim, {
+    toValue: value ? 1 : 0,
+    duration: 300,
+    easing: Easing.bezier(0.4, 0.0, 0.2, 1),
+    useNativeDriver: false,
+  }).start();
+};
 
   const loadSettings = async () => {
   try {
@@ -107,18 +117,24 @@ useEffect(() => {
 };
 
   const updateSetting = async (key, value) => {
-    try {
-      const newSettings = { ...settings, [key]: value };
-      setSettings(newSettings);
-      
-      const state = await StorageService.getState();
-      if (!state.settings) state.settings = {};
-      state.settings[key] = value;
-      await StorageService.saveState(state);
-    } catch (error) {
-      console.error('Error updating setting:', error);
+  try {
+    const newSettings = { ...settings, [key]: value };
+    setSettings(newSettings);
+    
+    // ADD ANIMATION FOR DARK MODE
+    if (key === 'darkMode') {
+      HapticFeedback.light();
+      animateDarkModeToggle(value);
     }
-  };
+    
+    const state = await StorageService.getState();
+    if (!state.settings) state.settings = {};
+    state.settings[key] = value;
+    await StorageService.saveState(state);
+  } catch (error) {
+    console.error('Error updating setting:', error);
+  }
+};
   const updateNotificationSetting = async (key, value) => {
   try {
     const newSettings = { ...notificationSettings, [key]: value };

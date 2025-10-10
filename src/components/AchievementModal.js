@@ -1,27 +1,75 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Animated, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Theme } from '../styles/theme';
+import { HapticFeedback } from '../utils/HapticFeedback';
+
+const { width } = Dimensions.get('window');
 
 export default function AchievementModal({ visible, achievements, onClose }) {
+  const slideAnim = useRef(new Animated.Value(width)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.5)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 50,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      slideAnim.setValue(width);
+      fadeAnim.setValue(0);
+      scaleAnim.setValue(0.5);
+    }
+  }, [visible]);
+
   if (!achievements || achievements.length === 0) return null;
 
-  const AchievementCard = ({ achievement }) => (
-    <LinearGradient colors={Theme.gradients.secondary} style={styles.achievementCard}>
-      <View style={styles.achievementIcon}>
-        <Text style={styles.achievementEmoji}>🏆</Text>
-      </View>
-      <View style={styles.achievementContent}>
-        <Text style={styles.achievementTitle}>{achievement.title}</Text>
-        <Text style={styles.achievementDescription}>{achievement.description}</Text>
-      </View>
-    </LinearGradient>
+  const AchievementCard = ({ achievement, index }) => (
+    <Animated.View style={{
+      transform: [
+        { scale: scaleAnim },
+        { translateX: slideAnim },
+      ],
+      opacity: fadeAnim,
+    }}>
+      <LinearGradient colors={Theme.gradients.secondary} style={styles.achievementCard}>
+        <View style={styles.achievementIcon}>
+          <Text style={styles.achievementEmoji}>🏆</Text>
+        </View>
+        <View style={styles.achievementContent}>
+          <Text style={styles.achievementTitle}>{achievement.title}</Text>
+          <Text style={styles.achievementDescription}>{achievement.description}</Text>
+        </View>
+      </LinearGradient>
+    </Animated.View>
   );
 
   return (
     <Modal visible={visible} animationType="fade" transparent={true}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+      <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
+        <Animated.View style={[
+          styles.modalContent,
+          {
+            transform: [{ scale: scaleAnim }],
+          }
+        ]}>
           <LinearGradient colors={Theme.gradients.primary} style={styles.modalHeader}>
             <Text style={styles.modalTitle}>🎉 Achievement Unlocked!</Text>
             <Text style={styles.modalSubtitle}>
@@ -34,15 +82,21 @@ export default function AchievementModal({ visible, achievements, onClose }) {
 
           <ScrollView style={styles.achievementsList}>
             {achievements.map((achievement, index) => (
-              <AchievementCard key={index} achievement={achievement} />
+              <AchievementCard key={index} achievement={achievement} index={index} />
             ))}
           </ScrollView>
 
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <TouchableOpacity 
+            style={styles.closeButton} 
+            onPress={() => {
+              HapticFeedback.light();
+              onClose();
+            }}
+          >
             <Text style={styles.closeButtonText}>Continue</Text>
           </TouchableOpacity>
-        </View>
-      </View>
+        </Animated.View>
+      </Animated.View>
     </Modal>
   );
 }

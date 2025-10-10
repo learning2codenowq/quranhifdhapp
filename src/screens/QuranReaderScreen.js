@@ -29,6 +29,7 @@ import { parseTajweedText, hasTajweedMarkup } from '../utils/TajweedParser';
 import { Theme } from '../styles/theme'; 
 import { getThemedColors } from '../styles/theme';
 import { Icon, AppIcons } from '../components/Icon';
+import { HapticFeedback } from '../utils/HapticFeedback';
 
 
 export default function QuranReaderScreen({ route, navigation }) {
@@ -480,35 +481,40 @@ const TajweedHelpModal = () => (
 };
 
   const toggleAyahMemorization = async (currentSurahId, ayahNumber, isCurrentlyMemorized) => {
-    try {
-      // Scale animation
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 1.1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
+  try {
+    // Scale animation
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 1.1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-      if (isCurrentlyMemorized) {
-        await QuranUtils.unmarkAyahMemorized(currentSurahId, ayahNumber);
-        Alert.alert('✓ Removed', 'Ayah unmarked from memorization', [{ text: 'OK' }]);
-      } else {
-        await QuranUtils.markAyahMemorized(currentSurahId, ayahNumber, 2);
-        await checkSurahCompletion(currentSurahId);
-      }
-      
-      await loadMemorizedAyahs();
-    } catch (error) {
-      Logger.error('Error toggling memorization:', error);
-      Alert.alert('Error', 'Failed to update memorization status');
+    if (isCurrentlyMemorized) {
+      // ADD HAPTIC for unmark
+      HapticFeedback.light();
+      await QuranUtils.unmarkAyahMemorized(currentSurahId, ayahNumber);
+      Alert.alert('✓ Removed', 'Ayah unmarked from memorization', [{ text: 'OK' }]);
+    } else {
+      // ADD SUCCESS HAPTIC for mark
+      HapticFeedback.success();
+      await QuranUtils.markAyahMemorized(currentSurahId, ayahNumber, 2);
+      await checkSurahCompletion(currentSurahId);
     }
-  };
+    
+    await loadMemorizedAyahs();
+  } catch (error) {
+    Logger.error('Error toggling memorization:', error);
+    HapticFeedback.error();
+    Alert.alert('Error', 'Failed to update memorization status');
+  }
+};
 
   const handleAudioPlay = async (currentSurahId, ayahNumber) => {
     try {

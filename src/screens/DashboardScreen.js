@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StorageService } from '../services/StorageService';
 import { QuranUtils } from '../utils/QuranUtils';
@@ -16,6 +16,7 @@ import { DashboardSkeleton } from '../components/SkeletonLoader';
 import ContinueCard from '../components/ContinueCard';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import WeeklyProgress from '../components/WeeklyProgress';
+import { HapticFeedback } from '../utils/HapticFeedback';
 
 export default function DashboardScreen({ navigation }) {
   const [stats, setStats] = useState(null);
@@ -23,6 +24,7 @@ export default function DashboardScreen({ navigation }) {
   const [settings, setSettings] = useState({ darkMode: false });
   const [refreshing, setRefreshing] = useState(false);
   const [revisionPlan, setRevisionPlan] = useState(null);
+  const [streakBadgeAnim] = useState(new Animated.Value(0));
   const [achievementModal, setAchievementModal] = useState({
     visible: false,
     achievements: []
@@ -35,15 +37,22 @@ export default function DashboardScreen({ navigation }) {
   const confettiRef = useRef(null);
 
   useEffect(() => {
+  loadData();
+  
+  // Animate streak badge
+  Animated.spring(streakBadgeAnim, {
+    toValue: 1,
+    tension: 50,
+    friction: 7,
+    useNativeDriver: true,
+  }).start();
+  
+  const unsubscribe = navigation.addListener('focus', () => {
     loadData();
-    
-    const unsubscribe = navigation.addListener('focus', () => {
-     // Logger.log('Dashboard focused - reloading data');
-      loadData();
-    });
-    
-    return unsubscribe;
-  }, [navigation]);
+  });
+  
+  return unsubscribe;
+}, [navigation]);
 
   const loadData = async () => {
   try {
@@ -166,11 +175,12 @@ export default function DashboardScreen({ navigation }) {
   
   console.log('🎯 Navigating to:', nextSegment);
   
-  // If new user, go to surah list
+  // ADD HAPTIC FEEDBACK
+  HapticFeedback.medium();
+  
   if (nextSegment.isNewUser) {
     navigation.navigate('SurahList');
   } else {
-    // Existing user, go to their last position
     navigation.navigate('QuranReader', { 
       surahId: nextSegment.surahId,
       scrollToAyah: nextSegment.startAyah
@@ -262,16 +272,29 @@ return (
             <Text style={styles.greeting}>As-salamu alaykum,</Text>
             <Text style={styles.userName}>{userName}</Text>
           </View>
-          <View style={styles.streakBadge}>
-            <Icon 
-              name="flame" 
-              type="Ionicons" 
-              size={16} 
-              color={Theme.colors.warning} 
-            />
-            <Text style={styles.streakNumber}>{currentStreak}</Text>
-            <Text style={styles.streakLabel}>day streak</Text>
-          </View>
+          <Animated.View style={[
+  styles.streakBadge,
+  {
+    transform: [
+      { scale: streakBadgeAnim },
+      {
+        rotate: streakBadgeAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['-10deg', '0deg'],
+        }),
+      },
+    ],
+  }
+]}>
+  <Icon 
+    name="book" 
+    type="Ionicons" 
+    size={16} 
+    color={Theme.colors.warning} 
+  />
+  <Text style={styles.streakNumber}>{currentStreak}</Text>
+  <Text style={styles.streakLabel}>day streak</Text>
+</Animated.View>
         </View>
       </View>
 

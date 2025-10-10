@@ -1,31 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Theme, getThemedColors } from '../styles/theme';
 import { QuranUtils } from '../utils/QuranUtils';
 
 export default function WeeklyProgress({ state, darkMode = false }) {
   const [weekData, setWeekData] = useState([]);
   const themedColors = getThemedColors(darkMode);
+  const dotAnims = React.useRef([]).current;
 
   useEffect(() => {
     console.log('📅 WeeklyProgress: Regenerating week data');
     generateWeekData();
   }, [state?.progress, state?.settings?.dailyGoal, darkMode]);
-
-  const getTodayDateString = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const getDateString = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
 
   const generateWeekData = () => {
     const today = new Date();
@@ -33,24 +19,19 @@ export default function WeeklyProgress({ state, darkMode = false }) {
     
     console.log('📅 Today:', today.toDateString());
     console.log('📅 Today string:', todayStr);
-    console.log('📅 Today day of week:', today.getDay()); // 0 = Sunday, 5 = Friday
+    console.log('📅 Today day of week:', today.getDay());
     
-    // Get day of week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
     const todayDayOfWeek = today.getDay();
     
-    // Calculate days since Monday (Monday = 0, Tuesday = 1, ..., Sunday = 6)
     let daysSinceMonday;
     if (todayDayOfWeek === 0) {
-      // Sunday
       daysSinceMonday = 6;
     } else {
-      // Monday to Saturday
       daysSinceMonday = todayDayOfWeek - 1;
     }
     
     console.log('📅 Days since Monday:', daysSinceMonday);
     
-    // Get Monday of this week
     const monday = new Date(today);
     monday.setDate(today.getDate() - daysSinceMonday);
     monday.setHours(0, 0, 0, 0);
@@ -67,7 +48,6 @@ export default function WeeklyProgress({ state, darkMode = false }) {
       const dateStr = getDateString(date);
       const isToday = dateStr === todayStr;
       
-      // Compare dates properly
       const dateOnly = new Date(date);
       dateOnly.setHours(0, 0, 0, 0);
       const todayOnly = new Date(today);
@@ -91,17 +71,36 @@ export default function WeeklyProgress({ state, darkMode = false }) {
       
       console.log(`📅 ${dayLetter} final status:`, status);
       
+      // CREATE ANIMATION FOR EACH DOT
+      if (!dotAnims[index]) {
+        dotAnims[index] = new Animated.Value(0);
+      }
+      
       return {
         day: dayLetter,
         isToday,
         status,
         dateStr,
         progress,
-        dailyGoal
+        dailyGoal,
+        animValue: dotAnims[index],
       };
     });
     
     setWeekData(data);
+    
+    // ANIMATE DOTS IN SEQUENCE
+    const animations = data.map((dayData, index) => 
+      Animated.spring(dayData.animValue, {
+        toValue: 1,
+        delay: index * 50,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      })
+    );
+    
+    Animated.stagger(50, animations).start();
   };
 
   const getDotColor = (status) => {
@@ -146,13 +145,16 @@ export default function WeeklyProgress({ state, darkMode = false }) {
               ]}>
                 {dayData.day}
               </Text>
-              <View style={[
+              <Animated.View style={[
                 styles.weekDayDot,
                 { 
                   backgroundColor: getDotColor(dayData.status),
                   width: getDotSize(dayData.isToday),
                   height: getDotSize(dayData.isToday),
                   borderRadius: getDotSize(dayData.isToday) / 2,
+                  transform: [
+                    { scale: dayData.animValue },
+                  ],
                 },
                 dayData.isToday && {
                   borderWidth: 2,

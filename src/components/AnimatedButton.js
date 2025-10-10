@@ -1,9 +1,8 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, Vibration, View } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View, ActivityIndicator, Animated } from 'react-native';
 import { Theme } from '../styles/theme';
 import { Icon } from './Icon';
-import { TouchableOpacity, Text, StyleSheet, Vibration, View, ActivityIndicator } from 'react-native';
-
+import { HapticFeedback } from '../utils/HapticFeedback';
 
 export default function AnimatedButton({ 
   title, 
@@ -12,18 +11,41 @@ export default function AnimatedButton({
   textStyle, 
   disabled = false,
   hapticFeedback = true,
-  variant = 'primary', // 'primary', 'secondary', 'success', 'outline'
-  size = 'medium', // 'small', 'medium', 'large'
-  icon = null, // { name: 'play', type: 'Ionicons' }
-  iconPosition = 'left', // 'left', 'right'
+  variant = 'primary',
+  size = 'medium',
+  icon = null,
+  iconPosition = 'left',
   loading = false,
 }) {
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    if (hapticFeedback) {
+      HapticFeedback.light();
+    }
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
+  };
+
   const handlePress = () => {
     if (!disabled && !loading) {
       if (hapticFeedback) {
-        Vibration.vibrate(50);
+        HapticFeedback.medium();
       }
-      setTimeout(() => onPress && onPress(), 50);
+      onPress && onPress();
     }
   };
 
@@ -126,16 +148,16 @@ export default function AnimatedButton({
 
   const renderContent = () => {
     if (loading) {
-  return (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator 
-        size="small" 
-        color={variant === 'outline' ? Theme.colors.primary : Theme.colors.textOnPrimary} 
-      />
-      <Text style={[getTextStyle(), textStyle, { marginLeft: 8 }]}>Loading...</Text>
-    </View>
-  );
-}
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator 
+            size="small" 
+            color={variant === 'outline' ? Theme.colors.primary : Theme.colors.textOnPrimary} 
+          />
+          <Text style={[getTextStyle(), textStyle, { marginLeft: 8 }]}>Loading...</Text>
+        </View>
+      );
+    }
 
     return (
       <View style={styles.contentContainer}>
@@ -167,14 +189,18 @@ export default function AnimatedButton({
   };
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={handlePress}
-      disabled={disabled || loading}
-      style={[getButtonStyle(), style, { opacity: disabled ? 0.5 : 1 }]}
-    >
-      {renderContent()}
-    </TouchableOpacity>
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={disabled || loading}
+        style={[getButtonStyle(), style, { opacity: disabled ? 0.5 : 1 }]}
+      >
+        {renderContent()}
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 

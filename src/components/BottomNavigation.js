@@ -3,6 +3,8 @@ import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Theme } from '../styles/theme';
 import { Icon, AppIcons } from './Icon';
+import { HapticFeedback } from '../utils/HapticFeedback';
+
 
 export default function BottomNavigation({ currentRoute, onNavigate }) {
   const tabs = [
@@ -27,10 +29,11 @@ export default function BottomNavigation({ currentRoute, onNavigate }) {
   ];
 
   const handleTabPress = (tab) => {
-    if (currentRoute !== tab.route) {
-      onNavigate(tab.route);
-    }
-  };
+  if (currentRoute !== tab.route) {
+    HapticFeedback.selection();
+    onNavigate(tab.route);
+  }
+};
 
   return (
     <SafeAreaView edges={['bottom']} style={styles.container}>
