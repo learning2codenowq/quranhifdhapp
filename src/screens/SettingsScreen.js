@@ -348,20 +348,69 @@ const formatTime = (timeObj) => {
     items: [
       {
         type: 'button',
-  title: 'Your Name',
-  subtitle: `Current: ${settings.userName}`,
-  icon: { name: 'person-outline', type: 'Ionicons' },
-  onPress: () => {
-    setShowNameModal(true);
-  }
+        title: 'Your Name',
+        subtitle: `Current: ${settings.userName}`,
+        icon: { name: 'person-outline', type: 'Ionicons' },
+        onPress: () => {
+          setShowNameModal(true);
+        }
       },
       {
-  type: 'button',
-  title: 'Daily Target',
-  subtitle: `${settings.dailyGoal} ayahs per day`,
-  icon: { name: 'target', type: 'Ionicons' },
-  onPress: () => setShowDailyTargetModal(true)
-}
+        type: 'button',
+        title: 'Daily Target',
+        subtitle: `${settings.dailyGoal} ayahs per day`,
+        icon: { name: 'target', type: 'Ionicons' },
+        onPress: () => setShowDailyTargetModal(true)
+      },
+      {
+        type: 'button',
+        title: 'Delete All Data',
+        subtitle: 'Permanently delete all your memorization progress',
+        icon: { name: 'trash', type: 'Ionicons' },
+        onPress: () => {
+          Alert.alert(
+            'Delete All Data?',
+            'This will permanently delete all your memorization progress, achievements, and settings. This action cannot be undone.\n\nAre you absolutely sure?',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { 
+                text: 'Delete Everything', 
+                style: 'destructive',
+                onPress: async () => {
+                  Alert.alert(
+                    'Final Confirmation',
+                    'This is your last chance. All your Quran memorization data will be permanently deleted.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Yes, Delete All',
+                        style: 'destructive',
+                        onPress: async () => {
+                          await StorageService.clearState();
+                          Alert.alert(
+                            'Data Deleted',
+                            'All your data has been permanently deleted. The app will now restart.',
+                            [
+                              { 
+                                text: 'OK', 
+                                onPress: () => navigation.reset({
+                                  index: 0,
+                                  routes: [{ name: 'Onboarding' }],
+                                })
+                              }
+                            ]
+                          );
+                        }
+                      }
+                    ]
+                  );
+                }
+              }
+            ]
+          );
+        },
+        dangerous: true
+      }
     ]
   },
   {
@@ -376,25 +425,25 @@ const formatTime = (timeObj) => {
         onValueChange: (value) => updateNotificationSetting('enabled', value)
       },
       {
-  type: 'button',
-  title: 'Morning Reminder',
-  subtitle: `${formatTime(notificationSettings.morningTime)} (preferably after Fajr)`,
-  icon: { name: 'sunny', type: 'Ionicons' },
-  onPress: () => {
-    setShowEveningTimePicker(false); // Close evening if open
-    setShowMorningTimePicker(true);
-  }
-},
-{
-  type: 'button',
-  title: 'Evening Reminder',
-  subtitle: `${formatTime(notificationSettings.eveningTime)} (after work/school)`,
-  icon: { name: 'moon', type: 'Ionicons' },
-  onPress: () => {
-    setShowMorningTimePicker(false); // Close morning if open
-    setShowEveningTimePicker(true);
-  }
-}
+        type: 'button',
+        title: 'Morning Reminder',
+        subtitle: `${formatTime(notificationSettings.morningTime)} (preferably after Fajr)`,
+        icon: { name: 'sunny', type: 'Ionicons' },
+        onPress: () => {
+          setShowEveningTimePicker(false);
+          setShowMorningTimePicker(true);
+        }
+      },
+      {
+        type: 'button',
+        title: 'Evening Reminder',
+        subtitle: `${formatTime(notificationSettings.eveningTime)} (after work/school)`,
+        icon: { name: 'moon', type: 'Ionicons' },
+        onPress: () => {
+          setShowMorningTimePicker(false);
+          setShowEveningTimePicker(true);
+        }
+      }
     ]
   },
   {
@@ -408,7 +457,6 @@ const formatTime = (timeObj) => {
         value: settings.autoPlayNext,
         onValueChange: (value) => updateSetting('autoPlayNext', value)
       },
-      // NEW ITEM - Add this entire block
       {
         type: 'button',
         title: 'Reciter',
@@ -421,146 +469,146 @@ const formatTime = (timeObj) => {
     ]
   },
   {
-  title: '🎨 Display Settings', 
-  icon: { name: 'color-palette', type: 'Ionicons' },
-  items: [
-    {
-      type: 'switch',
-      title: 'Dark Mode',
-      subtitle: 'Easy on the eyes for night reading',
-      value: settings.darkMode,
-      onValueChange: (value) => updateSetting('darkMode', value)
-    },
-    {
-      type: 'switch',
-      title: 'Show Translations',
-      subtitle: 'Display English translations below Arabic text',
-      value: settings.showTranslations,
-      onValueChange: (value) => updateSetting('showTranslations', value)
-    },
-    {
-  type: 'button',
-  title: 'Arabic Script Type',
-  subtitle: `Current: ${settings.scriptType.charAt(0).toUpperCase() + settings.scriptType.slice(1)}`,
-  icon: { name: 'text', type: 'Ionicons' },
-  onPress: () => {
-    Alert.alert(
-      'Arabic Script Type',
-      'Choose your preferred Quran script style',
-      [
-        { 
-          text: 'Uthmani (Madina)', 
-          onPress: () => updateSetting('scriptType', 'uthmani')
-        },
-        { 
-          text: 'IndoPak', 
-          onPress: () => updateSetting('scriptType', 'indopak')
-        },
-        { 
-          text: 'Tajweed (Color-coded)', 
-          onPress: () => updateSetting('scriptType', 'tajweed')
-        },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
-  }
-},
-    {
-      type: 'button',
-      title: 'Arabic Font Size',
-      subtitle: `Current: ${settings.arabicFontSize}`,
-      icon: { name: 'text', type: 'Ionicons' },
-      onPress: () => {
-        Alert.alert(
-          'Arabic Font Size',
-          'Choose your preferred size for Arabic text',
-          [
-            { 
-              text: 'Small', 
-              onPress: () => {
-                setPreviewFontSize('Small');
-                setFontPreviewModal(true);
-              }
-            },
-            { 
-              text: 'Medium', 
-              onPress: () => {
-                setPreviewFontSize('Medium');
-                setFontPreviewModal(true);
-              }
-            },
-            { 
-              text: 'Large', 
-              onPress: () => {
-                setPreviewFontSize('Large');
-                setFontPreviewModal(true);
-              }
-            },
-            { 
-              text: 'Extra Large', 
-              onPress: () => {
-                setPreviewFontSize('Extra Large');
-                setFontPreviewModal(true);
-              }
-            },
-            { text: 'Cancel', style: 'cancel' }
-          ]
-        );
-      }
-    },
-    {
-      type: 'button',
-      title: 'Translation Font Size',
-      subtitle: `Current: ${settings.translationFontSize}`,
-      icon: { name: 'text-outline', type: 'Ionicons' },
-      onPress: () => {
-        Alert.alert(
-          'Translation Font Size',
-          'Choose your preferred size for translation text',
-          [
-            { 
-              text: 'Small', 
-              onPress: () => {
-                setPreviewFontSize(settings.arabicFontSize);
-                setSettings(prev => ({ ...prev, translationFontSize: 'Small' }));
-                updateSetting('translationFontSize', 'Small');
-                setFontPreviewModal(true);
-              }
-            },
-            { 
-              text: 'Medium', 
-              onPress: () => {
-                setPreviewFontSize(settings.arabicFontSize);
-                setSettings(prev => ({ ...prev, translationFontSize: 'Medium' }));
-                updateSetting('translationFontSize', 'Medium');
-                setFontPreviewModal(true);
-              }
-            },
-            { 
-              text: 'Large', 
-              onPress: () => {
-                setPreviewFontSize(settings.arabicFontSize);
-                setSettings(prev => ({ ...prev, translationFontSize: 'Large' }));
-                updateSetting('translationFontSize', 'Large');
-                setFontPreviewModal(true);
-              }
-            },
-            { 
-              text: 'Extra Large', 
-              onPress: () => {
-                setPreviewFontSize(settings.arabicFontSize);
-                setSettings(prev => ({ ...prev, translationFontSize: 'Extra Large' }));
-                updateSetting('translationFontSize', 'Extra Large');
-                setFontPreviewModal(true);
-              }
-            },
-            { text: 'Cancel', style: 'cancel' }
-          ]
-        );
-      }
-    },
-  ]
-},
+    title: '🎨 Display Settings', 
+    icon: { name: 'color-palette', type: 'Ionicons' },
+    items: [
+      {
+        type: 'switch',
+        title: 'Dark Mode',
+        subtitle: 'Easy on the eyes for night reading',
+        value: settings.darkMode,
+        onValueChange: (value) => updateSetting('darkMode', value)
+      },
+      {
+        type: 'switch',
+        title: 'Show Translations',
+        subtitle: 'Display English translations below Arabic text',
+        value: settings.showTranslations,
+        onValueChange: (value) => updateSetting('showTranslations', value)
+      },
+      {
+        type: 'button',
+        title: 'Arabic Script Type',
+        subtitle: `Current: ${settings.scriptType.charAt(0).toUpperCase() + settings.scriptType.slice(1)}`,
+        icon: { name: 'text', type: 'Ionicons' },
+        onPress: () => {
+          Alert.alert(
+            'Arabic Script Type',
+            'Choose your preferred Quran script style',
+            [
+              { 
+                text: 'Uthmani (Madina)', 
+                onPress: () => updateSetting('scriptType', 'uthmani')
+              },
+              { 
+                text: 'IndoPak', 
+                onPress: () => updateSetting('scriptType', 'indopak')
+              },
+              { 
+                text: 'Tajweed (Color-coded)', 
+                onPress: () => updateSetting('scriptType', 'tajweed')
+              },
+              { text: 'Cancel', style: 'cancel' }
+            ]
+          );
+        }
+      },
+      {
+        type: 'button',
+        title: 'Arabic Font Size',
+        subtitle: `Current: ${settings.arabicFontSize}`,
+        icon: { name: 'text', type: 'Ionicons' },
+        onPress: () => {
+          Alert.alert(
+            'Arabic Font Size',
+            'Choose your preferred size for Arabic text',
+            [
+              { 
+                text: 'Small', 
+                onPress: () => {
+                  setPreviewFontSize('Small');
+                  setFontPreviewModal(true);
+                }
+              },
+              { 
+                text: 'Medium', 
+                onPress: () => {
+                  setPreviewFontSize('Medium');
+                  setFontPreviewModal(true);
+                }
+              },
+              { 
+                text: 'Large', 
+                onPress: () => {
+                  setPreviewFontSize('Large');
+                  setFontPreviewModal(true);
+                }
+              },
+              { 
+                text: 'Extra Large', 
+                onPress: () => {
+                  setPreviewFontSize('Extra Large');
+                  setFontPreviewModal(true);
+                }
+              },
+              { text: 'Cancel', style: 'cancel' }
+            ]
+          );
+        }
+      },
+      {
+        type: 'button',
+        title: 'Translation Font Size',
+        subtitle: `Current: ${settings.translationFontSize}`,
+        icon: { name: 'text-outline', type: 'Ionicons' },
+        onPress: () => {
+          Alert.alert(
+            'Translation Font Size',
+            'Choose your preferred size for translation text',
+            [
+              { 
+                text: 'Small', 
+                onPress: () => {
+                  setPreviewFontSize(settings.arabicFontSize);
+                  setSettings(prev => ({ ...prev, translationFontSize: 'Small' }));
+                  updateSetting('translationFontSize', 'Small');
+                  setFontPreviewModal(true);
+                }
+              },
+              { 
+                text: 'Medium', 
+                onPress: () => {
+                  setPreviewFontSize(settings.arabicFontSize);
+                  setSettings(prev => ({ ...prev, translationFontSize: 'Medium' }));
+                  updateSetting('translationFontSize', 'Medium');
+                  setFontPreviewModal(true);
+                }
+              },
+              { 
+                text: 'Large', 
+                onPress: () => {
+                  setPreviewFontSize(settings.arabicFontSize);
+                  setSettings(prev => ({ ...prev, translationFontSize: 'Large' }));
+                  updateSetting('translationFontSize', 'Large');
+                  setFontPreviewModal(true);
+                }
+              },
+              { 
+                text: 'Extra Large', 
+                onPress: () => {
+                  setPreviewFontSize(settings.arabicFontSize);
+                  setSettings(prev => ({ ...prev, translationFontSize: 'Extra Large' }));
+                  updateSetting('translationFontSize', 'Extra Large');
+                  setFontPreviewModal(true);
+                }
+              },
+              { text: 'Cancel', style: 'cancel' }
+            ]
+          );
+        }
+      },
+    ]
+  },
   {
     title: '🔒 Data & Privacy',
     icon: { name: 'shield-checkmark', type: 'Ionicons' },
@@ -626,38 +674,6 @@ const formatTime = (timeObj) => {
         subtitle: 'Generate sample progress for testing',
         icon: { name: 'flask-outline', type: 'Ionicons' },
         onPress: TestingUtils.loadTestData
-      },
-      {
-        type: 'button',
-        title: 'Reset All Data',
-        subtitle: 'Delete all progress and restart',
-        icon: { name: 'trash', type: 'Ionicons' },
-        onPress: () => {
-          Alert.alert(
-            'Reset All Data',
-            'This will permanently delete all your memorization progress and restart the onboarding. Are you sure?',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { 
-                text: 'Reset', 
-                style: 'destructive',
-                onPress: async () => {
-                  await StorageService.clearState();
-                  Alert.alert('Data Reset', 'All data has been deleted.', [
-                    { 
-                      text: 'OK', 
-                      onPress: () => navigation.reset({
-                        index: 0,
-                        routes: [{ name: 'Onboarding' }],
-                      })
-                    }
-                  ]);
-                }
-              }
-            ]
-          );
-        },
-        dangerous: true
       }
     ]
   }] : [])
