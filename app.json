@@ -7,24 +7,12 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "description": "Your companion for memorizing the Holy Quran with structured learning and revision methods.",
-    "keywords": [
-      "quran",
-      "islam",
-      "memorization",
-      "hifdh",
-      "islamic",
-      "muslim"
-    ],
-    "privacy": "public",
-    "privacyPolicy": "https://learning2codenowq.github.io/quran-hifdh-privacy/",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#22575D"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.shayan.quranhifdh",
@@ -37,31 +25,28 @@
       }
     },
     "android": {
-  "adaptiveIcon": {
-    "foregroundImage": "./assets/adaptive-icon.png",
-    "backgroundColor": "#22575D"
-  },
-  "package": "com.shayan.quranhifdh",
-  "versionCode": 3,
-  "compileSdkVersion": 34,
-  "targetSdkVersion": 34,
-  "minSdkVersion": 23,
-  "permissions": [
-    "INTERNET",
-    "ACCESS_NETWORK_STATE",
-    "MODIFY_AUDIO_SETTINGS",
-    "WAKE_LOCK",
-    "RECEIVE_BOOT_COMPLETED",
-    "VIBRATE",
-    "android.permission.SCHEDULE_EXACT_ALARM"
-  ],
-  "blockedPermissions": [
-    "CAMERA",
-    "RECORD_AUDIO",
-    "ACCESS_FINE_LOCATION",
-    "ACCESS_COARSE_LOCATION"
-  ]
-},
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#22575D"
+      },
+      "package": "com.shayan.quranhifdh",
+      "versionCode": 3,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "MODIFY_AUDIO_SETTINGS",
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ],
+      "blockedPermissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
     "web": {
       "favicon": "./assets/favicon.png"
     },
@@ -70,9 +55,9 @@
         "expo-font",
         {
           "fonts": [
-      "./assets/fonts/KFGQPC_Uthmanic_Script_HAFS_Regular.otf",
-      "./assets/fonts/IndoPak.ttf"
-    ]
+            "./assets/fonts/KFGQPC_Uthmanic_Script_HAFS_Regular.otf",
+            "./assets/fonts/IndoPak.ttf"
+          ]
         }
       ],
       [
