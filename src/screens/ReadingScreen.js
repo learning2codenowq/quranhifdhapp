@@ -1,4 +1,3 @@
-// src/screens/ReadingScreen.js
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,24 +20,25 @@ export default function ReadingScreen({ navigation }) {
       setSettings({ darkMode: state.settings.darkMode || false });
     }
   };
+
   const readingModes = [
     {
       id: 'classic',
       title: 'Classic Mushaf',
       subtitle: 'Traditional page-by-page reading',
-      description: 'Coming soon',
-      icon: 'book',
-      color: Theme.colors.secondary,
-      gradient: ['#B8947D', '#D4C4B0'],
-      screen: null,
-      disabled: true
+      description: 'Read the Quran page by page',
+      icon: 'book-outline',
+      color: Theme.colors.primary,
+      gradient: Theme.gradients.primary,
+      screen: 'ClassicMushaf',
+      disabled: false  // ENABLED NOW
     },
     {
       id: 'wordbyword',
       title: 'Word by Word',
       subtitle: 'Interlinear translation',
       description: 'Coming soon',
-      icon: 'language',
+      icon: 'language-outline',
       color: Theme.colors.secondary,
       gradient: ['#B8947D', '#D4C4B0'],
       screen: null,
@@ -55,23 +55,23 @@ export default function ReadingScreen({ navigation }) {
 
   const themedColors = getThemedColors(settings.darkMode);
 
-return (
-  <SafeAreaProvider>
-    <LinearGradient 
-      colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
-      style={styles.container}
-    >
+  return (
+    <SafeAreaProvider>
+      <LinearGradient 
+        colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
+        style={styles.container}
+      >
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
           <View style={styles.header}>
-  <Text style={[
-    styles.headerTitle,
-    settings.darkMode && { color: themedColors.textPrimary }
-  ]}>Quran Reading</Text>
-  <Text style={[
-    styles.headerSubtitle,
-    settings.darkMode && { color: themedColors.textSecondary }
-  ]}>Choose your reading mode</Text>
-</View>
+            <Text style={[
+              styles.headerTitle,
+              settings.darkMode && { color: themedColors.textPrimary }
+            ]}>Quran Reading</Text>
+            <Text style={[
+              styles.headerSubtitle,
+              settings.darkMode && { color: themedColors.textSecondary }
+            ]}>Choose your reading mode</Text>
+          </View>
 
           <ScrollView 
             style={styles.content} 
@@ -80,78 +80,63 @@ return (
           >
             {readingModes.map((mode) => (
               <TouchableOpacity
-  key={mode.id}
-  style={styles.modeCardWrapper}
-  onPress={() => handleModePress(mode)}
-  activeOpacity={mode.disabled ? 1 : 0.8}
-  disabled={mode.disabled}
->
-  <LinearGradient
-    colors={settings.darkMode ? [themedColors.surface, themedColors.cardBackground] : mode.gradient}
-    style={[styles.modeCard, mode.disabled && styles.disabledCard]}
-  >
+                key={mode.id}
+                style={styles.modeCardWrapper}
+                onPress={() => handleModePress(mode)}
+                activeOpacity={mode.disabled ? 1 : 0.8}
+                disabled={mode.disabled}
+              >
+                <LinearGradient
+                  colors={settings.darkMode ? themedColors.gradients.primary : mode.gradient}
+                  style={[styles.modeCard, mode.disabled && styles.disabledCard]}
+                >
                   <View style={styles.modeIconContainer}>
                     <Icon 
-                      name={mode.icon} 
-                      type="Ionicons" 
-                      size={48} 
-                      color="white" 
+                      name={mode.icon}
+                      type="Ionicons"
+                      size={40}
+                      color="white"
                     />
                   </View>
                   
                   <View style={styles.modeContent}>
-                    <Text style={[
-  styles.modeTitle,
-  settings.darkMode && { color: themedColors.textPrimary }
-]}>{mode.title}</Text>
-<Text style={[
-  styles.modeSubtitle,
-  settings.darkMode && { color: themedColors.textSecondary }
-]}>{mode.subtitle}</Text>
-<Text style={[
-  styles.modeDescription,
-  settings.darkMode && { color: themedColors.textMuted }
-]}>{mode.description}</Text>
+                    <Text style={styles.modeTitle}>{mode.title}</Text>
+                    <Text style={styles.modeSubtitle}>{mode.subtitle}</Text>
+                    <Text style={styles.modeDescription}>{mode.description}</Text>
                   </View>
 
-                  {!mode.disabled && (
-                    <View style={styles.modeArrow}>
-                      <Icon 
-                        name="chevron-forward" 
-                        type="Ionicons" 
-                        size={24} 
-                        color="rgba(255, 255, 255, 0.8)" 
-                      />
-                    </View>
-                  )}
-
-                  {mode.disabled && (
+                  {mode.disabled ? (
                     <View style={styles.comingSoonBadge}>
                       <Text style={styles.comingSoonText}>Coming Soon</Text>
                     </View>
+                  ) : (
+                    <Icon 
+                      name="arrow-back"
+                      type="MaterialCommunityIcons"
+                      size={24}
+                      color="white"
+                      style={styles.modeArrow}
+                    />
                   )}
                 </LinearGradient>
               </TouchableOpacity>
             ))}
 
-            <View style={[
-  styles.infoCard,
-  settings.darkMode && { backgroundColor: themedColors.surface }
-]}>
-  <Icon 
-    name="information-circle" 
-    type="Ionicons" 
-    size={24} 
-    color={settings.darkMode ? themedColors.secondary : Theme.colors.secondary} 
-    style={styles.infoIcon}
-  />
-  <Text style={[
-    styles.infoText,
-    settings.darkMode && { color: themedColors.textSecondary }
-  ]}>
-    Choose a reading mode to begin your Quran journey. Each mode offers a unique way to engage with the sacred text.
-  </Text>
-</View>
+            <View style={styles.infoCard}>
+              <Icon 
+                name="information-circle"
+                type="Ionicons"
+                size={24}
+                color={settings.darkMode ? themedColors.secondary : Theme.colors.secondary} 
+                style={styles.infoIcon}
+              />
+              <Text style={[
+                styles.infoText,
+                settings.darkMode && { color: themedColors.textSecondary }
+              ]}>
+                Choose a reading mode to begin your Quran journey. Each mode offers a unique way to engage with the sacred text.
+              </Text>
+            </View>
           </ScrollView>
         </SafeAreaView>
       </LinearGradient>
