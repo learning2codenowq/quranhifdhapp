@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { StorageService } from '../services/StorageService';
 import { QuranUtils } from '../utils/QuranUtils';
 import TikrarPlan from '../components/TikrarPlan';
@@ -8,7 +7,6 @@ import AchievementModal from '../components/AchievementModal';
 import AnimatedProgressRing from '../components/AnimatedProgressRing';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Icon, AppIcons } from '../components/Icon';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Theme } from '../styles/theme';
 import { Logger } from '../utils/Logger';
 import { useSettings } from '../hooks/useSettings';
@@ -16,6 +14,8 @@ import { DashboardSkeleton } from '../components/SkeletonLoader';
 import ContinueCard from '../components/ContinueCard';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import WeeklyProgress from '../components/WeeklyProgress';
+import ScreenLayout from '../layouts/ScreenLayout';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function DashboardScreen({ navigation }) {
   const { settings, themedColors, userName, dailyGoal } = useSettings();
@@ -171,20 +171,16 @@ export default function DashboardScreen({ navigation }) {
   if (!stats) {
   
   console.log('🎨 Render check:', {
-  hasNextSegment: !!nextSegment,
-  isNewUser: nextSegment?.isNewUser,
-  willShowCard: nextSegment && !nextSegment.isNewUser
-});
+    hasNextSegment: !!nextSegment,
+    isNewUser: nextSegment?.isNewUser,
+    willShowCard: nextSegment && !nextSegment.isNewUser
+  });
   
   return (
-   <LinearGradient 
-     colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
-     style={styles.container}
-   >
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}></SafeAreaView>
-     <DashboardSkeleton darkMode={settings.darkMode} />
-   </LinearGradient>
- );
+    <ScreenLayout showBottomNav={true}>
+      <DashboardSkeleton darkMode={settings.darkMode} />
+    </ScreenLayout>
+  );
 }
 
   const displayStats = stats ? {
@@ -219,10 +215,7 @@ export default function DashboardScreen({ navigation }) {
 
 
 return (
-  <LinearGradient 
-    colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
-    style={styles.container}
-  >
+  <ScreenLayout scrollable={true} showBottomNav={true}>
     {showConfetti && (
   <ConfettiCannon
     ref={confettiRef}
@@ -233,18 +226,7 @@ return (
     fallSpeed={3000}
   />
 )}
-    <ScrollView 
-      contentContainerStyle={styles.scrollContent} 
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={[Theme.colors.secondary]}
-          tintColor={Theme.colors.secondary}
-        />
-      }
-    >
+<View style={styles.content}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -254,7 +236,7 @@ return (
           </View>
           <View style={styles.streakBadge}>
             <Icon 
-              name="flame" 
+              name="book" 
               type="Ionicons" 
               size={16} 
               color={Theme.colors.warning} 
@@ -579,8 +561,8 @@ return (
         achievements={achievementModal.achievements}
         onClose={handleCloseAchievements}
       />
-    </ScrollView>
-  </LinearGradient>
+    </View>
+  </ScreenLayout>
 );
 }
 
@@ -588,15 +570,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 120,
-  },
+  content: {
+  paddingHorizontal: Theme.spacing.lg,
+  paddingTop: Theme.spacing.xl,
+  paddingBottom: 100,
+},
   
   // Header
   header: {
     marginBottom: 24,
+    paddingHorizontal: Theme.spacing.xs,
   },
   headerContent: {
     flexDirection: 'row',
@@ -639,14 +622,15 @@ const styles = StyleSheet.create({
 
   // Hero Section
   heroSection: {
-    marginBottom: 24,
-  },
-  heroCard: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    ...Theme.shadows.xl,
-    marginBottom: 12,
-  },
+  marginBottom: Theme.spacing.xl,
+  paddingHorizontal: Theme.spacing.xs,
+},
+heroCard: {
+  borderRadius: Theme.borderRadius.xl,
+  overflow: 'hidden',
+  ...Theme.shadows.xl,
+  marginBottom: Theme.spacing.md,
+},
   heroGradient: {
     padding: 32,
   },
@@ -705,12 +689,12 @@ const styles = StyleSheet.create({
 
   // Today's Progress Bar
   todayProgressSection: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 24,
-    ...Theme.shadows.sm,
-  },
+  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  borderRadius: Theme.borderRadius.xl,
+  padding: Theme.spacing.xl,
+  marginBottom: Theme.spacing.xl,
+  ...Theme.shadows.md,
+},
   todayProgressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -742,6 +726,7 @@ const styles = StyleSheet.create({
   // Today's Plan
   todayPlanSection: {
     marginBottom: 24,
+    paddingHorizontal: Theme.spacing.xs,
   },
   sectionTitle: {
     fontSize: 20,
@@ -820,6 +805,7 @@ const styles = StyleSheet.create({
   // Progress Overview Section with Ring
 progressOverviewSection: {
   marginBottom: 24,
+  paddingHorizontal: Theme.spacing.xs,
 },
 progressOverviewCard: {
   backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -861,6 +847,7 @@ milestoneSection: {
   borderRadius: 16,
   padding: 16,
   alignItems: 'center',
+  paddingHorizontal: Theme.spacing.xs,
 },
 milestoneLabel: {
   fontSize: 13,

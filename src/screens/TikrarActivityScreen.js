@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { StorageService } from '../services/StorageService';
 import { QuranUtils } from '../utils/QuranUtils';
 import { Theme } from '../styles/theme';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import ScreenLayout from '../layouts/ScreenLayout';
+import ScreenHeader from '../layouts/ScreenHeader';
+import { useSettings } from '../hooks/useSettings';
 
 export default function TikrarActivityScreen({ route, navigation }) {
+  const { settings, themedColors } = useSettings();
+  
   const { categoryType, categoryData } = route.params;
   const [completed, setCompleted] = useState(0);
   const [state, setState] = useState(null);
@@ -104,90 +107,75 @@ export default function TikrarActivityScreen({ route, navigation }) {
   const isActive = getTarget() > 0;
 
   return (
-    <LinearGradient colors={Theme.gradients.primary} style={styles.container}>
-            <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}></SafeAreaView>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{getTitle()}</Text>
+  <ScreenLayout scrollable={true}>
+    <ScreenHeader 
+      title={getTitle()}
+      subtitle={`Target: ${getTarget()} segments`}
+      onBack={() => navigation.goBack()}
+    />
+    
+    <View style={styles.content}>
+      <View style={styles.descriptionCard}>
+        <Text style={styles.description}>{categoryData.description}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.descriptionCard}>
-          <Text style={styles.description}>{categoryData.description}</Text>
-        </View>
-
-        {isActive && (
-          <View style={styles.progressCard}>
-            <Text style={styles.progressTitle}>Progress</Text>
-            <Text style={styles.progressStats}>
-              {completed} / {getTarget()} {categoryType === 'revision' ? 'times completed' : 'ayahs'}
-            </Text>
-            
-            <View style={styles.progressBar}>
-              <View 
-                style={[styles.progressFill, { width: `${progress}%` }]} 
-              />
-            </View>
-            <Text style={styles.progressPercent}>{progress.toFixed(0)}% Complete</Text>
-          </View>
-        )}
-
-        <TouchableOpacity 
-          style={[
-            styles.actionButton, 
-            isCompleted && styles.completedButton,
-            !isActive && styles.inactiveButton
-          ]} 
-          onPress={handleComplete}
-          disabled={!isActive || (categoryType === 'revision' && isCompleted)}
-        >
-          <Text style={styles.actionButtonText}>
-            {getButtonText()}
+      {isActive && (
+        <View style={styles.progressCard}>
+          <Text style={styles.progressTitle}>Progress</Text>
+          <Text style={styles.progressStats}>
+            {completed} / {getTarget()} {categoryType === 'revision' ? 'times completed' : 'ayahs'}
           </Text>
-        </TouchableOpacity>
-
-        {/* Show specific ayahs for revision */}
-        {categoryType === 'revision' && categoryData.displayText && isActive && (
-          <View style={styles.ayahListCard}>
-            <Text style={styles.ayahListTitle}>Today's Revision</Text>
-            <Text style={styles.revisionText}>{categoryData.displayText}</Text>
-            <Text style={styles.revisionNote}>
-              Recite this combined portion from memory, then mark it as completed. Do this 3 times total.
-            </Text>
+          
+          <View style={styles.progressBar}>
+            <View 
+              style={[styles.progressFill, { width: `${progress}%` }]} 
+            />
           </View>
-        )}
+          <Text style={styles.progressPercent}>{progress.toFixed(0)}% Complete</Text>
+        </View>
+      )}
 
-        {/* No revision message */}
-        {categoryType === 'revision' && !isActive && (
-          <View style={styles.noRevisionCard}>
-            <Text style={styles.noRevisionText}>🎉</Text>
-            <Text style={styles.noRevisionTitle}>No Revision Today</Text>
-            <Text style={styles.noRevisionDescription}>
-              {categoryData.displayText || "Come back tomorrow to start your revision journey!"}
-            </Text>
-          </View>
-        )}
-      </ScrollView>
-    </LinearGradient>
-  );
+      <TouchableOpacity 
+        style={[
+          styles.actionButton, 
+          isCompleted && styles.completedButton,
+          !isActive && styles.inactiveButton
+        ]} 
+        onPress={handleComplete}
+        disabled={!isActive || (categoryType === 'revision' && isCompleted)}
+      >
+        <Text style={styles.actionButtonText}>
+          {getButtonText()}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Show specific ayahs for revision */}
+      {categoryType === 'revision' && categoryData.displayText && isActive && (
+        <View style={styles.ayahListCard}>
+          <Text style={styles.ayahListTitle}>Today's Revision</Text>
+          <Text style={styles.revisionText}>{categoryData.displayText}</Text>
+          <Text style={styles.revisionNote}>
+            Recite this combined portion from memory, then mark it as completed. Do this 3 times total.
+          </Text>
+        </View>
+      )}
+
+      {/* No revision message */}
+      {categoryType === 'revision' && !isActive && (
+        <View style={styles.noRevisionCard}>
+          <Text style={styles.noRevisionText}>🎉</Text>
+          <Text style={styles.noRevisionTitle}>No Revision Today</Text>
+          <Text style={styles.noRevisionDescription}>
+            {categoryData.displayText || "Come back tomorrow to start your revision journey!"}
+          </Text>
+        </View>
+      )}
+    </View>
+  </ScreenLayout>
+);
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  backText: {
-    color: 'white',
-    fontSize: 16,
-    marginBottom: 15,
-  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -195,9 +183,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   content: {
-    paddingHorizontal: 20,
-    paddingBottom: 30,
-  },
+  flex: 1,
+  paddingHorizontal: Theme.spacing.lg,
+  paddingTop: Theme.spacing.xl,
+},
   descriptionCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 15,

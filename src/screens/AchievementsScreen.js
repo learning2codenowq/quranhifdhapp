@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { StorageService } from '../services/StorageService';
 import { AchievementSystem } from '../utils/AchievementSystem';
 import AnimatedCard from '../components/AnimatedCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Icon, AppIcons } from '../components/Icon';
 import { Theme } from '../styles/theme';
-import { getThemedColors } from '../styles/theme';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import ScreenLayout from '../layouts/ScreenLayout';
+import ScreenHeader from '../layouts/ScreenHeader';
+import { useSettings } from '../hooks/useSettings';
 
 export default function AchievementsScreen({ navigation }) {
+  const { settings, themedColors } = useSettings();
+  
   const [earnedAchievements, setEarnedAchievements] = useState([]);
   const [totalAchievements, setTotalAchievements] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [settings, setSettings] = useState({ darkMode: false });
 
 
   useEffect(() => {
@@ -22,12 +23,9 @@ export default function AchievementsScreen({ navigation }) {
   }, []);
 
   const loadAchievements = async () => {
-    setLoading(true);
-    const state = await StorageService.getState();
-    if (state?.settings) {
-    setSettings({ darkMode: state.settings.darkMode || false });
-  }
-    const earned = state?.earnedAchievements || [];
+  setLoading(true);
+  const state = await StorageService.getState();
+  const earned = state?.earnedAchievements || [];
     setEarnedAchievements(earned);
     setTotalAchievements(AchievementSystem.achievements.length);
     setLoading(false);
@@ -161,168 +159,125 @@ export default function AchievementsScreen({ navigation }) {
   };
 
   if (loading) {
-    return (
-        <LinearGradient colors={settings.darkMode ? getThemedColors(true).gradients.primary : Theme.gradients.primary} style={styles.container}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}></SafeAreaView>
-        <LoadingSpinner message="Loading achievements..." />
-      </LinearGradient>
-    );
-  }
-
   return (
-      <LinearGradient colors={settings.darkMode ? getThemedColors(true).gradients.primary : Theme.gradients.primary} style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Icon 
-            name={AppIcons.back.name} 
-            type={AppIcons.back.type} 
-            size={24} 
-            color={Theme.colors.textOnDark} 
-          />
-          <Text style={styles.backText}>Dashboard</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.headerTitleContainer}>
-          <Icon 
-            name={AppIcons.trophy.name} 
-            type={AppIcons.trophy.type} 
-            size={32} 
-            color={Theme.colors.secondary} 
-          />
-          <Text style={styles.headerTitle}>Achievements</Text>
-        </View>
-        
-        <View style={styles.progressContainer}>
-          <Text style={styles.progressText}>
-            {earnedAchievements.length} / {totalAchievements} Unlocked
-          </Text>
-          <View style={styles.progressBar}>
-            <View 
-              style={[
-                styles.progressFill,
-                { width: `${(earnedAchievements.length / totalAchievements) * 100}%` }
-              ]}
-            />
-          </View>
-        </View>
-      </View>
-
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        
-        {Object.entries(categorizedAchievements).map(([category, achievements]) => {
-          if (achievements.length === 0) return null;
-          
-          return (
-            <View key={category} style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Icon 
-                  name={getCategoryIcon(category).name}
-                  type={getCategoryIcon(category).type}
-                  size={24}
-                  color={Theme.colors.secondary}
-                />
-                <Text style={styles.sectionTitle}>{getCategoryTitle(category)}</Text>
-              </View>
-              
-              {achievements.map(achievement => (
-                <AchievementCard 
-                  key={achievement.id}
-                  achievement={achievement}
-                  isEarned={earnedAchievements.includes(achievement.id)}
-                />
-              ))}
-            </View>
-          );
-        })}
-
-      </ScrollView>
-    </LinearGradient>
+    <ScreenLayout>
+      <LoadingSpinner message="Loading achievements..." />
+    </ScreenLayout>
   );
 }
 
+  return (
+  <ScreenLayout scrollable={true}>
+    <ScreenHeader 
+      title="Achievements"
+      subtitle={`${earnedAchievements.length} / ${totalAchievements} Unlocked`}
+      onBack={() => navigation.goBack()}
+    />
+    
+    <View style={styles.content}>
+      
+      {/* Progress Bar */}
+      <View style={styles.progressContainer}>
+        <Text style={styles.progressText}>
+          {earnedAchievements.length} / {totalAchievements} Unlocked
+        </Text>
+        <View style={styles.progressBar}>
+          <View 
+            style={[
+              styles.progressFill,
+              { width: `${(earnedAchievements.length / totalAchievements) * 100}%` }
+            ]}
+          />
+        </View>
+      </View>
+
+      {/* Achievement Categories */}
+      {Object.entries(categorizedAchievements).map(([category, achievements]) => {
+        if (achievements.length === 0) return null;
+        
+        return (
+          <View key={category} style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Icon 
+                name={getCategoryIcon(category).name}
+                type={getCategoryIcon(category).type}
+                size={24}
+                color={Theme.colors.secondary}
+              />
+              <Text style={styles.sectionTitle}>{getCategoryTitle(category)}</Text>
+            </View>
+            
+            {achievements.map(achievement => (
+              <AchievementCard 
+                key={achievement.id}
+                achievement={achievement}
+                isEarned={earnedAchievements.includes(achievement.id)}
+              />
+            ))}
+          </View>
+        );
+      })}
+      
+    </View>
+  </ScreenLayout>
+);
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: Theme.spacing.xl,
-    paddingTop: 50,
-    paddingBottom: Theme.spacing['3xl'],
-    alignItems: 'center',
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginBottom: Theme.spacing.xl,
-  },
-  backText: {
-    color: Theme.colors.textOnDark,
-    fontSize: Theme.typography.fontSize.base,
-    marginLeft: Theme.spacing.sm,
-    fontWeight: Theme.typography.fontWeight.medium,
-  },
-  headerTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Theme.spacing.xl,
-  },
-  headerTitle: {
-    fontSize: Theme.typography.fontSize['4xl'],
-    fontWeight: Theme.typography.fontWeight.bold,
-    color: Theme.colors.textOnDark,
-    marginLeft: Theme.spacing.md,
-  },
   progressContainer: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  progressText: {
-    fontSize: Theme.typography.fontSize.base,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: Theme.spacing.sm,
-    fontWeight: Theme.typography.fontWeight.medium,
-  },
-  progressBar: {
-    width: '80%',
-    height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: Theme.borderRadius.sm,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: Theme.colors.secondary,
-    borderRadius: Theme.borderRadius.sm,
-  },
+  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  borderRadius: Theme.borderRadius.lg,
+  padding: Theme.spacing.lg,
+  marginBottom: Theme.spacing.xl,
+},
+progressText: {
+  fontSize: Theme.typography.fontSize.base,
+  fontWeight: Theme.typography.fontWeight.semibold,
+  color: Theme.colors.textOnDark,
+  marginBottom: Theme.spacing.sm,
+  textAlign: 'center',
+},
+progressBar: {
+  height: 8,
+  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  borderRadius: Theme.borderRadius.full,
+  overflow: 'hidden',
+},
+progressFill: {
+  height: '100%',
+  backgroundColor: Theme.colors.secondary,
+  borderRadius: Theme.borderRadius.full,
+},
   content: {
-    flex: 1,
-  },
+  paddingHorizontal: Theme.spacing.lg,
+  paddingTop: Theme.spacing.md,
+  paddingBottom: Theme.spacing.xl,
+},
   contentContainer: {
     paddingHorizontal: Theme.spacing.xl,
     paddingBottom: Theme.spacing['6xl'],
   },
   section: {
-    marginBottom: Theme.spacing['3xl'],
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Theme.spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: Theme.typography.fontSize.xl,
-    fontWeight: Theme.typography.fontWeight.bold,
-    color: Theme.colors.textOnDark,
-    marginLeft: Theme.spacing.sm,
-  },
+  marginBottom: Theme.spacing.xl,
+},
+sectionHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: Theme.spacing.md,
+  gap: Theme.spacing.sm,
+},
+sectionTitle: {
+  fontSize: Theme.typography.fontSize.xl,
+  fontWeight: Theme.typography.fontWeight.bold,
+  color: Theme.colors.textOnDark,
+},
   achievementCard: {
-    marginBottom: Theme.spacing.md,
-    padding: Theme.spacing.lg,
-  },
+  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  borderRadius: Theme.borderRadius.lg,
+  padding: Theme.spacing.lg,
+  marginBottom: Theme.spacing.md,
+  ...Theme.shadows.md,
+},
   lockedCard: {
     opacity: 0.6,
   },

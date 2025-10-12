@@ -65,7 +65,7 @@ export default function AnalyticsScreen({ navigation }) {
 
           <View style={styles.headerStat}>
             <View style={styles.iconCircle}>
-              <Icon name="flame" type="Ionicons" size={24} color={Theme.colors.warning} />
+              <Icon name="book" type="Ionicons" size={24} color={Theme.colors.warning} />
             </View>
             <Text style={[styles.headerStatValue, settings.darkMode && { color: themedColors.textPrimary }]}>{currentStreak}</Text>
             <Text style={[styles.headerStatLabel, settings.darkMode && { color: themedColors.textSecondary }]}>Day Streak</Text>
