@@ -10,8 +10,6 @@ import {
   Alert,
   TextInput
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { QuranService } from '../services/QuranService';
 import { StorageService } from '../services/StorageService';
 import AnimatedCard from '../components/AnimatedCard';
@@ -20,6 +18,8 @@ import { Icon, AppIcons } from '../components/Icon';
 import { Theme } from '../styles/theme';
 import { useSettings } from '../hooks/useSettings';
 import { SurahListSkeleton } from '../components/SkeletonLoader';
+import ScreenLayout from '../layouts/ScreenLayout';
+import ScreenHeader from '../layouts/ScreenHeader';
 
 export default function SurahListScreen({ navigation }) {
   const { settings, themedColors } = useSettings();
@@ -217,110 +217,28 @@ export default function SurahListScreen({ navigation }) {
   };
 
   if (loading) {
-  
   return (
-    <SafeAreaProvider>
-      <LinearGradient 
-        colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
-        style={styles.container}
-      >
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
-          <View style={styles.header}>
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Icon 
-                name={AppIcons.back.name} 
-                type={AppIcons.back.type} 
-                size={24} 
-                color={Theme.colors.textOnDark} 
-              />
-              <Text style={styles.backText}>Dashboard</Text>
-            </TouchableOpacity>
-            
-            <View style={styles.headerTitleContainer}>
-              <Text style={styles.title}>Surahs</Text>
-              <Text style={styles.subtitle}>Choose a surah to memorize</Text>
-            </View>
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-              <View style={[
-                styles.searchInputWrapper,
-                settings.darkMode && themedColors?.surface && { backgroundColor: themedColors.surface }
-              ]}>
-                <Icon 
-                  name="search" 
-                  type="Ionicons" 
-                  size={20} 
-                  color={settings.darkMode && themedColors?.textMuted ? themedColors.textMuted : Theme.colors.textMuted} 
-                  style={styles.searchIcon}
-                />
-                <TextInput
-                  style={[
-                    styles.searchInput,
-                    settings.darkMode && themedColors?.textPrimary && { color: themedColors.textPrimary }
-                  ]}
-                  placeholder="Search surahs..."
-                  placeholderTextColor={settings.darkMode && themedColors?.textMuted ? themedColors.textMuted : Theme.colors.textMuted}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                {searchQuery.length > 0 && (
-                  <TouchableOpacity 
-                    onPress={() => setSearchQuery('')}
-                    style={styles.clearButton}
-                  >
-                    <Icon 
-                      name="close-circle" 
-                      type="Ionicons" 
-                      size={20} 
-                      color={settings.darkMode && themedColors?.textMuted ? themedColors.textMuted : Theme.colors.textMuted} 
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          </View>
-          <SurahListSkeleton darkMode={settings.darkMode} />
-        </SafeAreaView>
-      </LinearGradient>
-    </SafeAreaProvider>
+    <ScreenLayout>
+      <ScreenHeader 
+        title="Surahs"
+        subtitle="Choose a surah to memorize"
+        onBack={() => navigation.goBack()}
+      />
+      <SurahListSkeleton darkMode={settings.darkMode} />
+    </ScreenLayout>
   );
 }
 
   
 
 return (
-  <SafeAreaProvider>
-    <LinearGradient 
-      colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
-      style={styles.container}
-    >
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+  <ScreenLayout>
         
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Icon 
-              name={AppIcons.back.name} 
-              type={AppIcons.back.type} 
-              size={24} 
-              color={Theme.colors.textOnDark} 
-            />
-            <Text style={styles.backText}>Dashboard</Text>
-          </TouchableOpacity>
-          
-          <View style={styles.headerTitleContainer}>
-            <Text style={styles.title}>Quran Surahs</Text>
-            <Text style={styles.subtitle}>Choose a surah to memorize</Text>
-          </View>
-        </View>
+        <ScreenHeader 
+  title="Surahs"
+  subtitle="Choose a surah to memorize"
+  onBack={() => navigation.goBack()}
+/>
 
         {/* Search Bar - SHOULD BE HERE, OUTSIDE FlatList */}
         <View style={styles.searchContainer}>
@@ -389,24 +307,11 @@ return (
           )}
         />
         
-      </SafeAreaView>
-    </LinearGradient>
-  </SafeAreaProvider>
+      </ScreenLayout>
 );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: Theme.spacing.xl,
-    paddingTop: Theme.spacing.xl,
-    paddingBottom: Theme.spacing.md,
-  },
   searchContainer: {
     paddingHorizontal: Theme.spacing.xl,
     paddingBottom: Theme.spacing.lg,
@@ -450,32 +355,6 @@ const styles = StyleSheet.create({
     fontSize: Theme.typography.fontSize.sm,
     color: Theme.colors.textMuted,
     marginTop: Theme.spacing.sm,
-    textAlign: 'center',
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Theme.spacing.xl,
-  },
-  backText: {
-    color: Theme.colors.textOnDark,
-    fontSize: Theme.typography.fontSize.base,
-    marginLeft: Theme.spacing.sm,
-    fontWeight: Theme.typography.fontWeight.medium,
-  },
-  headerTitleContainer: {
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: Theme.typography.fontSize['4xl'],
-    fontWeight: Theme.typography.fontWeight.bold,
-    color: Theme.colors.textOnDark,
-    textAlign: 'center',
-    marginBottom: Theme.spacing.sm,
-  },
-  subtitle: {
-    fontSize: Theme.typography.fontSize.base,
-    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
   },
   listContent: {

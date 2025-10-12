@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { StorageService } from '../services/StorageService';
 import { AnalyticsUtils } from '../utils/AnalyticsUtils';
 import { QuranUtils } from '../utils/QuranUtils';
 import AnimatedCard from '../components/AnimatedCard';
 import { Icon, AppIcons } from '../components/Icon';
 import { Theme } from '../styles/theme';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '../hooks/useSettings';
+import ScreenLayout from '../layouts/ScreenLayout';
+import ScreenHeader from '../layouts/ScreenHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -35,15 +35,15 @@ export default function AnalyticsScreen({ navigation }) {
   };
 
   if (!weeklyData || !monthlyData) {
-    return (
-      <LinearGradient colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Theme.colors.secondary} />
-          <Text style={styles.loadingText}>Analyzing your progress...</Text>
-        </View>
-      </LinearGradient>
-    );
-  }
+  return (
+    <ScreenLayout>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Theme.colors.secondary} />
+        <Text style={styles.loadingText}>Loading Analytics...</Text>
+      </View>
+    </ScreenLayout>
+  );
+}
 
   // Header Stats Summary Card
   const HeaderStatsCard = () => {
@@ -138,31 +138,11 @@ export default function AnalyticsScreen({ navigation }) {
   );
 
   return (
-    <SafeAreaProvider>
-      <LinearGradient 
-        colors={settings.darkMode ? themedColors.gradients.primary : Theme.gradients.primary} 
-        style={styles.container}
-      >
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
-          
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Icon 
-                name={AppIcons.back.name} 
-                type={AppIcons.back.type} 
-                size={24} 
-                color={Theme.colors.textOnDark} 
-              />
-              <Text style={styles.backText}>Dashboard</Text>
-            </TouchableOpacity>
-            
-            <Text style={styles.headerTitle}>Analytics</Text>
-            <Text style={styles.headerSubtitle}> </Text>
-          </View>
+  <ScreenLayout>
+    <ScreenHeader 
+      title="Analytics"
+      onBack={() => navigation.goBack()}
+    />
 
           {/* Header Summary Card */}
           <View style={styles.headerCardWrapper}>
@@ -342,58 +322,11 @@ export default function AnalyticsScreen({ navigation }) {
             )}
 
           </ScrollView>
-        </SafeAreaView>
-      </LinearGradient>
-    </SafeAreaProvider>
-  );
+        </ScreenLayout>
+);
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: Theme.colors.textOnDark,
-    fontSize: 16,
-    marginTop: 16,
-    fontWeight: '500',
-  },
-  header: {
-    paddingHorizontal: Theme.spacing.xl,
-    paddingTop: 50,
-    paddingBottom: Theme.spacing.md,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Theme.spacing.lg,
-  },
-  backText: {
-    color: Theme.colors.textOnDark,
-    fontSize: Theme.typography.fontSize.base,
-    marginLeft: Theme.spacing.sm,
-    fontWeight: Theme.typography.fontWeight.medium,
-  },
-  headerTitle: {
-    fontSize: 36,
-    fontWeight: Theme.typography.fontWeight.bold,
-    color: Theme.colors.textOnDark,
-    textAlign: 'center',
-    marginBottom: Theme.spacing.xs,
-  },
-  headerSubtitle: {
-    fontSize: Theme.typography.fontSize.base,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
-  },
   headerCardWrapper: {
     paddingHorizontal: Theme.spacing.xl,
     marginBottom: Theme.spacing.lg,
