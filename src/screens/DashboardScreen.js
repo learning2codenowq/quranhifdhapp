@@ -11,16 +11,17 @@ import { Icon, AppIcons } from '../components/Icon';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Theme } from '../styles/theme';
 import { Logger } from '../utils/Logger';
-import { getThemedColors } from '../styles/theme';
+import { useSettings } from '../hooks/useSettings';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
 import ContinueCard from '../components/ContinueCard';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import WeeklyProgress from '../components/WeeklyProgress';
 
 export default function DashboardScreen({ navigation }) {
+  const { settings, themedColors, userName, dailyGoal } = useSettings();
+  
   const [stats, setStats] = useState(null);
   const [state, setState] = useState(null);
-  const [settings, setSettings] = useState({ darkMode: false });
   const [refreshing, setRefreshing] = useState(false);
   const [revisionPlan, setRevisionPlan] = useState(null);
   const [achievementModal, setAchievementModal] = useState({
@@ -28,7 +29,6 @@ export default function DashboardScreen({ navigation }) {
     achievements: []
   });
   const [totalAchievements, setTotalAchievements] = useState(0);
-  const [userName, setUserName] = useState('Student');
   const [nextSegment, setNextSegment] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [confettiShownToday, setConfettiShownToday] = useState(false);
@@ -52,17 +52,7 @@ export default function DashboardScreen({ navigation }) {
     if (!appState) {
       appState = await StorageService.initializeState();
     }
-    
-    // Load dark mode setting
-    if (appState?.settings) {
-      setSettings({
-        darkMode: appState.settings.darkMode || false
-      });
-    }
-      
-    const name = appState?.settings?.userName || 'Student';
-    setUserName(name);
-    
+          
     const { updatedState, newAchievements } = await QuranUtils.checkAndAwardAchievements(appState);
     setState(updatedState);
     
@@ -179,7 +169,7 @@ export default function DashboardScreen({ navigation }) {
 };
 
   if (!stats) {
-  const themedColors = getThemedColors(settings.darkMode);
+  
   console.log('🎨 Render check:', {
   hasNextSegment: !!nextSegment,
   isNewUser: nextSegment?.isNewUser,
@@ -226,7 +216,7 @@ export default function DashboardScreen({ navigation }) {
 
   // src/screens/DashboardScreen.js - Replace the entire return statement (starting from line 234)
 
-const themedColors = getThemedColors(settings.darkMode);
+
 
 return (
   <LinearGradient 

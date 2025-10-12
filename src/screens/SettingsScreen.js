@@ -10,27 +10,13 @@ import { Theme } from '../styles/theme';
 import { Icon } from '../components/Icon';
 import CustomTimePicker from '../components/CustomTimePicker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { getThemedColors } from '../styles/theme';
+import { useSettings } from '../hooks/useSettings';
 import { QuranService } from '../services/QuranService';
 
 
 export default function SettingsScreen({ navigation }) {
-  const [settings, setSettings] = useState({
-  // Audio Settings
-  autoPlayNext: false,
-  
-  // Display Settings
-  showTranslations: true,
-  arabicFontSize: 'Medium',
-  translationFontSize: 'Medium',
-  darkMode: false, 
-  tajweedHighlighting: false, 
-  scriptType: 'uthmani',
-  
-  // App Settings
-  dailyGoal: 10,
-  userName: 'Student',
-});
+  const { settings, themedColors, updateSetting: updateSettingHook } = useSettings();
+
   const [showNameModal, setShowNameModal] = useState(false);
   const [tempUserName, setTempUserName] = useState('');
   const [showDailyTargetModal, setShowDailyTargetModal] = useState(false);
@@ -67,19 +53,9 @@ useEffect(() => {
   const loadSettings = async () => {
   try {
     const state = await StorageService.getState();
+    
+    // Load selected reciter
     if (state?.settings) {
-      const newSettings = {
-        showTranslations: state.settings.showTranslations !== false,
-        arabicFontSize: state.settings.arabicFontSize || 'Medium',
-        translationFontSize: state.settings.translationFontSize || 'Medium',
-        autoPlayNext: state.settings.autoPlayNext !== false,
-        darkMode: state.settings.darkMode || false,
-        scriptType: state.settings.scriptType || 'uthmani',
-        userName: state.settings.userName || 'Student',
-        dailyGoal: state.settings.dailyGoal || 10,
-      };
-      Logger.log('🎵 Loaded settings:', newSettings);
-      setSettings(newSettings);
       setSelectedReciterId(state.settings.selectedReciter || null);
     }
     
@@ -107,18 +83,18 @@ useEffect(() => {
 };
 
   const updateSetting = async (key, value) => {
-    try {
-      const newSettings = { ...settings, [key]: value };
-      setSettings(newSettings);
-      
-      const state = await StorageService.getState();
-      if (!state.settings) state.settings = {};
-      state.settings[key] = value;
-      await StorageService.saveState(state);
-    } catch (error) {
-      console.error('Error updating setting:', error);
+  try {
+    // Use the hook's update method
+    const success = await updateSettingHook(key, value);
+    
+    if (!success) {
+      Alert.alert('Error', 'Failed to update setting. Please try again.');
     }
-  };
+  } catch (error) {
+    console.error('Error updating setting:', error);
+    Alert.alert('Error', 'Failed to update setting. Please try again.');
+  }
+};
   const updateNotificationSetting = async (key, value) => {
   try {
     const newSettings = { ...notificationSettings, [key]: value };
@@ -678,9 +654,6 @@ const formatTime = (timeObj) => {
     ]
   }] : [])
 ];
-
-  const themedColors = getThemedColors(settings.darkMode);
-
 return (
   <SafeAreaProvider>
     <LinearGradient 

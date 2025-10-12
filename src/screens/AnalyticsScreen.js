@@ -8,17 +8,17 @@ import AnimatedCard from '../components/AnimatedCard';
 import { Icon, AppIcons } from '../components/Icon';
 import { Theme } from '../styles/theme';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { getThemedColors } from '../styles/theme';
+import { useSettings } from '../hooks/useSettings';
 
 const { width } = Dimensions.get('window');
 
 export default function AnalyticsScreen({ navigation }) {
+  const { settings, themedColors } = useSettings();
   const [state, setState] = useState(null);
   const [weeklyData, setWeeklyData] = useState(null);
   const [monthlyData, setMonthlyData] = useState(null);
   const [surahProgress, setSurahProgress] = useState([]);
   const [activeTab, setActiveTab] = useState('week');
-  const [settings, setSettings] = useState({ darkMode: false });
 
   useEffect(() => {
     loadAnalytics();
@@ -31,14 +31,8 @@ export default function AnalyticsScreen({ navigation }) {
       setWeeklyData(AnalyticsUtils.getWeeklyAnalytics(appState));
       setMonthlyData(AnalyticsUtils.getMonthlyAnalytics(appState));
       setSurahProgress(AnalyticsUtils.getSurahProgress(appState));
-      
-      if (appState?.settings) {
-        setSettings({ darkMode: appState.settings.darkMode || false });
-      }
     }
   };
-
-  const themedColors = getThemedColors(settings.darkMode);
 
   if (!weeklyData || !monthlyData) {
     return (

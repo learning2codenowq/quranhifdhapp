@@ -18,13 +18,14 @@ import AnimatedCard from '../components/AnimatedCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Icon, AppIcons } from '../components/Icon';
 import { Theme } from '../styles/theme';
-import { getThemedColors } from '../styles/theme';
+import { useSettings } from '../hooks/useSettings';
 import { SurahListSkeleton } from '../components/SkeletonLoader';
 
 export default function SurahListScreen({ navigation }) {
+  const { settings, themedColors } = useSettings();
+  
   const [surahs, setSurahs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [settings, setSettings] = useState({ darkMode: false });
   const [memorizedStats, setMemorizedStats] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredSurahs, setFilteredSurahs] = useState([]);
@@ -76,12 +77,6 @@ export default function SurahListScreen({ navigation }) {
   const loadSurahs = async () => {
   try {
     setLoading(true);
-    
-    // Load dark mode setting - ADD THIS
-    const state = await StorageService.getState();
-    if (state?.settings) {
-      setSettings({ darkMode: state.settings.darkMode || false });
-    }
     
     const surahList = await QuranService.getAllSurahs();
     setSurahs(surahList);
@@ -222,7 +217,6 @@ export default function SurahListScreen({ navigation }) {
   };
 
   if (loading) {
-  const themedColors = getThemedColors(settings.darkMode);
   
   return (
     <SafeAreaProvider>
@@ -297,7 +291,7 @@ export default function SurahListScreen({ navigation }) {
   );
 }
 
-  const themedColors = getThemedColors(settings.darkMode);
+  
 
 return (
   <SafeAreaProvider>

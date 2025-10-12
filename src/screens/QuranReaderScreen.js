@@ -27,12 +27,23 @@ import ModernLoadingScreen from '../components/ModernLoadingScreen';
 import SurahCompletionModal from '../components/SurahCompletionModal';
 import { parseTajweedText, hasTajweedMarkup } from '../utils/TajweedParser';
 import { Theme } from '../styles/theme'; 
-import { getThemedColors } from '../styles/theme';
+import { useSettings } from '../hooks/useSettings';
 import { Icon, AppIcons } from '../components/Icon';
 
 
 export default function QuranReaderScreen({ route, navigation }) {
   const surahId = route?.params?.surahId || 1;
+  
+  // Use settings hook
+  const { settings, themedColors, loading: settingsLoading } = useSettings();
+  const [selectedReciterId, setSelectedReciterId] = useState(null);
+  
+// Sync selectedReciterId with settings
+useEffect(() => {
+  if (settings.selectedReciter) {
+    setSelectedReciterId(settings.selectedReciter);
+  }
+}, [settings.selectedReciter]);
   
   const [surahData, setSurahData] = useState(null);
   const [ayahs, setAyahs] = useState([]);
@@ -45,26 +56,9 @@ export default function QuranReaderScreen({ route, navigation }) {
   const [ayahAudioUrls, setAyahAudioUrls] = useState({});
   const [ayahCounters, setAyahCounters] = useState({});
   const [isInitialized, setIsInitialized] = useState(false);
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completedSurahInfo, setCompletedSurahInfo] = useState(null);
   const [loadingProgress, setLoadingProgress] = useState('');
-
-
-
-  // Settings state
-  const [settings, setSettings] = useState({
-  showTranslations: true,
-  arabicFontSize: 'Medium',
-  translationFontSize: 'Medium',
-  autoPlayNext: true,
-  darkMode: false, 
-  scriptType: 'uthmani',  
-});
-
-  const themedColors = getThemedColors(settings.darkMode);
-
-  const [selectedReciterId, setSelectedReciterId] = useState(null);
   
   // Replay segment states
   const [showReplayModal, setShowReplayModal] = useState(false);
@@ -104,14 +98,7 @@ useEffect(() => {
   setIsInitialized(false);
   
   const loadEverything = async () => {
-    try {
-      console.log('📥 Loading settings...');
-      await loadSettings();
-      console.log('✅ Settings loaded');
-      
-      // Small delay to ensure settings state is updated
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+    try {      
       console.log('🌐 Checking internet connection...');
       const hasInternet = await NetworkUtils.checkInternetConnection();
       if (!hasInternet) {
@@ -149,7 +136,7 @@ useEffect(() => {
     console.log('🧹 Cleanup');
     AudioService.stopAudio();
   };
-}, [surahId, selectedReciterId, settings.scriptType]);
+}, [surahId, selectedReciterId, settings?.scriptType]);
 
 // Separate effect for auto-scrolling to ayah
 useEffect(() => {
@@ -170,28 +157,6 @@ useEffect(() => {
   return () => clearTimeout(timer);
 }, [route.params?.scrollToAyah, ayahs.length]);
 
-  const loadSettings = async () => {
-  try {
-    const state = await StorageService.getState();
-    if (state?.settings) {
-      const newSettings = {
-        showTranslations: state.settings.showTranslations !== false,
-        arabicFontSize: state.settings.arabicFontSize || 'Medium',
-        translationFontSize: state.settings.translationFontSize || 'Medium',
-        autoPlayNext: state.settings.autoPlayNext !== false,
-        darkMode: state.settings.darkMode || false,
-        scriptType: state.settings.scriptType || 'uthmani',
-      };
-      Logger.log('🎵 Loaded settings:', newSettings);
-      setSettings(newSettings);
-      setSelectedReciterId(state.settings.selectedReciter || null);
-    }
-    setSettingsLoaded(true); // ADD THIS LINE
-  } catch (error) {
-    Logger.error('Error loading settings:', error);
-    setSettingsLoaded(true); // ADD THIS LINE
-  }
-};
 const TajweedHelpModal = () => (
   <Modal 
     visible={showTajweedHelp} 
@@ -1126,7 +1091,7 @@ const TajweedHelpModal = () => (
     );
   };
 
-  if (loading || !settingsLoaded) {
+  if (loading) {
   return (
     <ModernLoadingScreen 
       darkMode={settings.darkMode}
