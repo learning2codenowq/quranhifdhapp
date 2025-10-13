@@ -10,6 +10,8 @@ import { Icon, AppIcons } from '../components/Icon';
 import { Theme } from '../styles/theme';
 import { Logger } from '../utils/Logger';
 import { useSettings } from '../hooks/useSettings';
+import { useMemorization } from '../contexts';
+import { useAppState } from '../contexts';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
 import ContinueCard from '../components/ContinueCard';
 import ConfettiCannon from 'react-native-confetti-cannon';
@@ -20,117 +22,40 @@ import { LinearGradient } from 'expo-linear-gradient';
 export default function DashboardScreen({ navigation }) {
   const { settings, themedColors, userName, dailyGoal } = useSettings();
   
-  const [stats, setStats] = useState(null);
-  const [state, setState] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [revisionPlan, setRevisionPlan] = useState(null);
-  const [achievementModal, setAchievementModal] = useState({
-    visible: false,
-    achievements: []
-  });
-  const [totalAchievements, setTotalAchievements] = useState(0);
-  const [nextSegment, setNextSegment] = useState(null);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [confettiShownToday, setConfettiShownToday] = useState(false);
-  const confettiRef = useRef(null);
+  const { memorizedAyahs } = useMemorization();
+const { 
+  state,
+  stats,
+  dailyProgress,
+  revisionPlan,
+  achievements,
+  nextSegment,
+  loading: appStateLoading,
+  loadAppState
+} = useAppState();
+const [refreshing, setRefreshing] = useState(false);
+const [achievementModal, setAchievementModal] = useState({
+  visible: false,
+  achievements: []
+});
+const [showConfetti, setShowConfetti] = useState(false);
+const confettiRef = useRef(null);
 
   useEffect(() => {
-    loadData();
-    
-    const unsubscribe = navigation.addListener('focus', () => {
-     // Logger.log('Dashboard focused - reloading data');
-      loadData();
-    });
-    
-    return unsubscribe;
-  }, [navigation]);
-
-  const loadData = async () => {
-  try {
-    console.log('📊 Loading dashboard data...');
-    let appState = await StorageService.getState();
-    if (!appState) {
-      appState = await StorageService.initializeState();
-    }
-          
-    const { updatedState, newAchievements } = await QuranUtils.checkAndAwardAchievements(appState);
-    setState(updatedState);
-    
-    const computedStats = QuranUtils.computeStats(updatedState);
-    const todaysRevision = QuranUtils.getRevisionPlan(updatedState);
-    
-    setStats(computedStats);
-    setRevisionPlan(todaysRevision);
-    
-    const earnedCount = updatedState.earnedAchievements?.length || 0;
-    setTotalAchievements(earnedCount);
-    
-    // Get next segment
-    const segment = QuranUtils.getNextMemorizationSegment(updatedState);
-    console.log('🎯 Next segment:', segment);
-    console.log('📍 Last memorized position:', updatedState.lastMemorizedPosition);
-    setNextSegment(segment);
-    
-    // FIXED: Check for BOTH daily goal AND revision completion
-    const today = QuranUtils.localISO();
-    const todayProgress = updatedState?.progress?.[today] || 0;
-    const dailyGoal = updatedState?.settings?.dailyGoal || 10;
-    
-    // Check if revision is complete
-    const todayTikrarProgress = QuranUtils.getTikrarProgress(updatedState);
-    const revisionTarget = todaysRevision?.revision?.target || 0;
-    const revisionCompleted = todayTikrarProgress.revision >= revisionTarget;
-    
-    // Check if confetti was already shown today
-    const lastConfettiDate = updatedState?.lastConfettiDate;
-    const confettiAlreadyShown = lastConfettiDate === today;
-    
-    console.log('🎊 Confetti check:', {
-      todayProgress,
-      dailyGoal,
-      newMemCompleted: todayProgress >= dailyGoal,
-      revisionTarget,
-      revisionCompleted,
-      confettiAlreadyShown,
-      lastConfettiDate
-    });
-    
-    // FIXED: Only show confetti if BOTH tasks complete AND not shown today yet
-    const bothTasksComplete = todayProgress >= dailyGoal && revisionCompleted;
-    
-    if (bothTasksComplete && !confettiAlreadyShown && !showConfetti) {
-      console.log('🎊 TRIGGERING CONFETTI - Both tasks complete!');
-      setShowConfetti(true);
-      
-      // Mark confetti as shown today
-      updatedState.lastConfettiDate = today;
-      await StorageService.saveState(updatedState);
-      
-      setTimeout(() => {
-        confettiRef.current?.start();
-      }, 500);
-      
-      setTimeout(() => {
-        setShowConfetti(false);
-      }, 4000);
-    }
-    
-    if (newAchievements.length > 0) {
-      setAchievementModal({
-        visible: true,
-        achievements: newAchievements
-      });
-    }
-  } catch (error) {
-    console.error('❌ Error loading dashboard data:', error);
-  }
-};
+  loadAppState();
+  
+  const unsubscribe = navigation.addListener('focus', () => {
+    loadAppState();
+  });
+  
+  return unsubscribe;
+}, [navigation]);
 
   const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
-  };
+  setRefreshing(true);
+  await loadAppState();
+  setRefreshing(false);
+};
 
   const handleCategoryPress = (categoryType) => {
     if (!revisionPlan) return;
@@ -168,14 +93,7 @@ export default function DashboardScreen({ navigation }) {
   }
 };
 
-  if (!stats) {
-  
-  console.log('🎨 Render check:', {
-    hasNextSegment: !!nextSegment,
-    isNewUser: nextSegment?.isNewUser,
-    willShowCard: nextSegment && !nextSegment.isNewUser
-  });
-  
+  if (appStateLoading || !stats) {
   return (
     <ScreenLayout showBottomNav={true}>
       <DashboardSkeleton darkMode={settings.darkMode} />
@@ -523,7 +441,7 @@ return (
       </TouchableOpacity>
 
       {/* Achievements Card */}
-      {totalAchievements > 0 && (
+      {achievements.length > 0 && (
         <TouchableOpacity 
           style={styles.actionCard}
           onPress={() => navigation.navigate('Achievements')}
@@ -541,7 +459,7 @@ return (
               <View>
                 <Text style={styles.actionCardTitle}>Achievements</Text>
                 <Text style={styles.actionCardSubtitle}>
-                  {totalAchievements} earned
+                  {achievements.length} earned
                 </Text>
               </View>
             </View>

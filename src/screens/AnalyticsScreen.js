@@ -7,6 +7,7 @@ import AnimatedCard from '../components/AnimatedCard';
 import { Icon, AppIcons } from '../components/Icon';
 import { Theme } from '../styles/theme';
 import { useSettings } from '../hooks/useSettings';
+import { useAppState } from '../contexts';
 import ScreenLayout from '../layouts/ScreenLayout';
 import ScreenHeader from '../layouts/ScreenHeader';
 
@@ -14,25 +15,19 @@ const { width } = Dimensions.get('window');
 
 export default function AnalyticsScreen({ navigation }) {
   const { settings, themedColors } = useSettings();
-  const [state, setState] = useState(null);
+  const { state } = useAppState();
   const [weeklyData, setWeeklyData] = useState(null);
   const [monthlyData, setMonthlyData] = useState(null);
   const [surahProgress, setSurahProgress] = useState([]);
   const [activeTab, setActiveTab] = useState('week');
 
   useEffect(() => {
-    loadAnalytics();
-  }, []);
-
-  const loadAnalytics = async () => {
-    const appState = await StorageService.getState();
-    if (appState) {
-      setState(appState);
-      setWeeklyData(AnalyticsUtils.getWeeklyAnalytics(appState));
-      setMonthlyData(AnalyticsUtils.getMonthlyAnalytics(appState));
-      setSurahProgress(AnalyticsUtils.getSurahProgress(appState));
-    }
-  };
+  if (state) {
+    setWeeklyData(AnalyticsUtils.getWeeklyAnalytics(state));
+    setMonthlyData(AnalyticsUtils.getMonthlyAnalytics(state));
+    setSurahProgress(AnalyticsUtils.getSurahProgress(state));
+  }
+}, [state]);
 
   if (!weeklyData || !monthlyData) {
   return (

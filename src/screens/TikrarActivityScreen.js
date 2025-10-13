@@ -6,47 +6,41 @@ import { Theme } from '../styles/theme';
 import ScreenLayout from '../layouts/ScreenLayout';
 import ScreenHeader from '../layouts/ScreenHeader';
 import { useSettings } from '../hooks/useSettings';
+import { useAppState } from '../contexts';
 
 export default function TikrarActivityScreen({ route, navigation }) {
   const { settings, themedColors } = useSettings();
-  
+  const { state } = useAppState();
   const { categoryType, categoryData } = route.params;
   const [completed, setCompleted] = useState(0);
-  const [state, setState] = useState(null);
 
   useEffect(() => {
+  loadData();
+}, [state, categoryType]);
+
+  useEffect(() => {
+  const unsubscribe = navigation.addListener('focus', () => {
+    console.log('TikrarActivity focused - reloading data');
     loadData();
-  }, []);
+  });
+  
+  return unsubscribe;
+}, [navigation]);
 
-  // Add navigation listener to reload data when screen comes into focus
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      console.log('TikrarActivity focused - reloading data');
-      loadData();
-    });
+  const loadData = () => {
+  if (state) {
+    // Load existing progress for today from context state
+    const todayProgress = QuranUtils.getTikrarProgress(state);
+    const currentProgress = todayProgress[categoryType] || 0;
+    setCompleted(currentProgress);
     
-    return unsubscribe;
-  }, [navigation]);
-
-  const loadData = async () => {
-    try {
-      const appState = await StorageService.getState();
-      setState(appState);
-      
-      // Load existing progress for today
-      const todayProgress = QuranUtils.getTikrarProgress(appState);
-      const currentProgress = todayProgress[categoryType] || 0;
-      setCompleted(currentProgress);
-      
-      console.log('TikrarActivity data loaded:', {
-        categoryType,
-        currentProgress,
-        todayProgress
-      });
-    } catch (error) {
-      console.error('Error loading TikrarActivity data:', error);
-    }
-  };
+    console.log('TikrarActivity data loaded:', {
+      categoryType,
+      currentProgress,
+      todayProgress
+    });
+  }
+};
 
   const getTitle = () => {
     switch (categoryType) {

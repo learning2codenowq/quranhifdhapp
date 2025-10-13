@@ -28,6 +28,7 @@ import SurahCompletionModal from '../components/SurahCompletionModal';
 import { parseTajweedText, hasTajweedMarkup } from '../utils/TajweedParser';
 import { Theme } from '../styles/theme'; 
 import { useSettings } from '../hooks/useSettings';
+import { useMemorization } from '../contexts';
 import { Icon, AppIcons } from '../components/Icon';
 import BasmalaCard from '../components/quran/BasmalaCard';
 import AyahCounter from '../components/quran/AyahCounter';
@@ -43,6 +44,13 @@ export default function QuranReaderScreen({ route, navigation }) {
   // Use settings hook
   const { settings, themedColors, loading: settingsLoading } = useSettings();
   const [selectedReciterId, setSelectedReciterId] = useState(null);
+  const { 
+  memorizedAyahs, 
+  isAyahMemorized: isAyahMemorizedContext, 
+  markAsMemorized, 
+  unmarkAsMemorized,
+  getSurahProgress: getSurahProgressContext 
+} = useMemorization();
   
 // Sync selectedReciterId with settings
 useEffect(() => {
@@ -55,7 +63,6 @@ useEffect(() => {
   const [ayahs, setAyahs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showTajweedHelp, setShowTajweedHelp] = useState(false);
-  const [memorizedAyahs, setMemorizedAyahs] = useState([]);
   const [audioStatus, setAudioStatus] = useState({ isPlaying: false, hasSound: false });
   const [playingAyah, setPlayingAyah] = useState(null);
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -124,8 +131,6 @@ useEffect(() => {
       console.log('📥 Loading surah data...');
       await loadSurahData();
       console.log('✅ Surah data loaded');
-      
-      loadMemorizedAyahs();
       AudioService.setupAudio();
       
       setIsInitialized(true);
@@ -386,51 +391,14 @@ const TajweedHelpModal = () => (
   
   return attemptLoad();
 };
-
-  const loadMemorizedAyahs = async () => {
-    try {
-      const state = await StorageService.getState();
-      if (state && state.ayahProgress) {
-        const memorized = [];
-        Object.keys(state.ayahProgress).forEach(surahIdKey => {
-          Object.keys(state.ayahProgress[surahIdKey]).forEach(ayahNumber => {
-            const ayahData = state.ayahProgress[surahIdKey][ayahNumber];
-            if (ayahData.memorized) {
-              memorized.push({
-                surahId: parseInt(surahIdKey),
-                ayahNumber: parseInt(ayahNumber)
-              });
-            }
-          });
-        });
-        setMemorizedAyahs(memorized);
-      }
-    } catch (error) {
-      Logger.error('Error loading memorized ayahs:', error);
-    }
-  };
-
-  const isAyahMemorized = (currentSurahId, ayahNumber) => {
-    return memorizedAyahs.some(ayah => 
-      ayah.surahId === currentSurahId && ayah.ayahNumber === ayahNumber
-    );
-  };
   
   const checkSurahCompletion = async (surahId) => {
   try {
-    const state = await StorageService.getState();
-    if (!state?.ayahProgress?.[surahId]) return false;
-    
-    const surahProgress = state.ayahProgress[surahId];
     const totalAyahs = surahData?.total_ayahs || ayahs.length;
+    const progress = getSurahProgressContext(surahId, totalAyahs);
     
-    // Count memorized ayahs
-    const memorizedCount = Object.values(surahProgress).filter(
-      ayah => ayah.memorized
-    ).length;
-    
-    // Check if surah just became complete
-    const isComplete = memorizedCount >= totalAyahs;
+    // Check if surah is complete
+    const isComplete = progress.memorized >= totalAyahs;
     
     if (isComplete) {
       setCompletedSurahInfo({
@@ -451,35 +419,38 @@ const TajweedHelpModal = () => (
 };
 
   const toggleAyahMemorization = async (currentSurahId, ayahNumber, isCurrentlyMemorized) => {
-    try {
-      // Scale animation
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 1.1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
+  try {
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 1.1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-      if (isCurrentlyMemorized) {
-        await QuranUtils.unmarkAyahMemorized(currentSurahId, ayahNumber);
-        Alert.alert('✓ Removed', 'Ayah unmarked from memorization', [{ text: 'OK' }]);
-      } else {
-        await QuranUtils.markAyahMemorized(currentSurahId, ayahNumber, 2);
-        await checkSurahCompletion(currentSurahId);
-      }
-      
-      await loadMemorizedAyahs();
-    } catch (error) {
-      Logger.error('Error toggling memorization:', error);
-      Alert.alert('Error', 'Failed to update memorization status');
+    if (isCurrentlyMemorized) {
+      await unmarkAsMemorized(currentSurahId, ayahNumber);
+      Alert.alert('✓ Removed', 'Ayah unmarked from memorization', [{ text: 'OK' }]);
+    } else {
+      await markAsMemorized(currentSurahId, ayahNumber, 2);
+      await checkSurahCompletion(currentSurahId);
     }
-  };
+    
+    try {
+      Vibration.vibrate(50);
+    } catch (error) {
+      console.log('Vibration not available');
+    }
+  } catch (error) {
+    Logger.error('Error toggling memorization:', error);
+    Alert.alert('Error', 'Failed to update memorization status');
+  }
+};
 
   const handleAudioPlay = async (currentSurahId, ayahNumber) => {
     try {
@@ -883,12 +854,12 @@ const TajweedHelpModal = () => (
     return surahId !== 1 && surahId !== 9;
   };
 
-  const getSurahProgress = () => {
-    const currentSurahId = surahData?.id || surahId;
-    const memorizedCount = memorizedAyahs.filter(ayah => ayah.surahId === currentSurahId).length;
-    const totalAyahs = surahData?.total_ayahs || ayahs.length;
-    return { memorized: memorizedCount, total: totalAyahs };
-  };
+  const getSurahProgressLocal = () => {
+  const currentSurahId = surahData?.id || surahId;
+  const totalAyahs = surahData?.total_ayahs || ayahs.length;
+  const progress = getSurahProgressContext(currentSurahId, totalAyahs);
+  return { memorized: progress.memorized, total: progress.total };
+};
 
   const getFontSize = (sizeCategory) => {
   const sizes = {
@@ -966,12 +937,12 @@ const TajweedHelpModal = () => (
               <View 
                 style={[
                   styles.progressFill, 
-                  { width: `${(getSurahProgress().memorized / getSurahProgress().total) * 100}%` }
+                  { width: `${(getSurahProgressLocal().memorized / getSurahProgressLocal().total) * 100}%` }
                 ]} 
               />
             </View>
             <Text style={styles.progressText}>
-              {getSurahProgress().memorized} of {getSurahProgress().total} memorized
+              {getSurahProgressLocal().memorized} of {getSurahProgressLocal().total} memorized
             </Text>
           </View>
           {/* Main Content */}
@@ -981,7 +952,7 @@ const TajweedHelpModal = () => (
   keyExtractor={(item, index) => `${surahId}-${item.verse_number || index}`}
   renderItem={({ item }) => {
   const currentSurahId = surahData?.id || surahId;
-  const isMemorized = isAyahMemorized(currentSurahId, item.verse_number);
+  const isMemorized = isAyahMemorizedContext(currentSurahId, item.verse_number);  // ← FIXED!
   const isCurrentlyPlaying = playingAyah && 
     playingAyah.surahId === currentSurahId && 
     playingAyah.ayahNumber === item.verse_number;

@@ -9,27 +9,19 @@ import { Theme } from '../styles/theme';
 import ScreenLayout from '../layouts/ScreenLayout';
 import ScreenHeader from '../layouts/ScreenHeader';
 import { useSettings } from '../hooks/useSettings';
+import { useAppState } from '../contexts';
 
 export default function AchievementsScreen({ navigation }) {
   const { settings, themedColors } = useSettings();
-  
-  const [earnedAchievements, setEarnedAchievements] = useState([]);
-  const [totalAchievements, setTotalAchievements] = useState(0);
+  const { achievements: earnedAchievementIds, loading: appStateLoading } = useAppState();
   const [loading, setLoading] = useState(true);
 
 
   useEffect(() => {
-    loadAchievements();
-  }, []);
-
-  const loadAchievements = async () => {
-  setLoading(true);
-  const state = await StorageService.getState();
-  const earned = state?.earnedAchievements || [];
-    setEarnedAchievements(earned);
-    setTotalAchievements(AchievementSystem.achievements.length);
+  if (!appStateLoading) {
     setLoading(false);
-  };
+  }
+}, [appStateLoading]);
 
   const getAchievementData = (achievementId) => {
     return AchievementSystem.achievements.find(a => a.id === achievementId);
@@ -170,7 +162,7 @@ export default function AchievementsScreen({ navigation }) {
   <ScreenLayout scrollable={true}>
     <ScreenHeader 
       title="Achievements"
-      subtitle={`${earnedAchievements.length} / ${totalAchievements} Unlocked`}
+      subtitle={`${earnedAchievementIds.length} / ${AchievementSystem.achievements.length} Unlocked`}
       onBack={() => navigation.goBack()}
     />
     
@@ -179,13 +171,13 @@ export default function AchievementsScreen({ navigation }) {
       {/* Progress Bar */}
       <View style={styles.progressContainer}>
         <Text style={styles.progressText}>
-          {earnedAchievements.length} / {totalAchievements} Unlocked
+          {earnedAchievementIds.length} / {AchievementSystem.achievements.length} Unlocked
         </Text>
         <View style={styles.progressBar}>
           <View 
             style={[
               styles.progressFill,
-              { width: `${(earnedAchievements.length / totalAchievements) * 100}%` }
+              { width: `${(earnedAchievementIds.length / AchievementSystem.achievements.length) * 100}%` }
             ]}
           />
         </View>
@@ -211,7 +203,7 @@ export default function AchievementsScreen({ navigation }) {
               <AchievementCard 
                 key={achievement.id}
                 achievement={achievement}
-                isEarned={earnedAchievements.includes(achievement.id)}
+                isEarned={earnedAchievementIds.includes(achievement.id)}
               />
             ))}
           </View>

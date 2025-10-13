@@ -22,7 +22,7 @@ import AboutScreen from './src/screens/AboutScreen';
 import { StorageService } from './src/services/StorageService';
 import { Logger } from './src/utils/Logger';
 import { StatusBar } from 'expo-status-bar';
-
+import { MemorizationProvider, AppStateProvider } from './src/contexts';
 
 
 const Stack = createStackNavigator();
@@ -118,39 +118,46 @@ export default function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <StatusBar style="light" />
-      <View style={styles.container}>
-        <NavigationContainer ref={navigationRef} onStateChange={onStateChange}>
-          <Stack.Navigator 
-            initialRouteName={isFirstTime ? "Onboarding" : "Dashboard"} 
-            screenOptions={{ headerShown: false }}
-          >
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-            <Stack.Screen name="Dashboard" component={DashboardScreen} />
-            <Stack.Screen name="Reading" component={ReadingScreen} />
-            <Stack.Screen name="ClassicMushaf" component={ClassicMushafScreen} />
-            <Stack.Screen name="QuranReader" component={QuranReaderScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="TikrarActivity" component={TikrarActivityScreen} />
-            <Stack.Screen name="Achievements" component={AchievementsScreen} />
-            <Stack.Screen name="Analytics" component={AnalyticsScreen} />
-            <Stack.Screen name="SurahList" component={SurahListScreen} />
-            <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
-            <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
-            <Stack.Screen name="About" component={AboutScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
+  <ErrorBoundary>
+    <MemorizationProvider>
+      <AppStateProvider>
+        <View style={styles.container}>
+          {showSplash ? (
+            <SplashScreen onFinish={handleSplashFinish} />
+          ) : (
+            <NavigationContainer ref={navigationRef} onStateChange={onStateChange}>
+              <Stack.Navigator
+                initialRouteName={isFirstTime ? "Onboarding" : "Dashboard"} 
+                screenOptions={{ headerShown: false }}
+              >
+                <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+                <Stack.Screen name="Dashboard" component={DashboardScreen} />
+                <Stack.Screen name="Reading" component={ReadingScreen} />
+                <Stack.Screen name="ClassicMushaf" component={ClassicMushafScreen} />
+                <Stack.Screen name="QuranReader" component={QuranReaderScreen} />
+                <Stack.Screen name="Settings" component={SettingsScreen} />
+                <Stack.Screen name="TikrarActivity" component={TikrarActivityScreen} />
+                <Stack.Screen name="Achievements" component={AchievementsScreen} />
+                <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+                <Stack.Screen name="SurahList" component={SurahListScreen} />
+                <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+                <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
+                <Stack.Screen name="About" component={AboutScreen} />
+              </Stack.Navigator>
+            </NavigationContainer>
+          )}
 
-        {showBottomNav && (
-          <BottomNavigation 
-            currentRoute={currentRoute}
-            onNavigate={handleNavigate}
-          />
-        )}
-      </View>
-    </ErrorBoundary>
-  );
+          {showBottomNav && (
+            <BottomNavigation 
+              currentRoute={currentRoute}
+              onNavigate={handleNavigate}
+            />
+          )}
+        </View>
+      </AppStateProvider>
+    </MemorizationProvider>
+  </ErrorBoundary>
+);
 }
 
 const styles = StyleSheet.create({
