@@ -29,6 +29,12 @@ import { parseTajweedText, hasTajweedMarkup } from '../utils/TajweedParser';
 import { Theme } from '../styles/theme'; 
 import { useSettings } from '../hooks/useSettings';
 import { Icon, AppIcons } from '../components/Icon';
+import BasmalaCard from '../components/quran/BasmalaCard';
+import AyahCounter from '../components/quran/AyahCounter';
+import AudioControls from '../components/quran/AudioControls';
+import AyahItem from '../components/quran/AyahItem';
+import ReplayModal from '../components/quran/ReplayModal';
+import ReplayProgressBar from '../components/quran/ReplayProgressBar';
 
 
 export default function QuranReaderScreen({ route, navigation }) {
@@ -903,194 +909,6 @@ const TajweedHelpModal = () => (
     };
     return sizes[sizeCategory] || 16;
   };
-
-  // Modern Basmala Component
-  const BasmalaModern = () => {
-  const currentSurahId = surahData?.id || surahId;
-  
-  // Safety check
-  if (!currentSurahId || !shouldShowBasmala(currentSurahId)) {
-    return null;
-  }
-
-  return (
-    <View style={styles.modernBasmalaContainer}>
-      <View style={styles.basmalaCard}>
-        <Text style={styles.modernBasmalaText}>
-          بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
-        </Text>
-      </View>
-    </View>
-  );
-};
-
-  // Modern Ayah Item Component
-  const AyahItemModern = ({ item }) => {
-  // Safety checks
-  if (!item || !item.verse_number) {
-    console.warn('Invalid ayah item:', item);
-    return null;
-  }
-  
-  const currentSurahId = surahData?.id || surahId;
-  const isMemorized = isAyahMemorized(currentSurahId, item.verse_number);
-  const isCurrentlyPlaying = playingAyah && 
-    playingAyah.surahId === currentSurahId && 
-    playingAyah.ayahNumber === item.verse_number;
-  
-  const currentCount = ayahCounters[item.verse_number] || 0;
-  
-  return (
-    <View style={styles.modernAyahContainer}>
-        {/* Ayah Number Badge */}
-        <View style={styles.ayahNumberBadge}>
-          <Text style={styles.ayahNumberText}>{item.verse_number}</Text>
-        </View>
-
-        {/* Arabic Text Card */}
-<View style={[
-  styles.arabicTextCard, 
-  isMemorized && styles.memorizedCard,
-  settings.darkMode && { backgroundColor: themedColors.cardBackground }
-]}>
-  <View style={styles.arabicTextWrapper}>
-  <Text style={[
-    styles.modernArabicText, 
-    { 
-      fontSize: getFontSize(settings.arabicFontSize),
-      lineHeight: getFontSize(settings.arabicFontSize) * 1.8,
-      color: settings.darkMode ? themedColors.textPrimary : Theme.colors.primary,
-      fontFamily: settings.scriptType === 'uthmani' || settings.scriptType === 'tajweed' 
-        ? 'UthmanicFont'
-        : settings.scriptType === 'indopak'
-        ? 'IndoPakFont'
-        : 'System',
-    }
-  ]}>
-    {settings.scriptType === 'tajweed' && hasTajweedMarkup(item.text) ? (
-  parseTajweedText(item.text).map((segment, idx) => (
-    <Text key={idx} style={segment.color ? { color: segment.color } : {}}>
-      {segment.text}
-    </Text>
-  ))
-) : settings.scriptType === 'uthmani' ? (
-  cleanArabicText(item.text)
-) : (
-  item.text
-)}
-  </Text>
-</View>
-</View>
-        
-        {/* Translation Card */}
-        {settings.showTranslations && (
-  <View style={[
-    styles.translationCard,
-    settings.darkMode && { backgroundColor: themedColors.surface }
-  ]}>
-    <Text style={[
-      styles.modernTranslationText,
-      { 
-        fontSize: getTranslationFontSize(settings.translationFontSize),
-        color: settings.darkMode ? themedColors.textSecondary : Theme.colors.textSecondary,
-      }
-    ]}>
-      {cleanTranslation(item.translation)}
-    </Text>
-  </View>
-)}
-        
-        {/*Counter */}
-        
-        <View style={styles.counterContainer}>
-  {currentCount > 0 && (
-    <TouchableOpacity
-      style={styles.resetButton}
-      onPress={() => handleCounterReset(item.verse_number)}
-      activeOpacity={0.7}
-      accessible={true}
-      accessibilityLabel="Reset counter"
-      accessibilityHint="Reset repetition count to zero"
-    >
-      <Icon 
-        name="refresh" 
-        type="Ionicons" 
-        size={20} 
-        color="white" 
-      />
-    </TouchableOpacity>
-  )}
-  
-  <TouchableOpacity
-    style={styles.counterButton}
-    onPress={() => handleCounterTap(item.verse_number)}
-    activeOpacity={0.7}
-    accessible={true}
-    accessibilityLabel={`Repetition counter: ${currentCount} times`}
-    accessibilityHint="Tap to increment repetition count"
-  >
-    <Text style={styles.counterLabel}>Counter</Text>
-    <Text style={styles.counterNumber}>{currentCount}</Text>
-  </TouchableOpacity>
-</View>
-        
-        {/* Modern Controls */}
-        <View style={styles.modernControls}>
-  <TouchableOpacity
-    style={[
-      styles.modernAudioButton, 
-      isCurrentlyPlaying && styles.activeAudioButton,
-      settings.darkMode && { backgroundColor: themedColors.primary }
-    ]}
-    onPress={() => handleAudioPlay(currentSurahId, item.verse_number)}
-    accessible={true}
-    accessibilityLabel={isCurrentlyPlaying && audioStatus.isPlaying ? "Pause ayah recitation" : "Play ayah recitation"}
-    accessibilityRole="button"
-  >
-    <Icon 
-      name={isCurrentlyPlaying && audioStatus.isPlaying ? 'pause' : 'play'} 
-      type="Ionicons" 
-      size={20} 
-      color="white" 
-    />
-  </TouchableOpacity>
-  
-  <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-    <TouchableOpacity
-      style={[
-        styles.modernMemorizeButton,
-        isMemorized && styles.modernMemorizedButton,
-        settings.darkMode && !isMemorized && { backgroundColor: themedColors.surface }
-      ]}
-      onPress={() => toggleAyahMemorization(
-        currentSurahId, 
-        item.verse_number, 
-        isMemorized
-      )}
-      accessible={true}
-      accessibilityLabel={isMemorized ? "Mark ayah as not memorized" : "Mark ayah as memorized"}
-      accessibilityRole="button"
-    >
-      <Icon 
-        name={isMemorized ? 'checkmark-circle' : 'radio-button-off'} 
-        type="Ionicons" 
-        size={20} 
-        color={isMemorized ? Theme.colors.success : (settings.darkMode ? themedColors.textMuted : Theme.colors.textMuted)} 
-      />
-      <Text style={[
-        styles.modernMemorizeText,
-        isMemorized && styles.modernMemorizedText,
-        settings.darkMode && !isMemorized && { color: themedColors.textPrimary }
-      ]}>
-        {isMemorized ? 'Memorized' : 'Mark as Memorized'}
-      </Text>
-    </TouchableOpacity>
-  </Animated.View>
-</View>
-      </View>
-    );
-  };
-
   if (loading) {
   return (
     <ModernLoadingScreen 
@@ -1161,8 +979,44 @@ const TajweedHelpModal = () => (
   ref={flatListRef}
   data={ayahs}
   keyExtractor={(item, index) => `${surahId}-${item.verse_number || index}`}
-  renderItem={AyahItemModern}
-  ListHeaderComponent={BasmalaModern}
+  renderItem={({ item }) => {
+  const currentSurahId = surahData?.id || surahId;
+  const isMemorized = isAyahMemorized(currentSurahId, item.verse_number);
+  const isCurrentlyPlaying = playingAyah && 
+    playingAyah.surahId === currentSurahId && 
+    playingAyah.ayahNumber === item.verse_number;
+  const currentCount = ayahCounters[item.verse_number] || 0;
+
+  return (
+    <AyahItem
+      item={item}
+      surahId={currentSurahId}
+      settings={settings}
+      darkMode={settings.darkMode}
+      themedColors={themedColors}
+      isMemorized={isMemorized}
+      isCurrentlyPlaying={isCurrentlyPlaying}
+      currentCount={currentCount}
+      onToggleMemorization={() => toggleAyahMemorization(currentSurahId, item.verse_number, isMemorized)}
+      onPlayAudio={() => handleAudioPlay(currentSurahId, item.verse_number)}
+      onIncrementCounter={() => handleCounterTap(item.verse_number)}
+      onResetCounter={() => handleCounterReset(item.verse_number)}
+      parseTajweedText={parseTajweedText}
+      hasTajweedMarkup={hasTajweedMarkup}
+      cleanArabicText={cleanArabicText}
+      cleanTranslation={cleanTranslation}
+      getFontSize={getFontSize}
+      getTranslationFontSize={getTranslationFontSize}
+    />
+  );
+}}
+  ListHeaderComponent={() => (
+    <BasmalaCard
+      surahId={surahData?.id || surahId}
+      darkMode={settings.darkMode}
+      themedColors={themedColors}
+    />
+  )}
   contentContainerStyle={styles.modernListContent}
   showsVerticalScrollIndicator={false}
   
@@ -1197,84 +1051,73 @@ const TajweedHelpModal = () => (
           </View>
 
           {/* Replay Modal */}
-          <Modal visible={showReplayModal} transparent={true} animationType="slide">
-            <View style={styles.modernModalOverlay}>
-              <View style={styles.modernReplayModal}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modernModalTitle}>Replay Segment</Text>
-                  <TouchableOpacity onPress={() => setShowReplayModal(false)}>
-                    <Icon name="close" type="Ionicons" size={24} color={Theme.colors.textMuted} />
-                  </TouchableOpacity>
-                </View>
-                
-                <View style={styles.modernInputRow}>
-                  <View style={styles.modernInputGroup}>
-                    <Text style={styles.modernInputLabel}>Start</Text>
-                    <TextInput
-                      style={styles.modernInput}
-                      value={replaySegment.startAyah}
-                      onChangeText={(text) => setReplaySegment(prev => ({ ...prev, startAyah: text }))}
-                      keyboardType="numeric"
-                      maxLength={3}
-                    />
-                  </View>
-                  
-                  <View style={styles.modernInputGroup}>
-                    <Text style={styles.modernInputLabel}>End</Text>
-                    <TextInput
-                      style={styles.modernInput}
-                      value={replaySegment.endAyah}
-                      onChangeText={(text) => setReplaySegment(prev => ({ ...prev, endAyah: text }))}
-                      keyboardType="numeric"
-                      maxLength={3}
-                    />
-                  </View>
-                  
-                  <View style={styles.modernInputGroup}>
-                    <Text style={styles.modernInputLabel}>Times</Text>
-                    <TextInput
-                      style={styles.modernInput}
-                      value={replaySegment.repetitions}
-                      onChangeText={(text) => setReplaySegment(prev => ({ ...prev, repetitions: text }))}
-                      keyboardType="numeric"
-                      maxLength={2}
-                    />
-                  </View>
-                </View>
-                
-                <TouchableOpacity style={styles.modernStartButton} onPress={startReplaySegment}>
-                  <Text style={styles.modernStartButtonText}>Start Replay</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
+      <ReplayModal
+  visible={showReplayModal}
+  onClose={() => setShowReplayModal(false)}
+  onStart={({ startAyah, endAyah, repetitions }) => {
+    // Update the replaySegment state first
+    setReplaySegment({
+      startAyah: startAyah.toString(),
+      endAyah: endAyah.toString(),
+      repetitions: repetitions.toString()
+    });
+    setShowReplayModal(false);
+    
+    // Call your existing function with the values
+    setTimeout(() => {
+      const start = parseInt(startAyah);
+      const end = parseInt(endAyah);
+      const reps = parseInt(repetitions);
+      
+      if (isNaN(start) || isNaN(end) || isNaN(reps) || start < 1 || end < 1 || reps < 1) {
+        Alert.alert('Invalid Input', 'Please enter valid numbers greater than 0');
+        return;
+      }
+
+      if (start > end) {
+        Alert.alert('Invalid Range', 'Start ayah must be less than or equal to end ayah');
+        return;
+      }
+
+      if (end > ayahs.length) {
+        Alert.alert('Invalid Range', `End ayah cannot be greater than ${ayahs.length}`);
+        return;
+      }
+
+      setIsReplaying(true);
+      isReplayingRef.current = true;
+      
+      setReplayProgress({
+        current: 0,
+        total: reps,
+        currentAyah: 0,
+        totalAyahs: end - start + 1
+      });
+      
+      playSegmentSequence(start, end, reps);
+    }, 100);
+  }}
+  darkMode={settings.darkMode}
+  themedColors={themedColors}
+  totalAyahs={surahData?.total_ayahs || ayahs.length}
+/>
           {/* Tajweed Help Modal */}
 <TajweedHelpModal />
 
           {/* Replay Progress Bottom Bar */}
-          {isReplaying && (
-            <View style={styles.modernReplayBar}>
-              <View style={styles.replayInfo}>
-                <Text style={styles.replayText}>
-                  Playing {replayProgress.current}/{replayProgress.total} • 
-                  Ayah {replayProgress.currentAyah}/{replayProgress.totalAyahs}
-                </Text>
-                <TouchableOpacity style={styles.modernStopButton} onPress={stopReplaySegment}>
-                  <Icon name="stop" type="Ionicons" size={16} color="white" />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.modernProgressBar}>
-                <View 
-                  style={[
-                    styles.modernProgressFill,
-                    { 
-                      width: `${((replayProgress.current - 1) * replayProgress.totalAyahs + replayProgress.currentAyah) / (replayProgress.total * replayProgress.totalAyahs) * 100}%`
-                    }
-                  ]}
-                />
-              </View>
-            </View>
-          )}
+<ReplayProgressBar
+  replayState={{
+    isActive: isReplaying,
+    currentAyah: replayProgress.currentAyah,
+    currentRepetition: replayProgress.current,
+    totalRepetitions: replayProgress.total,
+    startAyah: parseInt(replaySegment.startAyah) || 1,
+    endAyah: parseInt(replaySegment.endAyah) || 1
+  }}
+  onStop={stopReplaySegment}
+  darkMode={settings.darkMode}
+  themedColors={themedColors}
+/>
         </SafeAreaView>
         <SurahCompletionModal
           visible={showCompletionModal}
@@ -1426,183 +1269,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 100,
   },
-
-  // Basmala Modern
-  modernBasmalaContainer: {
-    marginBottom: 24,
-  },
-  basmalaCard: {
-    backgroundColor: Theme.colors.cardBackground,
-    borderRadius: 20,
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    ...Theme.shadows.md,
-    borderLeftWidth: 4,
-    borderLeftColor: Theme.colors.secondary,
-  },
-  modernBasmalaText: {
-  fontFamily: Theme.typography.fontFamily.arabic,
-  fontSize: 28,
-  color: Theme.colors.primary,
-  textAlign: 'center',
-  lineHeight: 50,     
-  letterSpacing: 2,  
-  },
-
-  // Ayah Container Modern
-  modernAyahContainer: {
-    position: 'relative',
-  },
-  ayahSeparator: {
-  height: 20,
-  },
-
-  // Ayah Number Badge
-  ayahNumberBadge: {
-    alignSelf: 'center',
-    backgroundColor: Theme.colors.secondary,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginBottom: 16,
-    ...Theme.shadows.sm,
-  },
-  ayahNumberText: {
-    color: Theme.colors.textOnPrimary,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-
-  // Arabic Text Card
-  arabicTextCard: {
-  backgroundColor: Theme.colors.cardBackground,
-  borderRadius: 24,
-  paddingVertical: 25,
-  paddingHorizontal: 20,
-  marginBottom: 16,
-  ...Theme.shadows.lg,
-  },
-  memorizedCard: {
-    backgroundColor: Theme.colors.successLight,
-    borderLeftWidth: 6,
-    borderLeftColor: Theme.colors.success,
-  },
-  modernArabicText: {
-  fontFamily: Theme.typography.fontFamily.arabic,
-  textAlign: 'right',
-  color: Theme.colors.primary,
-  writingDirection: 'rtl',
-  includeFontPadding: false,
-  textAlignVertical: 'top',
-  },
-  // Translation Card
-  translationCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 20,
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    marginBottom: 20,
-    ...Theme.shadows.sm,
-  },
-  modernTranslationText: {
-    lineHeight: 28,
-    color: Theme.colors.textSecondary,
-    fontStyle: 'italic',
-    textAlign: 'left',
-    fontWeight: '400',
-  },
-
-  // Modern Controls
-  modernControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    marginBottom: 8,
-  },
-  counterContainer: {
-    marginBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  counterButton: {
-    backgroundColor: '#2C3E3F', // Dark teal-gray from theme
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    minWidth: 140,
-    alignItems: 'center',
-    ...Theme.shadows.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  counterLabel: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontWeight: '600',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  counterNumber: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
-  },
-  resetButton: {
-    backgroundColor: '#556B6D', // Medium teal-gray from theme
-    borderRadius: 12,
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 12,
-    ...Theme.shadows.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  modernAudioButton: {
-    backgroundColor: Theme.colors.primary,
-    borderRadius: 28,
-    width: 56,
-    height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Theme.shadows.md,
-  },
-  activeAudioButton: {
-    backgroundColor: Theme.colors.success,
-    transform: [{ scale: 1.05 }],
-  },
-  modernMemorizeButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 28,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    marginLeft: 16,
-    ...Theme.shadows.sm,
-  },
-  modernMemorizedButton: {
-    backgroundColor: Theme.colors.successLight,
-    borderWidth: 2,
-    borderColor: Theme.colors.success,
-  },
-  modernMemorizeText: {
-    fontSize: 16,
-    color: Theme.colors.textMuted,
-    fontWeight: '600',
-    marginLeft: 12,
-  },
-  modernMemorizedText: {
-    color: Theme.colors.success,
-  },
-
   // Floating Actions
   floatingActions: {
     position: 'absolute',
@@ -1617,116 +1283,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...Theme.shadows.xl,
-  },
-
-  // Modern Modal
-  modernModalOverlay: {
-    flex: 1,
-    backgroundColor: Theme.colors.overlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  modernReplayModal: {
-    backgroundColor: Theme.colors.white,
-    borderRadius: 24,
-    padding: 24,
-    width: '100%',
-    maxWidth: 400,
-    ...Theme.shadows.xl,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  modernModalTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: Theme.colors.primary,
-  },
-  modernInputRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  modernInputGroup: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  modernInputLabel: {
-    fontSize: 14,
-    color: Theme.colors.textMuted,
-    marginBottom: 8,
-    fontWeight: '600',
-  },
-  modernInput: {
-    borderWidth: 2,
-    borderColor: Theme.colors.gray200,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 18,
-    textAlign: 'center',
-    fontWeight: '600',
-    color: Theme.colors.primary,
-    backgroundColor: Theme.colors.gray100,
-    minWidth: 60,
-  },
-  modernStartButton: {
-    backgroundColor: Theme.colors.secondary,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-    ...Theme.shadows.md,
-  },
-  modernStartButtonText: {
-    color: Theme.colors.textOnPrimary,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-
-  // Modern Replay Bar
-  modernReplayBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingBottom: 32,
-  },
-  replayInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  replayText: {
-    color: Theme.colors.textOnDark,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  modernStopButton: {
-    backgroundColor: Theme.colors.error,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  modernProgressBar: {
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  modernProgressFill: {
-    height: '100%',
-    backgroundColor: Theme.colors.secondary,
-    borderRadius: 3,
   },
   arabicTextWrapper: {
   width: '100%',
