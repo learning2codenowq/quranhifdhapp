@@ -8,6 +8,12 @@ import { TestingUtils } from '../utils/TestingUtils';
 import { Logger } from '../utils/Logger'
 import { Theme } from '../styles/theme';
 import { Icon } from '../components/Icon';
+import SettingItem from '../components/settings/SettingItem';
+import SwitchItem from '../components/settings/SwitchItem';
+import UserNameModal from '../components/settings/UserNameModal';
+import DailyTargetModal from '../components/settings/DailyTargetModal';
+import FontPreviewModal from '../components/settings/FontPreviewModal';
+import ReciterSelectionModal from '../components/settings/ReciterSelectionModal';
 import CustomTimePicker from '../components/CustomTimePicker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSettings } from '../hooks/useSettings';
@@ -199,123 +205,6 @@ const formatTime = (timeObj) => {
     setPreviewFontSize(fontSize);
     setFontPreviewModal(true);
   };
-
-  const FontPreviewModal = () => (
-    <Modal visible={fontPreviewModal} transparent={true} animationType="slide">
-      <View style={styles.modalOverlay}>
-        <View style={[
-  styles.fontPreviewModal,
-  settings.darkMode && { backgroundColor: themedColors.cardBackground }
-]}>
-          <Text style={[
-  styles.modalTitle,
-  settings.darkMode && { color: themedColors.textPrimary }
-]}>Font Size Preview</Text>
-          
-          <View style={styles.previewContainer}>
-            <Text style={styles.previewLabel}>Arabic Text ({previewFontSize})</Text>
-            <Text style={[
-              styles.arabicPreview, 
-              { 
-                fontSize: getFontSize(previewFontSize),
-                fontFamily: 'UthmanicFont'
-              }
-            ]}>
-              بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
-            </Text>
-            
-            <Text style={styles.previewLabel}>Translation Text ({settings.translationFontSize})</Text>
-            <Text style={[
-              styles.translationPreview,
-              { fontSize: getTranslationFontSize(settings.translationFontSize) }
-            ]}>
-              In the name of Allah, the Most Gracious, the Most Merciful.
-            </Text>
-          </View>
-
-          <View style={styles.modalButtons}>
-            <TouchableOpacity 
-              style={styles.cancelButton}
-              onPress={() => setFontPreviewModal(false)}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.applyButton}
-              onPress={() => {
-                updateSetting('arabicFontSize', previewFontSize);
-                setFontPreviewModal(false);
-              }}
-            >
-              <Text style={styles.applyButtonText}>Apply</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-
-  const SettingItem = ({ title, subtitle, onPress, rightComponent, dangerous = false }) => (
-  <TouchableOpacity
-    style={[
-      styles.settingItem, 
-      dangerous && styles.dangerousItem,
-      settings.darkMode && !dangerous && { backgroundColor: themedColors.cardBackground }
-    ]}
-    onPress={onPress}
-    disabled={!onPress}
-    accessible={true}
-    accessibilityLabel={title}
-    accessibilityHint={subtitle}
-    accessibilityRole="button"
-  >
-    <View style={styles.settingContent}>
-      <Text style={[
-        styles.settingTitle, 
-        dangerous && styles.dangerousText,
-        settings.darkMode && !dangerous && { color: themedColors.textPrimary }
-      ]}>
-        {title}
-      </Text>
-      <Text style={[
-        styles.settingSubtitle, 
-        dangerous && { color: 'rgba(255, 255, 255, 0.8)' },
-        settings.darkMode && !dangerous && { color: themedColors.textSecondary }
-      ]}>
-        {subtitle}
-      </Text>
-    </View>
-    {rightComponent || (
-      <Text style={[
-        styles.settingArrow, 
-        dangerous && { color: 'white' },
-        settings.darkMode && !dangerous && { color: themedColors.secondary }
-      ]}>
-        →
-      </Text>
-    )}
-  </TouchableOpacity>
-);
-
-  const SwitchItem = ({ title, subtitle, value, onValueChange, dangerous = false }) => (
-    <View style={[
-  styles.settingItem,
-  dangerous && styles.dangerousItem,
-  settings.darkMode && !dangerous && { backgroundColor: themedColors.cardBackground }
-]}>
-      <View style={styles.settingContent}>
-        <Text style={styles.settingTitle}>{title}</Text>
-        <Text style={styles.settingSubtitle}>{subtitle}</Text>
-      </View>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: '#ccc', true: Theme.colors.secondary }}
-        thumbColor={value ? Theme.colors.primary : '#f4f3f4'}
-      />
-    </View>
-  );
 
   const settingSections = [
   {
@@ -668,35 +557,47 @@ return (
           <View key={sectionIndex} style={styles.section}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
             {section.items.map((item, itemIndex) => {
-              if (item.type === 'switch') {
-                return (
-                  <SwitchItem
-                    key={itemIndex}
-                    title={item.title}
-                    subtitle={item.subtitle}
-                    value={item.value}
-                    onValueChange={item.onValueChange}
-                  />
-                );
-              } else {
-                return (
-                  <SettingItem
-                    key={itemIndex}
-                    title={item.title}
-                    subtitle={item.subtitle}
-                    onPress={item.onPress}
-                    dangerous={item.dangerous}
-                  />
-                );
-              }
-            })}
+  if (item.type === 'switch') {
+    return (
+      <SwitchItem
+        key={itemIndex}
+        title={item.title}
+        subtitle={item.subtitle}
+        value={item.value}
+        onValueChange={item.onValueChange}
+        darkMode={settings.darkMode}
+        themedColors={themedColors}
+      />
+    );
+  } else {
+    return (
+      <SettingItem
+        key={itemIndex}
+        title={item.title}
+        subtitle={item.subtitle}
+        onPress={item.onPress}
+        dangerous={item.dangerous}
+        darkMode={settings.darkMode}
+        themedColors={themedColors}
+      />
+    );
+  }
+})}
           </View>
         ))}
       </View>
     </ScreenLayout>
 
     {/* Font Preview Modal */}
-    <FontPreviewModal />
+    <FontPreviewModal
+      visible={fontPreviewModal}
+      onClose={() => setFontPreviewModal(false)}
+      arabicFontSize={previewFontSize}
+      translationFontSize={settings.translationFontSize}
+      onApply={() => updateSetting('arabicFontSize', previewFontSize)}
+      darkMode={settings.darkMode}
+      themedColors={themedColors}
+    />
 
     {/* Morning Time Picker */}
     <CustomTimePicker
@@ -730,324 +631,40 @@ return (
       subtitle="When done from work/school"
     />
 
-    {/* Name Change Modal */}
-    <Modal visible={showNameModal} transparent={true} animationType="slide">
-      <View style={styles.modalOverlay}>
-        <View style={[
-          styles.nameModal,
-          settings.darkMode && { backgroundColor: themedColors.cardBackground }
-        ]}>
-          <Text style={[
-            styles.namemodalTitle,
-            settings.darkMode && { color: themedColors.textPrimary }
-          ]}>Change Your Name</Text>
-          <TextInput
-            style={styles.nameInput}
-            placeholder="Enter your name"
-            value={tempUserName}
-            onChangeText={setTempUserName}
-            autoFocus={true}
-            onSubmitEditing={() => {
-              if (tempUserName && tempUserName.trim().length > 0) {
-                updateSetting('userName', tempUserName.trim());
-                setShowNameModal(false);
-                setTempUserName('');
-                Alert.alert('Success', 'Your name has been updated!');
-              }
-            }}
-          />
-          <View style={styles.nameModalButtons}>
-            <TouchableOpacity 
-              style={styles.nameModalCancelButton}
-              onPress={() => {
-                setShowNameModal(false);
-                setTempUserName('');
-              }}
-            >
-              <Text style={styles.nameModalCancelText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.nameModalSaveButton}
-              onPress={() => {
-                if (tempUserName && tempUserName.trim().length > 0) {
-                  updateSetting('userName', tempUserName.trim());
-                  setShowNameModal(false);
-                  setTempUserName('');
-                  Alert.alert('Success', 'Your name has been updated!');
-                } else {
-                  Alert.alert('Invalid Name', 'Please enter a valid name.');
-                }
-              }}
-            >
-              <Text style={styles.nameModalSaveText}>Save</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
+    {/* Name Modal */}
+    <UserNameModal
+      visible={showNameModal}
+      onClose={() => setShowNameModal(false)}
+      currentName={settings.userName}
+      onSave={(newName) => updateSetting('userName', newName)}
+      darkMode={settings.darkMode}
+      themedColors={themedColors}
+    />
 
     {/* Daily Target Modal */}
-    <Modal visible={showDailyTargetModal} transparent={true} animationType="slide">
-      <View style={styles.modalOverlay}>
-        <View style={[
-          styles.dailyTargetModal,
-          settings.darkMode && { backgroundColor: themedColors.cardBackground }
-        ]}>
-          <Text style={[
-            styles.dailytargetmodalTitle,
-            settings.darkMode && { color: themedColors.textPrimary }
-          ]}>Daily Target</Text>
-          <Text style={styles.dailyTargetModalSubtitle}>Choose your daily memorization goal:</Text>
-          
-          <View style={styles.targetOptions}>
-            {[5, 10, 15, 20].map((target) => (
-              <TouchableOpacity
-                key={target}
-                style={[
-                  styles.targetOption,
-                  settings.dailyGoal === target && styles.selectedTargetOption
-                ]}
-                onPress={() => {
-                  updateSetting('dailyGoal', target);
-                  setShowDailyTargetModal(false);
-                }}
-              >
-                <Text style={[
-                  styles.targetOptionText,
-                  settings.dailyGoal === target && styles.selectedTargetOptionText
-                ]}>
-                  {target} ayahs
-                </Text>
-                {target === 10 && (
-                  <Text style={styles.recommendedText}>Recommended</Text>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-          
-          <TouchableOpacity 
-            style={styles.dailyTargetModalCancelButton}
-            onPress={() => setShowDailyTargetModal(false)}
-          >
-            <Text style={styles.dailyTargetModalCancelText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
+    <DailyTargetModal
+      visible={showDailyTargetModal}
+      onClose={() => setShowDailyTargetModal(false)}
+      currentTarget={settings.dailyGoal}
+      onSelect={(target) => updateSetting('dailyGoal', target)}
+      darkMode={settings.darkMode}
+      themedColors={themedColors}
+    />
 
     {/* Reciter Selection Modal */}
-    <Modal visible={showReciterModal} transparent={true} animationType="slide">
-      <View style={styles.reciterModalOverlay}>
-        <View style={[
-          styles.peacefulReciterModal,
-          settings.darkMode && { backgroundColor: themedColors.cardBackground }
-        ]}>
-          
-          {/* Header */}
-          <View style={styles.peacefulModalHeader}>
-            <View>
-              <Text style={[
-                styles.peacefulModalTitle,
-                settings.darkMode && { color: themedColors.textPrimary }
-              ]}>Choose Your Reciter</Text>
-              <Text style={[
-                styles.peacefulModalSubtitle,
-                settings.darkMode && { color: themedColors.textSecondary }
-              ]}>Select your preferred Quran recitation</Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.peacefulCloseButton}
-              onPress={() => setShowReciterModal(false)}
-            >
-              <Icon name="close" type="Ionicons" size={24} color={settings.darkMode ? themedColors.textMuted : Theme.colors.textMuted} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Reciters List */}
-          <ScrollView 
-            style={styles.peacefulReciterList}
-            contentContainerStyle={styles.peacefulReciterListContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Default/Recommended Reciter */}
-            <View style={styles.featuredSection}>
-              <Text style={[
-                styles.sectionLabel,
-                settings.darkMode && { color: themedColors.textSecondary }
-              ]}>RECOMMENDED</Text>
-              
-              <TouchableOpacity
-                style={[
-                  styles.peacefulReciterCard,
-                  !selectedReciterId && styles.selectedPeacefulCard,
-                  settings.darkMode && { backgroundColor: themedColors.surface }
-                ]}
-                onPress={() => {
-                  setSelectedReciterId(null);
-                  updateSetting('selectedReciter', null);
-                  setShowReciterModal(false);
-                }}
-              >
-                <View style={styles.reciterCardContent}>
-                  <View style={[
-                    styles.reciterAvatar,
-                    !selectedReciterId && styles.selectedAvatar
-                  ]}>
-                    <Icon 
-                      name="star" 
-                      type="Ionicons" 
-                      size={24} 
-                      color={!selectedReciterId ? Theme.colors.textOnPrimary : Theme.colors.secondary} 
-                    />
-                  </View>
-                  
-                  <View style={styles.reciterCardInfo}>
-                    <Text style={[
-                      styles.reciterCardName,
-                      !selectedReciterId && styles.selectedReciterName,
-                      settings.darkMode && !selectedReciterId && { color: Theme.colors.primary },
-                      settings.darkMode && selectedReciterId && { color: themedColors.textPrimary }
-                    ]}>Mishary Rashid Alafasy</Text>
-                    <Text style={[
-                      styles.reciterCardDetails,
-                      settings.darkMode && { color: themedColors.textMuted }
-                    ]}>Murattal • Hafs</Text>
-                    <View style={styles.reciterBadge}>
-                      <Text style={styles.reciterBadgeText}>APP DEFAULT</Text>
-                    </View>
-                  </View>
-
-                  {!selectedReciterId && (
-                    <View style={styles.checkmarkCircle}>
-                      <Icon 
-                        name="checkmark" 
-                        type="Ionicons" 
-                        size={20} 
-                        color={Theme.colors.textOnPrimary} 
-                      />
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            </View>
-            
-            {/* All Reciters */}
-            <View style={styles.allRecitersSection}>
-              <Text style={[
-                styles.sectionLabel,
-                settings.darkMode && { color: themedColors.textSecondary }
-              ]}>ALL RECITERS ({reciters.length})</Text>
-              
-              {/* Loading State */}
-              {reciters.length === 0 && (
-                <View style={styles.loadingRecitersContainer}>
-                  <ActivityIndicator size="small" color={Theme.colors.secondary} />
-                  <Text style={[
-                    styles.loadingRecitersText,
-                    settings.darkMode && { color: themedColors.textSecondary }
-                  ]}>Loading reciters...</Text>
-                </View>
-              )}
-              
-              {/* Reciters List */}
-              {reciters.map((reciter, index) => {
-                // Validate reciter object before rendering
-                if (!reciter || !reciter.id || !reciter.name) {
-                  console.warn('Invalid reciter data at index', index, reciter);
-                  return null;
-                }
-
-                // Safely extract values with defaults
-                const reciterName = String(reciter.name || 'Unknown Reciter');
-                const reciterInitial = reciterName.charAt(0).toUpperCase();
-                const translatedName = reciter.translated_name ? String(reciter.translated_name) : null;
-                
-                // Safely build style text
-                let styleText = '';
-                if (reciter.style && typeof reciter.style === 'string') {
-                  styleText = reciter.style;
-                }
-                if (reciter.qirat && typeof reciter.qirat === 'string') {
-                  styleText = styleText ? `${styleText} • ${reciter.qirat}` : reciter.qirat;
-                }
-                if (!styleText) {
-                  styleText = 'Murattal';
-                }
-
-                return (
-                  <TouchableOpacity
-                    key={`reciter-${reciter.id}-${index}`}
-                    style={[
-                      styles.peacefulReciterCard,
-                      selectedReciterId === reciter.id && styles.selectedPeacefulCard,
-                      settings.darkMode && { backgroundColor: themedColors.surface }
-                    ]}
-                    onPress={() => {
-                      setSelectedReciterId(reciter.id);
-                      updateSetting('selectedReciter', reciter.id);
-                      setShowReciterModal(false);
-                    }}
-                  >
-                    <View style={styles.reciterCardContent}>
-                      <View style={[
-                        styles.reciterAvatar,
-                        selectedReciterId === reciter.id && styles.selectedAvatar
-                      ]}>
-                        <Text style={[
-                          styles.reciterInitial,
-                          selectedReciterId === reciter.id && { color: Theme.colors.textOnPrimary }
-                        ]}>
-                          {reciterInitial}
-                        </Text>
-                      </View>
-                      
-                      <View style={styles.reciterCardInfo}>
-                        <Text style={[
-                          styles.reciterCardName,
-                          selectedReciterId === reciter.id && styles.selectedReciterName,
-                          settings.darkMode && selectedReciterId !== reciter.id && { color: themedColors.textPrimary }
-                        ]}>
-                          {reciterName}
-                        </Text>
-                        
-                        {translatedName && (
-                          <Text style={[
-                            styles.reciterCardTranslated,
-                            selectedReciterId === reciter.id && styles.selectedReciterDetails,
-                            settings.darkMode && { color: themedColors.textMuted }
-                          ]}>
-                            {translatedName}
-                          </Text>
-                        )}
-                        
-                        <Text style={[
-                          styles.reciterCardDetails,
-                          selectedReciterId === reciter.id && styles.selectedReciterDetails,
-                          settings.darkMode && { color: themedColors.textMuted }
-                        ]}>
-                          {styleText}
-                        </Text>
-                      </View>
-
-                      {selectedReciterId === reciter.id && (
-                        <View style={styles.checkmarkCircle}>
-                          <Icon 
-                            name="checkmark" 
-                            type="Ionicons" 
-                            size={20} 
-                            color={Theme.colors.textOnPrimary} 
-                          />
-                        </View>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
+    <ReciterSelectionModal
+      visible={showReciterModal}
+      onClose={() => setShowReciterModal(false)}
+      reciters={reciters}
+      selectedReciterId={selectedReciterId}
+      onSelect={(reciterId) => {
+        setSelectedReciterId(reciterId);
+        updateSetting('selectedReciter', reciterId);
+      }}
+      loading={reciters.length === 0}
+      darkMode={settings.darkMode}
+      themedColors={themedColors}
+    />
   </React.Fragment>
 );
 }
@@ -1101,80 +718,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: Theme.colors.secondary,
     fontWeight: 'bold',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  fontPreviewModal: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 25,
-    width: '100%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Theme.colors.primary,
-    textAlign: 'center',
-    marginBottom: 25,
-  },
-  previewContainer: {
-    marginBottom: 25,
-  },
-  previewLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 10,
-    marginTop: 15,
-  },
-  arabicPreview: {
-    textAlign: 'center',
-    color: Theme.colors.primary,
-    marginBottom: 10,
-    paddingVertical: 10,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 10,
-  },
-  translationPreview: {
-    textAlign: 'center',
-    color: '#666',
-    paddingVertical: 10,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 10,
-    fontStyle: 'italic',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 15,
-    paddingVertical: 12,
-  },
-  cancelButtonText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  applyButton: {
-    flex: 1,
-    backgroundColor: '#d4af37',
-    borderRadius: 15,
-    paddingVertical: 12,
-  },
-  applyButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
   },
   settingsTimePickerOverlay: {
   flex: 1,
@@ -1240,125 +783,6 @@ settingsTimePickerConfirmText: {
   fontSize: 16,
   fontWeight: '600',
 },
-nameModal: {
-  backgroundColor: 'white',
-  borderRadius: 20,
-  padding: 25,
-  width: '90%',
-  maxWidth: 350,
-  alignItems: 'center',
-},
-nameModalTitle: {
-  fontSize: 20,
-  fontWeight: 'bold',
-  color: Theme.colors.primary,
-  marginBottom: 20,
-  textAlign: 'center',
-},
-nameInput: {
-  borderWidth: 2,
-  borderColor: Theme.colors.gray200,
-  borderRadius: 12,
-  paddingHorizontal: 16,
-  paddingVertical: 12,
-  fontSize: 16,
-  width: '100%',
-  marginBottom: 20,
-  color: Theme.colors.primary,
-},
-nameModalButtons: {
-  flexDirection: 'row',
-  gap: 12,
-  width: '100%',
-},
-nameModalCancelButton: {
-  flex: 1,
-  backgroundColor: '#f5f5f5',
-  borderRadius: 12,
-  paddingVertical: 12,
-  alignItems: 'center',
-},
-nameModalSaveButton: {
-  flex: 1,
-  backgroundColor: Theme.colors.secondary,
-  borderRadius: 12,
-  paddingVertical: 12,
-  alignItems: 'center',
-},
-nameModalCancelText: {
-  color: '#666',
-  fontSize: 16,
-  fontWeight: '600',
-},
-nameModalSaveText: {
-  color: 'white',
-  fontSize: 16,
-  fontWeight: '600',
-},
-dailyTargetModal: {
-  backgroundColor: 'white',
-  borderRadius: 20,
-  padding: 25,
-  width: '90%',
-  maxWidth: 350,
-  alignItems: 'center',
-},
-dailyTargetModalTitle: {
-  fontSize: 20,
-  fontWeight: 'bold',
-  color: Theme.colors.primary,
-  marginBottom: 10,
-  textAlign: 'center',
-},
-dailyTargetModalSubtitle: {
-  fontSize: 14,
-  color: '#666',
-  marginBottom: 20,
-  textAlign: 'center',
-},
-targetOptions: {
-  width: '100%',
-  marginBottom: 20,
-},
-targetOption: {
-  borderWidth: 2,
-  borderColor: Theme.colors.gray200,
-  borderRadius: 12,
-  paddingVertical: 15,
-  paddingHorizontal: 20,
-  marginBottom: 10,
-  alignItems: 'center',
-},
-selectedTargetOption: {
-  borderColor: Theme.colors.secondary,
-  backgroundColor: Theme.colors.secondary + '20',
-},
-targetOptionText: {
-  fontSize: 16,
-  color: Theme.colors.primary,
-  fontWeight: '600',
-},
-selectedTargetOptionText: {
-  color: Theme.colors.secondary,
-  fontWeight: 'bold',
-},
-recommendedText: {
-  fontSize: 12,
-  color: Theme.colors.secondary,
-  fontWeight: 'bold',
-  marginTop: 4,
-},
-dailyTargetModalCancelButton: {
-  backgroundColor: '#f5f5f5',
-  borderRadius: 12,
-  paddingVertical: 12,
-  paddingHorizontal: 30,
-},
-dailyTargetModalCancelText: {
-  color: '#666',
-  fontSize: 16,
-  fontWeight: '600',
-},
 reciterModal: {
   backgroundColor: 'white',
   borderRadius: 20,
@@ -1381,9 +805,6 @@ reciterItem: {
 },
 selectedReciterItem: {
   backgroundColor: Theme.colors.successLight,
-},
-reciterInfo: {
-  flex: 1,
 },
 reciterName: {
   fontSize: 16,
@@ -1514,82 +935,11 @@ modernTimePickerConfirmText: {
   fontSize: 16,
   fontWeight: '600',
 },
-loadingReciters: {
-  padding: 20,
-  alignItems: 'center',
-},
-loadingText: {
-  fontSize: 14,
-  color: Theme.colors.textMuted,
-  fontStyle: 'italic',
-},
 reciterNote: {
   fontSize: 12,
   color: Theme.colors.textMuted,
   marginTop: 4,
   fontStyle: 'italic',
-},
-reciterModalOverlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0, 0, 0, 0.75)',
-  justifyContent: 'flex-end',
-},
-peacefulReciterModal: {
-  backgroundColor: 'white',
-  borderTopLeftRadius: 24,
-  borderTopRightRadius: 24,
-  height: '80%', // CRITICAL: Fixed height
-  paddingBottom: 20,
-},
-peacefulModalHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'flex-start',
-  paddingHorizontal: 24,
-  paddingTop: 24,
-  paddingBottom: 16,
-  borderBottomWidth: 1,
-  borderBottomColor: Theme.colors.gray200,
-},
-peacefulModalTitle: {
-  fontSize: 24,
-  fontWeight: 'bold',
-  color: Theme.colors.primary,
-  marginBottom: 4,
-},
-peacefulModalSubtitle: {
-  fontSize: 14,
-  color: Theme.colors.textSecondary,
-},
-peacefulCloseButton: {
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  backgroundColor: Theme.colors.gray100,
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-peacefulReciterList: {
-  flex: 1, // CRITICAL: Takes remaining space
-},
-peacefulReciterListContent: {
-  paddingHorizontal: 24,
-  paddingVertical: 16,
-  paddingBottom: 40, // Extra bottom padding
-},
-featuredSection: {
-  marginBottom: 24,
-},
-allRecitersSection: {
-  marginBottom: 20,
-},
-sectionLabel: {
-  fontSize: 12,
-  fontWeight: '700',
-  color: Theme.colors.textMuted,
-  letterSpacing: 0.5,
-  marginBottom: 12,
-  marginLeft: 4,
 },
 peacefulReciterCard: {
   backgroundColor: Theme.colors.white,
@@ -1603,11 +953,6 @@ selectedPeacefulCard: {
   borderColor: Theme.colors.secondary,
   backgroundColor: Theme.colors.successLight,
   ...Theme.shadows.md,
-},
-reciterCardContent: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  padding: 16,
 },
 reciterAvatar: {
   width: 56,
@@ -1626,31 +971,10 @@ reciterInitial: {
   fontWeight: 'bold',
   color: Theme.colors.primary,
 },
-reciterCardInfo: {
-  flex: 1,
-},
-reciterCardName: {
-  fontSize: 16,
-  fontWeight: '600',
-  color: Theme.colors.primary,
-  marginBottom: 4,
-},
-selectedReciterName: {
-  color: Theme.colors.primary,
-  fontWeight: '700',
-},
 reciterCardTranslated: {
   fontSize: 13,
   color: Theme.colors.textSecondary,
   marginBottom: 2,
-},
-reciterCardDetails: {
-  fontSize: 12,
-  color: Theme.colors.textMuted,
-  fontStyle: 'italic',
-},
-selectedReciterDetails: {
-  color: Theme.colors.textSecondary,
 },
 reciterBadge: {
   alignSelf: 'flex-start',
@@ -1665,26 +989,6 @@ reciterBadgeText: {
   fontWeight: '700',
   color: Theme.colors.textOnPrimary,
   letterSpacing: 0.3,
-},
-checkmarkCircle: {
-  width: 32,
-  height: 32,
-  borderRadius: 16,
-  backgroundColor: Theme.colors.success,
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginLeft: 12,
-},
-loadingRecitersContainer: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  paddingVertical: 32,
-  gap: 12,
-},
-loadingRecitersText: {
-  fontSize: 14,
-  color: Theme.colors.textMuted,
 },
 noResultsContainer: {
   alignItems: 'center',
