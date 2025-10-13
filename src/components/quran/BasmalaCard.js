@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Theme } from '../../styles/theme';
 
-export default function BasmalaCard({ surahId, darkMode, themedColors }) {
+const BasmalaCard = ({ surahId, darkMode, themedColors }) => {
   // Don't show Basmala for Surah 1 (Al-Fatiha) or Surah 9 (At-Tawbah)
   const shouldShow = surahId && surahId !== 1 && surahId !== 9;
   
@@ -45,3 +45,4 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 });
+export default React.memo(BasmalaCard);

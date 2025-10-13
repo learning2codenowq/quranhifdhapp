@@ -3,13 +3,13 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Icon } from '../Icon';
 import { Theme } from '../../styles/theme';
 
-export default function AyahCounter({ 
-  count, 
-  onIncrement, 
-  onReset, 
-  darkMode, 
+const AyahCounter = ({ 
+  count,
+  onIncrement,
+  onReset,
+  darkMode,
   themedColors 
-}) {
+}) => {
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -96,3 +96,4 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
 });
+export default React.memo(AyahCounter);

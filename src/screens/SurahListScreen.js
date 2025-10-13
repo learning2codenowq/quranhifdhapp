@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -115,87 +115,78 @@ export default function SurahListScreen({ navigation }) {
     }
   };
 
-  const getSurahProgress = (surah) => {
+  const getSurahProgress = useCallback((surah) => {
     const memorized = memorizedStats[surah.id] || 0;
     const total = surah.total_ayahs || 0;
     const percentage = total > 0 ? (memorized / total) * 100 : 0;
     return { memorized, total, percentage };
-  };
+  }, [memorizedStats]);
 
-  const SurahItem = ({ item }) => {
+  const SurahItem = useCallback(({ item }) => {
     const progress = getSurahProgress(item);
     const isCompleted = progress.percentage === 100;
     const hasProgress = progress.memorized > 0;
 
     return (
       <AnimatedCard
-  style={[
-    styles.surahCard,
-    isCompleted && styles.completedSurah,
-    settings.darkMode && { backgroundColor: themedColors.cardBackground }
-  ]}
-  onPress={() => navigation.navigate('QuranReader', { surahId: item.id })}
-  variant={isCompleted ? "elevated" : "default"}
-  accessible={true}
-  accessibilityLabel={`${item.name}, ${item.arabic_name}`}
-  accessibilityHint={`Open surah ${item.name} for memorization. ${isCompleted ? 'Completed' : hasProgress ? `${progress.memorized} of ${progress.total} ayahs memorized` : 'Not started yet'}`}
-  accessibilityRole="button"
->
+        style={[
+          styles.surahCard,
+          isCompleted && styles.completedSurah,
+          settings.darkMode && { backgroundColor: themedColors.cardBackground }
+        ]}
+        onPress={() => navigation.navigate('QuranReader', { surahId: item.id })}
+        variant={isCompleted ? "elevated" : "default"}
+        accessible={true}
+        accessibilityLabel={`${item.name}, ${item.arabic_name}`}
+        accessibilityHint={`Open surah ${item.name} for memorization. ${isCompleted ? 'Completed' : hasProgress ? `${progress.memorized} of ${progress.total} verses memorized` : 'Not started'}`}
+      >
+        {/* Surah Header */}
         <View style={styles.surahHeader}>
+          {/* Number Badge */}
           <View style={styles.surahNumberContainer}>
             <Text style={styles.surahNumber}>{item.id}</Text>
           </View>
-          
+
+          {/* Surah Info */}
           <View style={styles.surahInfo}>
-            <Text style={[
-  styles.surahName,
-  settings.darkMode && { color: themedColors.textPrimary }
-]}>{item.name}</Text>
-            <Text style={[
-  styles.surahArabicName,
-  settings.darkMode && { color: themedColors.textSecondary }
-]}>{item.arabic_name}</Text>
+            <Text style={[styles.surahName, settings.darkMode && { color: themedColors.textPrimary }]}>
+              {item.name}
+            </Text>
+            <Text style={[styles.surahArabicName, settings.darkMode && { color: themedColors.textSecondary }]}>
+              {item.arabic_name}
+            </Text>
             <View style={styles.surahMeta}>
               <View style={styles.metaItem}>
-                <Icon 
-                  name="location" 
-                  type="Ionicons" 
-                  size={12} 
-                  color={Theme.colors.textMuted} 
-                />
-                <Text style={styles.surahType}>{item.type}</Text>
+                <Icon name="location" type="Ionicons" size={12} color={Theme.colors.textMuted} />
+                <Text style={[styles.surahType, settings.darkMode && { color: themedColors.textMuted }]}>
+                  {item.revelation_place}
+                </Text>
               </View>
               <View style={styles.metaItem}>
-                <Icon 
-                  name={AppIcons.book.name} 
-                  type={AppIcons.book.type} 
-                  size={12} 
-                  color={Theme.colors.textMuted} 
-                />
-                <Text style={styles.ayahCount}>{item.total_ayahs} ayahs</Text>
+                <Icon name="book" type="Ionicons" size={12} color={Theme.colors.textMuted} />
+                <Text style={[styles.ayahCount, settings.darkMode && { color: themedColors.textMuted }]}>
+                  {item.total_ayahs} ayahs
+                </Text>
               </View>
             </View>
           </View>
 
+          {/* Completion Badge */}
           {isCompleted && (
             <View style={styles.completedBadge}>
-              <Icon 
-                name={AppIcons.checkmark.name} 
-                type={AppIcons.checkmark.type} 
-                size={16} 
-                color={Theme.colors.textOnPrimary} 
-              />
+              <Icon name="checkmark" type="Ionicons" size={18} color="white" />
             </View>
           )}
         </View>
 
+        {/* Progress Section */}
         {hasProgress && (
           <View style={styles.progressSection}>
             <View style={styles.progressInfo}>
-              <Text style={styles.progressText}>
-                {progress.memorized}/{progress.total} memorized
+              <Text style={[styles.progressText, settings.darkMode && { color: themedColors.textSecondary }]}>
+                {progress.memorized} of {progress.total} memorized
               </Text>
-              <Text style={styles.progressPercentage}>
+              <Text style={[styles.progressPercentage, settings.darkMode && { color: themedColors.secondary }]}>
                 {Math.round(progress.percentage)}%
               </Text>
             </View>
@@ -205,7 +196,8 @@ export default function SurahListScreen({ navigation }) {
                   styles.progressBarFill,
                   { 
                     width: `${progress.percentage}%`,
-                    backgroundColor: isCompleted ? Theme.colors.success : Theme.colors.secondary
+                    backgroundColor: isCompleted ? 
+                      Theme.colors.success : Theme.colors.secondary
                   }
                 ]}
               />
@@ -214,7 +206,9 @@ export default function SurahListScreen({ navigation }) {
         )}
       </AnimatedCard>
     );
-  };
+  }, [getSurahProgress, settings.darkMode, themedColors, navigation]);
+
+    const keyExtractor = useCallback((item) => item.id.toString(), []);
 
   if (loading) {
   return (
@@ -278,8 +272,8 @@ return (
         {/* FlatList - SEPARATE FROM SEARCH */}
         <FlatList
           data={filteredSurahs}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={SurahItem}
+          keyExtractor={keyExtractor}
+          renderItem={({ item }) => <SurahItem item={item} />}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={{ height: Theme.spacing.sm }} />}

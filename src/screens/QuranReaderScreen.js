@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -839,7 +839,7 @@ const TajweedHelpModal = () => (
   });
 };
 
-  const cleanTranslation = (text) => {
+  const cleanTranslation = useCallback((text) => {
     if (!text) return '';
     return text
       .replace(/<[^>]*>/g, '')
@@ -847,31 +847,31 @@ const TajweedHelpModal = () => (
       .replace(/\d+/g, '')
       .replace(/\s+/g, ' ')
       .trim();
-  };
+  }, []);
 
   const shouldShowBasmala = (surahId) => {
     if (!surahId) return false;
     return surahId !== 1 && surahId !== 9;
   };
 
-  const getSurahProgressLocal = () => {
-  const currentSurahId = surahData?.id || surahId;
-  const totalAyahs = surahData?.total_ayahs || ayahs.length;
-  const progress = getSurahProgressContext(currentSurahId, totalAyahs);
-  return { memorized: progress.memorized, total: progress.total };
-};
+  const surahProgress = useMemo(() => {
+    const currentSurahId = surahData?.id || surahId;
+    const totalAyahs = surahData?.total_ayahs || ayahs.length;
+    const progress = getSurahProgressContext(currentSurahId, totalAyahs);
+    return { memorized: progress.memorized, total: progress.total };
+  }, [surahData, surahId, ayahs.length, getSurahProgressContext]);
 
-  const getFontSize = (sizeCategory) => {
-  const sizes = {
-    'Small': 18,
-    'Medium': 22,
-    'Large': 26,
-    'Extra Large': 30
-  };
-  return sizes[sizeCategory] || 22;
-};
+  const getFontSize = useCallback((sizeCategory) => {
+    const sizes = {
+      'Small': 18,
+      'Medium': 22,
+      'Large': 26,
+      'Extra Large': 30
+    };
+    return sizes[sizeCategory] || 22;
+  }, []);
 
-  const getTranslationFontSize = (sizeCategory) => {
+  const getTranslationFontSize = useCallback((sizeCategory) => {
     const sizes = {
       'Small': 14,
       'Medium': 16,
@@ -879,7 +879,59 @@ const TajweedHelpModal = () => (
       'Extra Large': 20
     };
     return sizes[sizeCategory] || 16;
-  };
+  }, []);
+  const keyExtractor = useCallback((item, index) => {
+    return `${surahId}-${item.verse_number || index}`;
+  }, [surahId]);
+  const renderAyahItem = useCallback(({ item }) => {
+    const currentSurahId = surahData?.id || surahId;
+    const isMemorized = isAyahMemorizedContext(currentSurahId, item.verse_number);
+    const isCurrentlyPlaying = playingAyah && 
+      playingAyah.surahId === currentSurahId && 
+      playingAyah.ayahNumber === item.verse_number;
+    const currentCount = ayahCounters[item.verse_number] || 0;
+
+    return (
+      <AyahItem
+        item={item}
+        surahId={currentSurahId}
+        settings={settings}
+        darkMode={settings.darkMode}
+        themedColors={themedColors}
+        isMemorized={isMemorized}
+        isCurrentlyPlaying={isCurrentlyPlaying}
+        currentCount={currentCount}
+        onToggleMemorization={() => toggleAyahMemorization(currentSurahId, item.verse_number, isMemorized)}
+        onPlayAudio={() => handleAudioPlay(currentSurahId, item.verse_number)}
+        onIncrementCounter={() => handleCounterTap(item.verse_number)}
+        onResetCounter={() => handleCounterReset(item.verse_number)}
+        parseTajweedText={parseTajweedText}
+        hasTajweedMarkup={hasTajweedMarkup}
+        cleanArabicText={cleanArabicText}
+        cleanTranslation={cleanTranslation}
+        getFontSize={getFontSize}
+        getTranslationFontSize={getTranslationFontSize}
+      />
+    );
+  }, [
+    surahData, 
+    surahId, 
+    isAyahMemorizedContext, 
+    playingAyah, 
+    ayahCounters, 
+    settings, 
+    themedColors,
+    parseTajweedText,
+    hasTajweedMarkup,
+    cleanArabicText,
+    cleanTranslation,
+    getFontSize,
+    getTranslationFontSize,
+    toggleAyahMemorization,
+    handleAudioPlay,
+    handleCounterTap,
+    handleCounterReset
+  ]);
   if (loading) {
   return (
     <ModernLoadingScreen 
@@ -890,7 +942,6 @@ const TajweedHelpModal = () => (
     />
   );
 }
-
   return (
     <SafeAreaProvider>
       <LinearGradient 
@@ -937,50 +988,21 @@ const TajweedHelpModal = () => (
               <View 
                 style={[
                   styles.progressFill, 
-                  { width: `${(getSurahProgressLocal().memorized / getSurahProgressLocal().total) * 100}%` }
-                ]} 
+                  { width: `${(surahProgress.memorized / surahProgress.total) * 100}%` }
+                ]}
               />
             </View>
             <Text style={styles.progressText}>
-              {getSurahProgressLocal().memorized} of {getSurahProgressLocal().total} memorized
+              {surahProgress.memorized} of {surahProgress.total} memorized
             </Text>
           </View>
-          {/* Main Content */}
+          
+          {/* Main Content */}         
           <FlatList
   ref={flatListRef}
   data={ayahs}
   keyExtractor={(item, index) => `${surahId}-${item.verse_number || index}`}
-  renderItem={({ item }) => {
-  const currentSurahId = surahData?.id || surahId;
-  const isMemorized = isAyahMemorizedContext(currentSurahId, item.verse_number);  // ← FIXED!
-  const isCurrentlyPlaying = playingAyah && 
-    playingAyah.surahId === currentSurahId && 
-    playingAyah.ayahNumber === item.verse_number;
-  const currentCount = ayahCounters[item.verse_number] || 0;
-
-  return (
-    <AyahItem
-      item={item}
-      surahId={currentSurahId}
-      settings={settings}
-      darkMode={settings.darkMode}
-      themedColors={themedColors}
-      isMemorized={isMemorized}
-      isCurrentlyPlaying={isCurrentlyPlaying}
-      currentCount={currentCount}
-      onToggleMemorization={() => toggleAyahMemorization(currentSurahId, item.verse_number, isMemorized)}
-      onPlayAudio={() => handleAudioPlay(currentSurahId, item.verse_number)}
-      onIncrementCounter={() => handleCounterTap(item.verse_number)}
-      onResetCounter={() => handleCounterReset(item.verse_number)}
-      parseTajweedText={parseTajweedText}
-      hasTajweedMarkup={hasTajweedMarkup}
-      cleanArabicText={cleanArabicText}
-      cleanTranslation={cleanTranslation}
-      getFontSize={getFontSize}
-      getTranslationFontSize={getTranslationFontSize}
-    />
-  );
-}}
+  renderItem={renderAyahItem}
   ListHeaderComponent={() => (
     <BasmalaCard
       surahId={surahData?.id || surahId}

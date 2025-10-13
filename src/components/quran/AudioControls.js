@@ -3,7 +3,7 @@ import { TouchableOpacity, StyleSheet } from 'react-native';
 import { Icon } from '../Icon';
 import { Theme } from '../../styles/theme';
 
-export default function AudioControls({ isPlaying, onPress, darkMode }) {
+const AudioControls = ({ isPlaying, onPress, darkMode }) => {
   return (
     <TouchableOpacity
       style={[
@@ -37,3 +37,4 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.05 }],
   },
 });
+export default React.memo(AudioControls);

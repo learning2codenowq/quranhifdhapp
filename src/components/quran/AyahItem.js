@@ -5,7 +5,7 @@ import { Theme } from '../../styles/theme';
 import AudioControls from './AudioControls';
 import AyahCounter from './AyahCounter';
 
-export default function AyahItem({
+const AyahItem = ({
   item,
   surahId,
   settings,
@@ -24,7 +24,7 @@ export default function AyahItem({
   cleanTranslation,
   getFontSize,
   getTranslationFontSize,
-}) {
+}) => {
   // Safety checks
   if (!item || !item.verse_number) {
     console.warn('Invalid ayah item:', item);
@@ -227,3 +227,4 @@ const styles = StyleSheet.create({
     color: Theme.colors.success,
   },
 });
+export default React.memo(AyahItem);
