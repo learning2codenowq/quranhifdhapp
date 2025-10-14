@@ -23,6 +23,7 @@ import { StorageService } from './src/services/StorageService';
 import { Logger } from './src/utils/Logger';
 import { StatusBar } from 'expo-status-bar';
 import { MemorizationProvider, AppStateProvider } from './src/contexts';
+import LoadingState from './src/components/LoadingState';
 
 
 const Stack = createStackNavigator();
@@ -109,13 +110,8 @@ export default function App() {
 
   // Show loading if we haven't determined first time status yet
   if (isFirstTime === null) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#22575D' }}>
-        <ActivityIndicator size="large" color="#d4af37" />
-        <Text style={{ color: 'white', marginTop: 16 }}>Loading...</Text>
-      </View>
-    );
-  }
+  return <LoadingState fullScreen message="Loading..." />;
+}
 
   return (
   <ErrorBoundary>

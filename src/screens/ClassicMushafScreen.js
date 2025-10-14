@@ -18,6 +18,7 @@ import { Theme } from '../styles/theme';
 import { Icon } from '../components/Icon';
 import { SURAH_NAMES } from '../constants/SurahNames';
 import { cleanArabicText } from '../utils/TextCleaner';
+import LoadingState from '../components/LoadingState';
 
 const { width, height } = Dimensions.get('window');
 
@@ -152,19 +153,8 @@ export default function ClassicMushafScreen({ navigation }) {
   const pageMetadata = getPageMetadata();
 
   if (loading) {
-    return (
-      <SafeAreaProvider>
-        <View style={styles.container}>
-          <SafeAreaView style={styles.safeArea}>
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={Theme.colors.primary} />
-              <Text style={styles.loadingText}>Loading page {currentPage}...</Text>
-            </View>
-          </SafeAreaView>
-        </View>
-      </SafeAreaProvider>
-    );
-  }
+  return <LoadingState fullScreen message={`Loading Page ${currentPage}...`} />;
+}
 
   return (
     <SafeAreaProvider>

@@ -111,35 +111,32 @@ useEffect(() => {
   setIsInitialized(false);
   
   const loadEverything = async () => {
-    try {      
-      console.log('🌐 Checking internet connection...');
-      const hasInternet = await NetworkUtils.checkInternetConnection();
-      if (!hasInternet) {
-        setLoading(false);
-        Alert.alert(
-          'No Internet Connection',
-          'Please check your internet connection and try again.',
-          [
-            { text: 'Go Back', onPress: () => navigation.goBack() },
-            { text: 'Retry', onPress: () => loadEverything() }
-          ]
-        );
-        return;
-      }
-      console.log('✅ Internet connected');
-      
-      console.log('📥 Loading surah data...');
-      await loadSurahData();
-      console.log('✅ Surah data loaded');
-      AudioService.setupAudio();
-      
-      setIsInitialized(true);
-      console.log('✅ Everything initialized');
-    } catch (error) {
-      console.error('❌ Error during initialization:', error);
-      setLoading(false);
-    }
-  };
+  try {      
+    console.log('📥 Loading surah data...');
+    await loadSurahData();
+    console.log('✅ Surah data loaded');
+    AudioService.setupAudio();
+    
+    setIsInitialized(true);
+    console.log('✅ Everything initialized');
+  } catch (error) {
+    console.error('❌ Error during initialization:', error);
+    setLoading(false);
+    
+    // ONE ALERT ONLY - handles all errors
+    Alert.alert(
+      'Connection Error',
+      'Failed to load surah. Please check your internet connection and try again.',
+      [
+        { text: 'Go Back', onPress: () => navigation.goBack() },
+        { text: 'Retry', onPress: () => {
+          setIsInitialized(false);
+          loadEverything();
+        }}
+      ]
+    );
+  }
+};
   
   loadEverything();
   
@@ -326,9 +323,10 @@ const TajweedHelpModal = () => (
   const maxRetries = 3;
   
   const attemptLoad = async () => {
-    try {if (retryCount > 0) {
-      setLoadingProgress(`Retry attempt ${retryCount}/${maxRetries}`);
-    }
+    try {
+      if (retryCount > 0) {
+        setLoadingProgress(`Retry attempt ${retryCount}/${maxRetries}`);
+      }
       console.log(`🚀 Loading surah ${surahId} (Attempt ${retryCount + 1}/${maxRetries})`);
       setLoading(true);
       
@@ -372,17 +370,9 @@ const TajweedHelpModal = () => (
         return attemptLoad(); // Recursive retry
       }
       
-      // All retries failed
+      // All retries failed - JUST THROW, NO ALERT
       Logger.error('Error loading surah after retries:', error);
-      Alert.alert(
-        'Connection Error',
-        `Failed to load surah after ${maxRetries} attempts. Please check your internet connection and try again.`,
-        [
-          { text: 'Go Back', onPress: () => navigation.goBack() },
-          { text: 'Retry', onPress: () => loadSurahData() }
-        ]
-      );
-      throw error;
+      throw error; // This will be caught by loadEverything
     } finally {
       console.log('🏁 Setting loading to false');
       setLoading(false);

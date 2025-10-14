@@ -80,16 +80,21 @@ export default function SurahListScreen({ navigation }) {
     
     const surahList = await QuranService.getAllSurahs();
     setSurahs(surahList);
+    setFilteredSurahs(surahList); // Also set filtered list on success
   } catch (error) {
     console.error('Error loading surahs:', error);
-    Alert.alert(
-      'Connection Error',
-      error.message || 'Unable to load Surahs. Please check your internet connection and try again.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Retry', onPress: () => loadSurahs() }
-      ]
-    );
+    
+    // Only show alert if we don't have any surahs loaded yet
+    if (surahs.length === 0) {
+      Alert.alert(
+        'Connection Error',
+        error.message || 'Unable to load Surahs. Please check your internet connection and try again.',
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => navigation.goBack() },
+          { text: 'Retry', onPress: () => loadSurahs() }
+        ]
+      );
+    }
   } finally {
     setLoading(false);
   }
