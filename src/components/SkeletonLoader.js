@@ -32,29 +32,29 @@ export const SkeletonLine = ({ width = '100%', height = 20, style, borderRadius 
 
   return (
     <View
-      style={[
-        styles.skeletonLine,
-        {
-          width,
-          height,
-          borderRadius,
-          backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.2)',
-          overflow: 'hidden',
-        },
-        style,
-      ]}
-    >
+  style={[
+    styles.skeletonLine,
+    {
+      width,
+      height,
+      borderRadius,
+      backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.08)',
+      overflow: 'hidden',
+    },
+    style,
+  ]}
+>
       <Animated.View
-        style={[
-          styles.shimmer,
-          {
-            transform: [{ translateX }],
-            backgroundColor: darkMode 
-              ? 'rgba(255, 255, 255, 0.1)' 
-              : 'rgba(255, 255, 255, 0.4)',
-          },
-        ]}
-      />
+  style={[
+    styles.shimmer,
+    {
+      transform: [{ translateX }],
+      backgroundColor: darkMode 
+        ? 'rgba(255, 255, 255, 0.1)' 
+        : 'rgba(255, 255, 255, 0.9)',
+    },
+  ]}
+/>
     </View>
   );
 };
@@ -90,28 +90,28 @@ export const SkeletonCircle = ({ size = 60, darkMode = false }) => {
 
   return (
     <View
-      style={[
-        styles.skeletonCircle,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.2)',
-          overflow: 'hidden',
-        },
-      ]}
-    >
+  style={[
+    styles.skeletonCircle,
+    {
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+      backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.08)',
+      overflow: 'hidden',
+    },
+  ]}
+>
       <Animated.View
-        style={[
-          styles.shimmer,
-          {
-            transform: [{ translateX }],
-            backgroundColor: darkMode 
-              ? 'rgba(255, 255, 255, 0.1)' 
-              : 'rgba(255, 255, 255, 0.4)',
-          },
-        ]}
-      />
+  style={[
+    styles.shimmer,
+    {
+      transform: [{ translateX }],
+      backgroundColor: darkMode 
+        ? 'rgba(255, 255, 255, 0.1)' 
+        : 'rgba(255, 255, 255, 0.9)',
+    },
+  ]}
+/>
     </View>
   );
 };
@@ -243,13 +243,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   surahCardSkeleton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  backgroundColor: 'rgba(240, 240, 240, 0.95)',
+  borderRadius: 20,
+  padding: 20,
+  marginBottom: 12,
+  flexDirection: 'row',
+  alignItems: 'center',
+},
   surahInfoSkeleton: {
     flex: 1,
     marginLeft: 16,
