@@ -23,16 +23,16 @@ export default function ReadingScreen({ navigation }) {
 
   const readingModes = [
     {
-      id: 'classic',
-      title: 'Classic Mushaf',
-      subtitle: 'Traditional page-by-page reading',
-      description: 'Read the Quran page by page',
-      icon: 'book-outline',
-      color: Theme.colors.primary,
-      gradient: Theme.gradients.primary,
-      screen: 'ClassicMushaf',
-      disabled: false  // ENABLED NOW
-    },
+  id: 'classic',
+  title: 'Classic Mushaf',
+  subtitle: 'Traditional page-by-page reading',
+  description: 'Coming soon',
+  icon: 'book-outline',
+  color: Theme.colors.secondary,
+  gradient: ['#B8947D', '#D4C4B0'],
+  screen: 'ClassicMushaf',
+  disabled: true  // DISABLED - Feature not ready yet
+},
     {
       id: 'wordbyword',
       title: 'Word by Word',

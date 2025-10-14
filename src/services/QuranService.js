@@ -191,8 +191,12 @@ export class QuranService {
     }
     
     const data = await response.json();
+    const allReciters = data.reciters || [];
     
-    return data.reciters || [];
+    // Filter out Yasser Al-Dosari (ID: 1001) - feature not ready yet
+    const filteredReciters = allReciters.filter(reciter => reciter.id !== 1001);
+    
+    return filteredReciters;
   } catch (error) {
     console.error('Error fetching reciters:', error);
     return [];
