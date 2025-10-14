@@ -18,13 +18,11 @@
   "bundleIdentifier": "com.shayan.quranhifdh",
   "buildNumber": "1",
   "infoPlist": {
-    "NSAppTransportSecurity": {
-      "NSAllowsArbitraryLoads": true
-    },
-    "ITSAppUsesNonExemptEncryption": false,
-    "NSUserTrackingUsageDescription": "This app does not track you. We respect your privacy.",
-    "NSMicrophoneUsageDescription": "This app does not use the microphone."
-  }
+  "NSAppTransportSecurity": {
+    "NSAllowsArbitraryLoads": true
+  },
+  "ITSAppUsesNonExemptEncryption": false
+}
 },
     "android": {
       "adaptiveIcon": {
