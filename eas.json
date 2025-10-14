@@ -9,13 +9,29 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "ios": {
+        "buildConfiguration": "Release"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "qshayan07@gmail.com",
+        "ascAppId": "6753983576",
+        "appleTeamId": "NTS84VRCZ2"
+      },
+      "android": {}
+    }
   }
 }

@@ -14,16 +14,18 @@
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.shayan.quranhifdh",
-      "buildNumber": "1",
-      "infoPlist": {
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        },
-        "ITSAppUsesNonExemptEncryption": false
-      }
+  "supportsTablet": true,
+  "bundleIdentifier": "com.shayan.quranhifdh",
+  "buildNumber": "1",
+  "infoPlist": {
+    "NSAppTransportSecurity": {
+      "NSAllowsArbitraryLoads": true
     },
+    "ITSAppUsesNonExemptEncryption": false,
+    "NSUserTrackingUsageDescription": "This app does not track you. We respect your privacy.",
+    "NSMicrophoneUsageDescription": "This app does not use the microphone."
+  }
+},
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
