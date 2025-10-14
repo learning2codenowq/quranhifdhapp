@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { StorageService } from '../services/StorageService';
 import { QuranUtils } from '../utils/QuranUtils';
@@ -51,13 +51,14 @@ const confettiRef = useRef(null);
   return unsubscribe;
 }, [navigation]);
 
-  const onRefresh = async () => {
-  setRefreshing(true);
-  await loadAppState();
-  setRefreshing(false);
-};
+  // ALL CALLBACKS FIRST
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadAppState();
+    setRefreshing(false);
+  }, [loadAppState]);
 
-  const handleCategoryPress = (categoryType) => {
+  const handleCategoryPress = useCallback((categoryType) => {
     if (!revisionPlan) return;
     
     const categoryData = revisionPlan[categoryType];
@@ -65,73 +66,93 @@ const confettiRef = useRef(null);
       categoryType,
       categoryData
     });
-  };
+  }, [revisionPlan, navigation]);
 
-  const handleCloseAchievements = () => {
+  const handleCloseAchievements = useCallback(() => {
     setAchievementModal({
       visible: false,
       achievements: []
     });
-  };
-  const handleContinueMemorization = () => {
-  if (!nextSegment) {
-    console.warn('No next segment available');
-    return;
-  }
+  }, []);
   
-  console.log('🎯 Navigating to:', nextSegment);
-  
-  // If new user, go to surah list
-  if (nextSegment.isNewUser) {
-    navigation.navigate('SurahList');
-  } else {
-    // Existing user, go to their last position
-    navigation.navigate('QuranReader', { 
-      surahId: nextSegment.surahId,
-      scrollToAyah: nextSegment.startAyah
-    });
-  }
-};
+  const handleContinueMemorization = useCallback(() => {
+    if (!nextSegment) {
+      console.warn('No next segment available');
+      return;
+    }
+    
+    console.log('🎯 Navigating to:', nextSegment);
+    
+    if (nextSegment.isNewUser) {
+      navigation.navigate('SurahList');
+    } else {
+      navigation.navigate('QuranReader', { 
+        surahId: nextSegment.surahId,
+        scrollToAyah: nextSegment.startAyah
+      });
+    }
+  }, [nextSegment, navigation]);
 
-  if (appStateLoading || !stats) {
-  return (
-    <ScreenLayout showBottomNav={true}>
-      <DashboardSkeleton darkMode={settings.darkMode} />
-    </ScreenLayout>
+  // ALL USEMEMO CALCULATIONS
+  const displayStats = useMemo(() => {
+    return stats ? {
+      percentComplete: Number(stats.percentComplete) || 0,
+      memorized: Number(stats.memorized) || 0,
+      total: Number(stats.total) || 6236,
+      remaining: Number(stats.remaining) || 6236,
+      daily: Number(stats.daily) || 10,
+      daysLeft: Number(stats.daysLeft) || 624
+    } : {
+      percentComplete: 0,
+      memorized: 0,
+      total: 6236,
+      remaining: 6236,
+      daily: 10,
+      daysLeft: 624
+    };
+  }, [stats]);
+
+  const isNewUser = useMemo(() => 
+    displayStats.memorized === 0 && !state?.progress, 
+    [displayStats.memorized, state?.progress]
   );
-}
+  
+  const hasAnyProgress = useMemo(() => 
+    displayStats.memorized > 0, 
+    [displayStats.memorized]
+  );
 
-  const displayStats = stats ? {
-    percentComplete: Number(stats.percentComplete) || 0,
-    memorized: Number(stats.memorized) || 0,
-    total: Number(stats.total) || 6236,
-    remaining: Number(stats.remaining) || 6236,
-    daily: Number(stats.daily) || 10,
-    daysLeft: Number(stats.daysLeft) || 624
-  } : {
-    percentComplete: 0,
-    memorized: 0,
-    total: 6236,
-    remaining: 6236,
-    daily: 10,
-    daysLeft: 624
-  };
-  const isNewUser = displayStats.memorized === 0 && !state?.progress;
-  const hasAnyProgress = displayStats.memorized > 0;
+  const today = useMemo(() => QuranUtils.localISO(), []);
+  
+  const todayProgress = useMemo(() => 
+    state?.progress?.[today] || 0, 
+    [state?.progress, today]
+  );
 
-  const today = QuranUtils.localISO();
-  const todayProgress = state?.progress?.[today] || 0;
+  const currentStreak = useMemo(() => 
+    QuranUtils.computeStreak(state?.progress || {}), 
+    [state?.progress]
+  );
 
-  const daysLeftTillHafidh = Math.ceil(displayStats.remaining / displayStats.daily);
-  const hafidhhETA = new Date();
-  hafidhhETA.setDate(hafidhhETA.getDate() + daysLeftTillHafidh);
+  const daysLeftTillHafidh = useMemo(() => 
+    Math.ceil(displayStats.remaining / displayStats.daily),
+    [displayStats.remaining, displayStats.daily]
+  );
 
-  const currentStreak = QuranUtils.computeStreak(state?.progress || {});
+  const hafidhhETA = useMemo(() => {
+    const eta = new Date();
+    eta.setDate(eta.getDate() + daysLeftTillHafidh);
+    return eta;
+  }, [daysLeftTillHafidh]);
 
-  // src/screens/DashboardScreen.js - Replace the entire return statement (starting from line 234)
-
-
-
+  // NOW THE CONDITIONAL RETURN
+  if (appStateLoading || !stats) {
+    return (
+      <ScreenLayout showBottomNav={true}>
+        <DashboardSkeleton darkMode={settings.darkMode} />
+      </ScreenLayout>
+    );
+  }
 return (
   <ScreenLayout scrollable={true} showBottomNav={true}>
     {showConfetti && (

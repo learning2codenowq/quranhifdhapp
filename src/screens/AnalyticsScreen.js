@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { StorageService } from '../services/StorageService';
 import { AnalyticsUtils } from '../utils/AnalyticsUtils';
@@ -16,32 +16,28 @@ const { width } = Dimensions.get('window');
 export default function AnalyticsScreen({ navigation }) {
   const { settings, themedColors } = useSettings();
   const { state } = useAppState();
-  const [weeklyData, setWeeklyData] = useState(null);
-  const [monthlyData, setMonthlyData] = useState(null);
-  const [surahProgress, setSurahProgress] = useState([]);
   const [activeTab, setActiveTab] = useState('week');
 
-  useEffect(() => {
-  if (state) {
-    setWeeklyData(AnalyticsUtils.getWeeklyAnalytics(state));
-    setMonthlyData(AnalyticsUtils.getMonthlyAnalytics(state));
-    setSurahProgress(AnalyticsUtils.getSurahProgress(state));
-  }
-}, [state]);
+  // ALL USEMEMO - Cache analytics calculations
+  const weeklyData = useMemo(() => {
+    return state ? AnalyticsUtils.getWeeklyAnalytics(state) : null;
+  }, [state]);
 
-  if (!weeklyData || !monthlyData) {
-  return (
-    <ScreenLayout>
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Theme.colors.secondary} />
-        <Text style={styles.loadingText}>Loading Analytics...</Text>
-      </View>
-    </ScreenLayout>
-  );
-}
+  const monthlyData = useMemo(() => {
+    return state ? AnalyticsUtils.getMonthlyAnalytics(state) : null;
+  }, [state]);
 
-  // Header Stats Summary Card
-  const HeaderStatsCard = () => {
+  const surahProgress = useMemo(() => {
+    return state ? AnalyticsUtils.getSurahProgress(state) : [];
+  }, [state]);
+
+  // Memoize tab handler
+  const handleTabChange = useCallback((tab) => {
+    setActiveTab(tab);
+  }, []);
+
+  // Memoize HeaderStatsCard
+  const HeaderStatsCard = useCallback(() => {
     const stats = QuranUtils.computeStats(state);
     const currentStreak = QuranUtils.computeStreak(state?.progress || {});
 
@@ -78,7 +74,19 @@ export default function AnalyticsScreen({ navigation }) {
         </View>
       </AnimatedCard>
     );
-  };
+  }, [state, settings.darkMode, themedColors]);
+
+  // NOW CONDITIONAL RETURN
+  if (!weeklyData || !monthlyData) {
+    return (
+      <ScreenLayout>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Theme.colors.secondary} />
+          <Text style={styles.loadingText}>Loading Analytics...</Text>
+        </View>
+      </ScreenLayout>
+    );
+  }
 
   // Weekly Progress Bar Component
   const WeeklyProgressBar = ({ day, maxValue }) => {

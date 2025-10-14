@@ -23,7 +23,7 @@ const AyahCounter = ({
           styles.counterLabel,
           darkMode && { color: themedColors.textSecondary }
         ]}>
-          REPETITIONS
+          COUNTER
         </Text>
         <Text style={[
           styles.counterNumber,

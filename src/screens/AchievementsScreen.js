@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { StorageService } from '../services/StorageService';
 import { AchievementSystem } from '../utils/AchievementSystem';
@@ -16,18 +16,38 @@ export default function AchievementsScreen({ navigation }) {
   const { achievements: earnedAchievementIds, loading: appStateLoading } = useAppState();
   const [loading, setLoading] = useState(true);
 
-
   useEffect(() => {
-  if (!appStateLoading) {
-    setLoading(false);
-  }
-}, [appStateLoading]);
+    if (!appStateLoading) {
+      setLoading(false);
+    }
+  }, [appStateLoading]);
 
-  const getAchievementData = (achievementId) => {
+  // Cache categorized achievements
+  const categorizedAchievements = useMemo(() => {
+    const categories = {
+      memorization: [],
+      surah_completion: [],
+      specific_surah: [],
+      streak: [],
+      special: []
+    };
+
+    AchievementSystem.achievements.forEach(achievement => {
+      const category = achievement.type || 'special';
+      if (categories[category]) {
+        categories[category].push(achievement);
+      }
+    });
+
+    return categories;
+  }, []);
+
+  // Memoize helper functions
+  const getAchievementData = useCallback((achievementId) => {
     return AchievementSystem.achievements.find(a => a.id === achievementId);
-  };
+  }, []);
 
-  const getAchievementIcon = (type, isEarned) => {
+  const getAchievementIcon = useCallback((type, isEarned) => {
     if (!isEarned) {
       return { name: 'lock-closed', type: 'Ionicons', color: Theme.colors.textMuted };
     }
@@ -46,8 +66,9 @@ export default function AchievementsScreen({ navigation }) {
       default:
         return { name: AppIcons.trophy.name, type: AppIcons.trophy.type, color: Theme.colors.primary };
     }
-  };
+  }, []);
 
+  // Memoize AchievementCard
   const AchievementCard = ({ achievement, isEarned }) => {
     const iconData = getAchievementIcon(achievement.type, isEarned);
     
@@ -56,70 +77,67 @@ export default function AchievementsScreen({ navigation }) {
         style={[
           styles.achievementCard, 
           !isEarned && styles.lockedCard,
-          isEarned && styles.earnedCard
+          isEarned && styles.earnedCard,
+          settings.darkMode && { backgroundColor: themedColors.cardBackground }
         ]}
         variant={isEarned ? "elevated" : "outlined"}
       >
         <View style={styles.achievementContent}>
           <View style={[
             styles.achievementIconContainer,
-            { backgroundColor: isEarned ? `${iconData.color}20` : Theme.colors.gray100 }
+            { backgroundColor: isEarned ? `${iconData.color}20` : (settings.darkMode ? themedColors.surface : Theme.colors.gray100) }
           ]}>
             <Icon 
               name={iconData.name}
               type={iconData.type}
-              size={32}
+              size={28}
               color={iconData.color}
             />
           </View>
           
           <View style={styles.achievementInfo}>
             <Text style={[
-              styles.achievementTitle, 
-              !isEarned && styles.lockedText
+              styles.achievementTitle,
+              !isEarned && styles.lockedText,
+              isEarned && settings.darkMode && { color: themedColors.textPrimary },
+              !isEarned && settings.darkMode && { color: themedColors.textMuted }
             ]}>
               {achievement.title}
             </Text>
             <Text style={[
-              styles.achievementDesc, 
-              !isEarned && styles.lockedText
+              styles.achievementDesc,
+              !isEarned && styles.lockedText,
+              isEarned && settings.darkMode && { color: themedColors.textSecondary },
+              !isEarned && settings.darkMode && { color: themedColors.textMuted }
             ]}>
               {achievement.description}
             </Text>
             <View style={styles.achievementTypeContainer}>
-              <Text style={styles.achievementType}>
-                {achievement.type.replace('_', ' ').toUpperCase()}
+              <Text style={[
+                styles.achievementType,
+                settings.darkMode && { 
+                  backgroundColor: themedColors.surface,
+                  color: themedColors.textMuted 
+                }
+              ]}>
+                {achievement.type?.replace('_', ' ').toUpperCase()}
               </Text>
             </View>
           </View>
-
+          
           {isEarned && (
             <View style={styles.earnedBadge}>
-              <Icon 
-                name="checkmark" 
-                type="Ionicons" 
-                size={20} 
-                color={Theme.colors.textOnPrimary} 
-              />
+              <Icon name="checkmark" type="Ionicons" size={18} color="white" />
             </View>
           )}
         </View>
       </AnimatedCard>
     );
   };
-
-  const categorizedAchievements = {
-    memorization: AchievementSystem.achievements.filter(a => a.type === 'memorization'),
-    surah_completion: AchievementSystem.achievements.filter(a => a.type === 'surah_completion'),
-    specific_surah: AchievementSystem.achievements.filter(a => a.type === 'specific_surah'),
-    streak: AchievementSystem.achievements.filter(a => a.type === 'streak'),
-    special: AchievementSystem.achievements.filter(a => a.type === 'special')
-  };
-
-  const getCategoryIcon = (category) => {
+  const getCategoryIcon = useCallback((category) => {
     switch (category) {
       case 'memorization':
-        return { name: 'library', type: 'Ionicons' };
+        return { name: 'checkmark-circle', type: 'Ionicons' };
       case 'surah_completion':
         return { name: 'book', type: 'Ionicons' };
       case 'specific_surah':
@@ -131,9 +149,9 @@ export default function AchievementsScreen({ navigation }) {
       default:
         return { name: 'trophy', type: 'Ionicons' };
     }
-  };
+  }, []);
 
-  const getCategoryTitle = (category) => {
+  const getCategoryTitle = useCallback((category) => {
     switch (category) {
       case 'memorization':
         return 'Memorization Milestones';
@@ -148,71 +166,72 @@ export default function AchievementsScreen({ navigation }) {
       default:
         return 'Achievements';
     }
-  };
+  }, []);
 
+  // CONDITIONAL RETURN
   if (loading) {
+    return (
+      <ScreenLayout>
+        <LoadingSpinner message="Loading achievements..." />
+      </ScreenLayout>
+    );
+  }
+
   return (
-    <ScreenLayout>
-      <LoadingSpinner message="Loading achievements..." />
+    <ScreenLayout scrollable={true}>
+      <ScreenHeader 
+        title="Achievements"
+        subtitle={`${earnedAchievementIds.length} / ${AchievementSystem.achievements.length} Unlocked`}
+        onBack={() => navigation.goBack()}
+      />
+      
+      <View style={styles.content}>
+        
+        {/* Progress Bar */}
+        <View style={styles.progressContainer}>
+          <Text style={styles.progressText}>
+            {earnedAchievementIds.length} / {AchievementSystem.achievements.length} Unlocked
+          </Text>
+          <View style={styles.progressBar}>
+            <View 
+              style={[
+                styles.progressFill,
+                { width: `${(earnedAchievementIds.length / AchievementSystem.achievements.length) * 100}%` }
+              ]}
+            />
+          </View>
+        </View>
+
+        {/* Achievement Categories */}
+        {Object.entries(categorizedAchievements).map(([category, achievements]) => {
+          if (achievements.length === 0) return null;
+          
+          return (
+            <View key={category} style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Icon 
+                  name={getCategoryIcon(category).name}
+                  type={getCategoryIcon(category).type}
+                  size={24}
+                  color={Theme.colors.secondary}
+                />
+                <Text style={styles.sectionTitle}>{getCategoryTitle(category)}</Text>
+              </View>
+              
+              {achievements.map(achievement => (
+                <AchievementCard 
+                  key={achievement.id}
+                  achievement={achievement}
+                  isEarned={earnedAchievementIds.includes(achievement.id)}
+                />
+              ))}
+            </View>
+          );
+        })}
+        
+      </View>
     </ScreenLayout>
   );
-}
-
-  return (
-  <ScreenLayout scrollable={true}>
-    <ScreenHeader 
-      title="Achievements"
-      subtitle={`${earnedAchievementIds.length} / ${AchievementSystem.achievements.length} Unlocked`}
-      onBack={() => navigation.goBack()}
-    />
-    
-    <View style={styles.content}>
-      
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <Text style={styles.progressText}>
-          {earnedAchievementIds.length} / {AchievementSystem.achievements.length} Unlocked
-        </Text>
-        <View style={styles.progressBar}>
-          <View 
-            style={[
-              styles.progressFill,
-              { width: `${(earnedAchievementIds.length / AchievementSystem.achievements.length) * 100}%` }
-            ]}
-          />
-        </View>
-      </View>
-
-      {/* Achievement Categories */}
-      {Object.entries(categorizedAchievements).map(([category, achievements]) => {
-        if (achievements.length === 0) return null;
-        
-        return (
-          <View key={category} style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Icon 
-                name={getCategoryIcon(category).name}
-                type={getCategoryIcon(category).type}
-                size={24}
-                color={Theme.colors.secondary}
-              />
-              <Text style={styles.sectionTitle}>{getCategoryTitle(category)}</Text>
-            </View>
-            
-            {achievements.map(achievement => (
-              <AchievementCard 
-                key={achievement.id}
-                achievement={achievement}
-                isEarned={earnedAchievementIds.includes(achievement.id)}
-              />
-            ))}
-          </View>
-        );
-      })}
-      
-    </View>
-  </ScreenLayout>
-);
 }
 
 const styles = StyleSheet.create({
