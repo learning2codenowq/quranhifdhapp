@@ -65,6 +65,18 @@ useEffect(() => {
       setSelectedReciterId(state.settings.selectedReciter || null);
     }
     
+    // Load notification settings
+    const notifSettings = await NotificationService.getNotificationSettings();
+    setNotificationSettings(notifSettings);
+    
+    // Update the time picker dates to match loaded settings
+    const morningDate = new Date(2024, 0, 1, notifSettings.morningTime.hour, notifSettings.morningTime.minute);
+    const eveningDate = new Date(2024, 0, 1, notifSettings.eveningTime.hour, notifSettings.eveningTime.minute);
+    setMorningTimeDate(morningDate);
+    setEveningTimeDate(eveningDate);
+    
+    console.log('📲 Loaded notification settings:', notifSettings);
+    
     // Load and filter reciters
     const recitersList = await QuranService.getReciters();
     console.log('📢 Raw reciters from API:', recitersList.length);

@@ -83,53 +83,31 @@ export class NotificationService {
     console.log('📅 Next morning notification:', nextMorning.toLocaleString());
     console.log('📅 Next evening notification:', nextEvening.toLocaleString());
 
-    // Schedule first morning notification using DATE (no immediate trigger)
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '🌅 As-salamu alaykum!',
-        body: `Ready for today's Quran session? Goal: ${dailyGoal} ayahs`,
-        sound: true,
-      },
-      trigger: nextMorning,
-    });
+    // Schedule morning notification - will repeat daily automatically
+await Notifications.scheduleNotificationAsync({
+  content: {
+    title: '🌅 As-salamu alaykum!',
+    body: `Ready for today's Quran session? Goal: ${dailyGoal} ayahs`,
+    sound: true,
+  },
+  trigger: {
+    type: 'date',
+    date: nextMorning,
+  },
+});
 
-    // Schedule first evening notification using DATE (no immediate trigger)
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '🌙 Don\'t break your streak!',
-        body: 'Don\'t forget to memorize the Quran today',
-        sound: true,
-      },
-      trigger: nextEvening,
-    });
-
-    // Schedule recurring morning (starts day after first notification)
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '🌅 As-salamu alaykum!',
-        body: `Ready for today's Quran session? Goal: ${dailyGoal} ayahs`,
-        sound: true,
-      },
-      trigger: {
-        hour: morningTime.hour,
-        minute: morningTime.minute,
-        repeats: true,
-      },
-    });
-
-    // Schedule recurring evening (starts day after first notification)
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '🌙 Don\'t break your streak!',
-        body: 'Don\'t forget to memorize the Quran today',
-        sound: true,
-      },
-      trigger: {
-        hour: eveningTime.hour,
-        minute: eveningTime.minute,
-        repeats: true,
-      },
-    });
+// Schedule evening notification - will repeat daily automatically
+await Notifications.scheduleNotificationAsync({
+  content: {
+    title: '🌙 Don\'t break your streak!',
+    body: 'Don\'t forget to memorize the Quran today',
+    sound: true,
+  },
+  trigger: {
+    type: 'date',
+    date: nextEvening,
+  },
+});
 
     console.log('✅ Notifications scheduled successfully (no immediate triggers)');
     return true;
