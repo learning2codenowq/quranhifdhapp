@@ -12,8 +12,10 @@ import {
   TextInput,
   Animated,
   Platform,
-  Vibration
+  Vibration,
+  KeyboardAvoidingView
 } from 'react-native';
+import JumpLoadingScreen from '../components/JumpLoadingScreen';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { QuranService } from '../services/QuranService';
@@ -62,6 +64,9 @@ useEffect(() => {
   const [surahData, setSurahData] = useState(null);
   const [ayahs, setAyahs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [jumpToAyahValue, setJumpToAyahValue] = useState('');
+  const [showJumpModal, setShowJumpModal] = useState(false);
+  const [isJumping, setIsJumping] = useState(false);
   const [showTajweedHelp, setShowTajweedHelp] = useState(false);
   const [audioStatus, setAudioStatus] = useState({ isPlaying: false, hasSound: false });
   const [playingAyah, setPlayingAyah] = useState(null);
@@ -441,7 +446,143 @@ const TajweedHelpModal = () => (
     Alert.alert('Error', 'Failed to update memorization status');
   }
 };
+// Jump to specific ayah - Adaptive timing based on distance
+const handleJumpToAyah = async () => {
+  const ayahNumber = parseInt(jumpToAyahValue);
+  const totalAyahs = surahData?.total_ayahs || ayahs.length;
 
+  console.log('🎯 Jump requested to ayah:', ayahNumber);
+
+  // Validation
+  if (!jumpToAyahValue.trim()) {
+    Alert.alert('Empty Input', 'Please enter an ayah number');
+    return;
+  }
+
+  if (isNaN(ayahNumber)) {
+    Alert.alert('Invalid Input', 'Please enter a valid number');
+    return;
+  }
+
+  if (ayahNumber < 1) {
+    Alert.alert('Invalid Number', 'Ayah number must be greater than 0');
+    return;
+  }
+
+  if (ayahNumber > totalAyahs) {
+    Alert.alert(
+      'Out of Range', 
+      `This surah only has ${totalAyahs} ayahs. Please enter a number between 1 and ${totalAyahs}.`
+    );
+    return;
+  }
+
+  // Check if ayah exists
+  const ayahIndex = ayahs.findIndex(ayah => ayah.verse_number === ayahNumber);
+  
+  if (ayahIndex === -1) {
+    Alert.alert('Error', `Ayah ${ayahNumber} not found.`);
+    return;
+  }
+
+  console.log('✅ Ayah found at index:', ayahIndex);
+  
+  // Close modal and show full-screen loading
+  setShowJumpModal(false);
+  setJumpToAyahValue('');
+  setIsJumping(true);
+
+  // Wait for modal close animation
+  await new Promise(resolve => setTimeout(resolve, 400));
+
+  if (!flatListRef.current) {
+    console.log('❌ FlatList ref not available');
+    setIsJumping(false);
+    return;
+  }
+
+  console.log('🔄 Force-rendering ayahs by scrolling through them');
+  console.log(`📏 Distance to travel: ${ayahIndex} ayahs`);
+
+  // Adaptive timing based on distance
+  const STEP_SIZE = 8; // Smaller steps for reliability
+  const BASE_WAIT_TIME = 150; // Base wait between steps
+  
+  // Calculate wait time based on distance
+  // Longer jumps need more time per step
+  let waitTime = BASE_WAIT_TIME;
+  if (ayahIndex > 100) {
+    waitTime = 200; // Slower for very long jumps
+  } else if (ayahIndex > 50) {
+    waitTime = 175; // Medium speed for medium jumps
+  }
+  
+  console.log(`⏱️ Using ${waitTime}ms wait time per step`);
+
+  let currentIndex = 0;
+
+  // Progressively scroll through to force rendering
+  while (currentIndex < ayahIndex) {
+    const targetIndex = Math.min(currentIndex + STEP_SIZE, ayahIndex);
+    
+    console.log(`📍 Step: ${currentIndex} → ${targetIndex} (${Math.round((targetIndex/ayahIndex)*100)}% complete)`);
+    
+    try {
+      flatListRef.current.scrollToIndex({
+        index: targetIndex,
+        animated: false,
+        viewPosition: 0.5,
+      });
+    } catch (error) {
+      console.log(`⚠️ Index ${targetIndex} not rendered yet, continuing...`);
+    }
+    
+    // Adaptive wait time
+    await new Promise(resolve => setTimeout(resolve, waitTime));
+    
+    currentIndex = targetIndex;
+  }
+
+  console.log('✅ Reached target area, doing final precise scroll');
+
+  // Extra wait to ensure last batch is fully rendered
+  // Longer wait for longer jumps
+  const finalWaitTime = ayahIndex > 100 ? 600 : ayahIndex > 50 ? 400 : 300;
+  await new Promise(resolve => setTimeout(resolve, finalWaitTime));
+
+  // Final precise scroll to exact ayah - Multiple attempts
+  let scrollSuccess = false;
+  
+  for (let attempt = 0; attempt < 5; attempt++) { // Increased to 5 attempts
+    try {
+      console.log(`🎯 Final scroll attempt ${attempt + 1}/5`);
+      flatListRef.current.scrollToIndex({
+        index: ayahIndex,
+        animated: true,
+        viewPosition: 0.05,
+      });
+      scrollSuccess = true;
+      console.log('✅ Final scroll successful');
+      break;
+    } catch (error) {
+      console.log(`⚠️ Attempt ${attempt + 1} failed, retrying...`);
+      await new Promise(resolve => setTimeout(resolve, 600)); // Longer retry wait
+    }
+  }
+
+  // If scrollToIndex still fails, use the backup scrollToAyah function
+  if (!scrollSuccess) {
+    console.log('🔄 Using backup scrollToAyah function');
+    scrollToAyah(ayahNumber);
+  }
+
+  // Wait for scroll animation to complete
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Hide loading screen
+  setIsJumping(false);
+  console.log('🎉 Jump complete!');
+};
   const handleAudioPlay = async (currentSurahId, ayahNumber) => {
     try {
       const audioUrl = ayahAudioUrls[ayahNumber];
@@ -986,7 +1127,6 @@ const TajweedHelpModal = () => (
               {surahProgress.memorized} of {surahProgress.total} memorized
             </Text>
           </View>
-          
           {/* Main Content */}         
           <FlatList
   ref={flatListRef}
@@ -1004,11 +1144,10 @@ const TajweedHelpModal = () => (
   showsVerticalScrollIndicator={false}
   
   // Performance optimizations
-  removeClippedSubviews={true}
-  maxToRenderPerBatch={3}
-  updateCellsBatchingPeriod={50}
-  initialNumToRender={5}
-  windowSize={8}
+  removeClippedSubviews={false}
+  maxToRenderPerBatch={15}     
+  initialNumToRender={15}  
+  windowSize={21}   
   
   // Smooth scrolling
   decelerationRate="normal"
@@ -1020,18 +1159,26 @@ const TajweedHelpModal = () => (
   
   // Separator
   ItemSeparatorComponent={() => <View style={styles.ayahSeparator} />}
-  
-  // No getItemLayout or scroll methods for now
-  onScrollToIndexFailed={() => {
-    // Do nothing - just prevent crashes
+  onScrollToIndexFailed={(info) => {
+    // Just log - don't retry here, our function handles retries
+    console.log('⚠️ Scroll to index failed:', info.index);
   }}
 />
           {/* Floating Action Buttons */}
-          <View style={styles.floatingActions}>
-            <TouchableOpacity style={styles.fab} onPress={openReplayModal}>
-              <Icon name="repeat" type="Ionicons" size={24} color="white" />
-            </TouchableOpacity>
-          </View>
+<View style={styles.floatingActions}>
+  {/* Jump to Ayah Button */}
+  <TouchableOpacity 
+    style={[styles.fab, { marginBottom: 12 }]} 
+    onPress={() => setShowJumpModal(true)}
+  >
+    <Icon name="locate" type="Ionicons" size={24} color="white" />
+  </TouchableOpacity>
+  
+  {/* Replay Segment Button */}
+  <TouchableOpacity style={styles.fab} onPress={openReplayModal}>
+    <Icon name="repeat" type="Ionicons" size={24} color="white" />
+  </TouchableOpacity>
+</View>
 
           {/* Replay Modal */}
       <ReplayModal
@@ -1084,6 +1231,146 @@ const TajweedHelpModal = () => (
   themedColors={themedColors}
   totalAyahs={surahData?.total_ayahs || ayahs.length}
 />
+{/* Jump to Ayah Modal */}
+<Modal
+  visible={showJumpModal}
+  transparent={true}
+  animationType="slide"
+  onRequestClose={() => {
+    setShowJumpModal(false);
+    setJumpToAyahValue('');
+  }}
+>
+  <KeyboardAvoidingView 
+    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    style={styles.jumpModalOverlay}
+  >
+    {/* Backdrop - tap to close */}
+    <TouchableOpacity 
+      style={styles.jumpModalBackdrop}
+      activeOpacity={1}
+      onPress={() => {
+        setShowJumpModal(false);
+        setJumpToAyahValue('');
+      }}
+    />
+    
+    {/* Modal Content - Above Keyboard */}
+    <View style={styles.jumpModalContainer}>
+      <View style={[
+        styles.jumpModalContent,
+        { 
+          backgroundColor: settings.darkMode ? themedColors.cardBackground : 'white',
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
+        }
+      ]}>
+        {/* Drag Handle */}
+        <View style={styles.jumpModalHandle}>
+          <View style={[
+            styles.jumpModalHandleBar,
+            { backgroundColor: settings.darkMode ? themedColors.textMuted : Theme.colors.gray300 }
+          ]} />
+        </View>
+
+        {/* Icon */}
+        <View style={[
+          styles.jumpModalIconContainer,
+          { backgroundColor: settings.darkMode ? themedColors.surface : Theme.colors.gray100 }
+        ]}>
+          <Icon 
+            name="locate" 
+            type="Ionicons" 
+            size={28} 
+            color={settings.darkMode ? themedColors.secondary : Theme.colors.secondary}
+          />
+        </View>
+
+        {/* Title */}
+        <Text style={[
+          styles.jumpModalTitle,
+          { color: settings.darkMode ? themedColors.textPrimary : Theme.colors.primary }
+        ]}>
+          Jump to Ayah
+        </Text>
+        
+        <Text style={[
+          styles.jumpModalSubtitle,
+          { color: settings.darkMode ? themedColors.textMuted : Theme.colors.textMuted }
+        ]}>
+          Surah has {surahData?.total_ayahs || ayahs.length} ayahs
+        </Text>
+
+        {/* Input */}
+        <View style={[
+          styles.jumpModalInputContainer,
+          { 
+            backgroundColor: settings.darkMode ? themedColors.surface : Theme.colors.gray100,
+          }
+        ]}>
+          <TextInput
+            style={[
+              styles.jumpModalInput,
+              { color: settings.darkMode ? themedColors.textPrimary : Theme.colors.primary }
+            ]}
+            placeholder="25"
+            placeholderTextColor={settings.darkMode ? themedColors.textMuted : Theme.colors.gray400}
+            keyboardType="number-pad"
+            value={jumpToAyahValue}
+            onChangeText={setJumpToAyahValue}
+            returnKeyType="go"
+            onSubmitEditing={handleJumpToAyah}
+            maxLength={4}
+            autoFocus={true}
+          />
+        </View>
+
+        {/* Buttons */}
+        <View style={styles.jumpModalButtons}>
+          <TouchableOpacity
+            style={[
+              styles.jumpModalButton,
+              { backgroundColor: settings.darkMode ? themedColors.surface : Theme.colors.gray100 }
+            ]}
+            onPress={() => {
+              setShowJumpModal(false);
+              setJumpToAyahValue('');
+            }}
+          >
+            <Text style={[
+              styles.jumpModalButtonText,
+              { color: settings.darkMode ? themedColors.textSecondary : Theme.colors.textSecondary }
+            ]}>
+              Cancel
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.jumpModalButton,
+              styles.jumpModalGoButton,
+              { backgroundColor: settings.darkMode ? themedColors.secondary : Theme.colors.secondary }
+            ]}
+            onPress={handleJumpToAyah}
+          >
+            <Text style={styles.jumpModalGoButtonText}>
+              Go to Ayah
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </KeyboardAvoidingView>
+</Modal>
+{/* Jump Loading Screen - Full Screen */}
+{isJumping && (
+  <View style={styles.fullScreenLoading}>
+    <JumpLoadingScreen 
+      darkMode={settings.darkMode} 
+      ayahNumber={parseInt(jumpToAyahValue) || '...'} 
+    />
+  </View>
+)}
           {/* Tajweed Help Modal */}
 <TajweedHelpModal />
 
@@ -1211,7 +1498,88 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
-
+// Jump to Ayah Modal Styles - Modern & Clean
+jumpModalOverlay: {
+  flex: 1,
+  justifyContent: 'flex-end',
+},
+jumpModalBackdrop: {
+  ...StyleSheet.absoluteFillObject,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+},
+jumpModalContainer: {
+  justifyContent: 'flex-end',
+},
+jumpModalContent: {
+  paddingTop: 8,
+  paddingBottom: 34,
+  paddingHorizontal: 24,
+  ...Theme.shadows.xl,
+},
+jumpModalHandle: {
+  alignItems: 'center',
+  paddingVertical: 12,
+},
+jumpModalHandleBar: {
+  width: 40,
+  height: 4,
+  borderRadius: 2,
+},
+jumpModalIconContainer: {
+  width: 64,
+  height: 64,
+  borderRadius: 32,
+  alignItems: 'center',
+  justifyContent: 'center',
+  alignSelf: 'center',
+  marginBottom: 16,
+},
+jumpModalTitle: {
+  fontSize: 22,
+  fontWeight: '700',
+  textAlign: 'center',
+  marginBottom: 4,
+},
+jumpModalSubtitle: {
+  fontSize: 14,
+  textAlign: 'center',
+  marginBottom: 24,
+},
+jumpModalInputContainer: {
+  borderRadius: 16,
+  marginBottom: 20,
+  overflow: 'hidden',
+},
+jumpModalInput: {
+  fontSize: 48,
+  fontWeight: '600',
+  textAlign: 'center',
+  paddingVertical: 20,
+  paddingHorizontal: 24,
+  letterSpacing: 2,
+},
+jumpModalButtons: {
+  flexDirection: 'row',
+  gap: 12,
+},
+jumpModalButton: {
+  flex: 1,
+  paddingVertical: 16,
+  borderRadius: 14,
+  alignItems: 'center',
+},
+jumpModalGoButton: {
+  flex: 1.5,
+},
+jumpModalButtonText: {
+  fontSize: 16,
+  fontWeight: '600',
+},
+jumpModalGoButtonText: {
+  fontSize: 16,
+  fontWeight: '700',
+  color: 'white',
+},
   // Jump to Ayah
   modernJumpContainer: {
     paddingHorizontal: 20,
@@ -1374,5 +1742,9 @@ tajweedCloseText: {
   color: 'white',
   fontSize: 16,
   fontWeight: '600',
+},
+fullScreenLoading: {
+  ...StyleSheet.absoluteFillObject,
+  zIndex: 10000,
 },
 });
