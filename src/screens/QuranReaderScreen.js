@@ -38,6 +38,8 @@ import AudioControls from '../components/quran/AudioControls';
 import AyahItem from '../components/quran/AyahItem';
 import ReplayModal from '../components/quran/ReplayModal';
 import ReplayProgressBar from '../components/quran/ReplayProgressBar';
+import { useTutorial } from '../contexts/TutorialContext';
+import TutorialModal from '../components/TutorialModal';
 
 
 export default function QuranReaderScreen({ route, navigation }) {
@@ -45,6 +47,7 @@ export default function QuranReaderScreen({ route, navigation }) {
   
   // Use settings hook
   const { settings, themedColors, loading: settingsLoading } = useSettings();
+  const { isTutorialActive, nextStep, completeTutorial, currentStep, getCurrentStepData, tutorialCompleted } = useTutorial();
   const [selectedReciterId, setSelectedReciterId] = useState(null);
   const { 
   memorizedAyahs, 
@@ -124,6 +127,13 @@ useEffect(() => {
     
     setIsInitialized(true);
     console.log('✅ Everything initialized');
+    
+    // Auto-advance tutorial when QuranReader loads
+    if (isTutorialActive && getCurrentStepData()?.id === 'select_fatiha') {
+      setTimeout(() => {
+        nextStep(); // Move to quran_reader_intro step
+      }, 500);
+    }
   } catch (error) {
     console.error('❌ Error during initialization:', error);
     setLoading(false);
@@ -133,23 +143,14 @@ useEffect(() => {
       'Connection Error',
       'Failed to load surah. Please check your internet connection and try again.',
       [
-        { text: 'Go Back', onPress: () => navigation.goBack() },
-        { text: 'Retry', onPress: () => {
-          setIsInitialized(false);
-          loadEverything();
-        }}
+        { text: 'OK', onPress: () => navigation.goBack() }
       ]
     );
   }
 };
-  
+
   loadEverything();
-  
-  return () => {
-    console.log('🧹 Cleanup');
-    AudioService.stopAudio();
-  };
-}, [surahId, selectedReciterId, settings?.scriptType]);
+}, [surahId, settings.scriptType]);
 
 // Separate effect for auto-scrolling to ayah
 useEffect(() => {
@@ -435,6 +436,11 @@ const TajweedHelpModal = () => (
       await markAsMemorized(currentSurahId, ayahNumber, 2);
       await checkSurahCompletion(currentSurahId);
     }
+    if (isTutorialActive && currentSurahId === 1 && ayahNumber === 1 && getCurrentStepData()?.id === 'mark_memorized') {
+        setTimeout(() => {
+          nextStep(); // Move to completion step
+        }, 1500);
+      }
     
     try {
       Vibration.vibrate(50);
@@ -1397,6 +1403,10 @@ const handleJumpToAyah = async () => {
             setCompletedSurahInfo(null);
           }}
         />
+        {/* Tutorial Modal */}
+        {isTutorialActive && !tutorialCompleted && (
+          <TutorialModal visible={isTutorialActive} currentScreen="QuranReader" />
+        )}
       </LinearGradient>
     </SafeAreaProvider>
   );

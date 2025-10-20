@@ -20,9 +20,12 @@ import { useSettings } from '../hooks/useSettings';
 import { SurahListSkeleton } from '../components/SkeletonLoader';
 import ScreenLayout from '../layouts/ScreenLayout';
 import ScreenHeader from '../layouts/ScreenHeader';
+import { useTutorial } from '../contexts/TutorialContext';
+import TutorialModal from '../components/TutorialModal';
 
 export default function SurahListScreen({ navigation }) {
   const { settings, themedColors } = useSettings();
+  const { isTutorialActive, nextStep, currentStep, getCurrentStepData, tutorialCompleted } = useTutorial();
   
   const [surahs, setSurahs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -139,7 +142,13 @@ export default function SurahListScreen({ navigation }) {
           isCompleted && styles.completedSurah,
           settings.darkMode && { backgroundColor: themedColors.cardBackground }
         ]}
-        onPress={() => navigation.navigate('QuranReader', { surahId: item.id })}
+        onPress={() => {
+        // If tutorial is active and this is Al-Fatihah, advance tutorial
+        if (isTutorialActive && item.id === 1 && getCurrentStepData()?.id === 'select_fatiha') {
+          nextStep();
+        }
+        navigation.navigate('QuranReader', { surahId: item.id });
+      }}
         variant={isCompleted ? "elevated" : "default"}
         accessible={true}
         accessibilityLabel={`${item.name}, ${item.arabic_name}`}
@@ -211,7 +220,7 @@ export default function SurahListScreen({ navigation }) {
         )}
       </AnimatedCard>
     );
-  }, [getSurahProgress, settings.darkMode, themedColors, navigation]);
+  }, [getSurahProgress, settings.darkMode, themedColors, navigation, isTutorialActive, getCurrentStepData, nextStep]);
 
     const keyExtractor = useCallback((item) => item.id.toString(), []);
 
@@ -305,7 +314,10 @@ return (
             </View>
           )}
         />
-        
+        {/* Tutorial Modal */}
+        {isTutorialActive && !tutorialCompleted && (
+          <TutorialModal visible={isTutorialActive} currentScreen="SurahList" />
+        )}
       </ScreenLayout>
 );
 }

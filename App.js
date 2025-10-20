@@ -24,7 +24,7 @@ import { Logger } from './src/utils/Logger';
 import { StatusBar } from 'expo-status-bar';
 import { MemorizationProvider, AppStateProvider } from './src/contexts';
 import LoadingState from './src/components/LoadingState';
-
+import { TutorialProvider } from './src/contexts/TutorialContext';
 
 const Stack = createStackNavigator();
 
@@ -117,6 +117,7 @@ export default function App() {
   <ErrorBoundary>
     <MemorizationProvider>
       <AppStateProvider>
+        <TutorialProvider>
         <View style={styles.container}>
           {showSplash ? (
             <SplashScreen onFinish={handleSplashFinish} />
@@ -150,6 +151,7 @@ export default function App() {
             />
           )}
         </View>
+       </TutorialProvider>
       </AppStateProvider>
     </MemorizationProvider>
   </ErrorBoundary>

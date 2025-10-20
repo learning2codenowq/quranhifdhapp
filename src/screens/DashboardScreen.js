@@ -12,6 +12,8 @@ import { Logger } from '../utils/Logger';
 import { useSettings } from '../hooks/useSettings';
 import { useMemorization } from '../contexts';
 import { useAppState } from '../contexts';
+import { useTutorial } from '../contexts/TutorialContext';
+import TutorialModal from '../components/TutorialModal';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
 import ContinueCard from '../components/ContinueCard';
 import ConfettiCannon from 'react-native-confetti-cannon';
@@ -33,6 +35,7 @@ const {
   loading: appStateLoading,
   loadAppState
 } = useAppState();
+const { isTutorialActive, startTutorial, tutorialCompleted, currentStep, getCurrentStepData, nextStep } = useTutorial();
 const [refreshing, setRefreshing] = useState(false);
 const [achievementModal, setAchievementModal] = useState({
   visible: false,
@@ -50,6 +53,29 @@ const confettiRef = useRef(null);
   
   return unsubscribe;
 }, [navigation]);
+// Start tutorial for new users (only once on mount)
+const tutorialStartedRef = React.useRef(false);
+
+// Start tutorial for new users
+useEffect(() => {
+  // Wait for everything to load first
+  if (appStateLoading || !state) return;
+  
+  // Don't start if already started once
+  if (tutorialStartedRef.current) return;
+  
+  // Only start tutorial if:
+  // 1. Tutorial not completed
+  // 2. User is brand new (no memorization progress)
+  // 3. Tutorial not already active
+  if (!tutorialCompleted && !state.lastMemorizedPosition && !isTutorialActive) {
+    console.log('🎓 Starting tutorial for new user');
+    tutorialStartedRef.current = true;
+    setTimeout(() => {
+      startTutorial();
+    }, 1500);
+  }
+}, [tutorialCompleted, state, appStateLoading, isTutorialActive]);
 
   // ALL CALLBACKS FIRST
   const onRefresh = useCallback(async () => {
@@ -76,13 +102,38 @@ const confettiRef = useRef(null);
   }, []);
   
   const handleContinueMemorization = useCallback(() => {
-    if (!nextSegment) {
-      console.warn('No next segment available');
-      return;
-    }
+  if (!nextSegment) {
+    console.warn('No next segment available');
+    return;
+  }
+  
+  console.log('🎯 Navigating to:', nextSegment);
+  console.log('🔍 Tutorial Debug:', {
+    isTutorialActive,
+    currentStepData: getCurrentStepData(),
+    currentStepId: getCurrentStepData()?.id
+  });
+  
+  // Advance tutorial if on step 2
+  if (isTutorialActive && getCurrentStepData()?.id === 'start_memorizing') {
+    console.log('📚 Advancing tutorial to step 3');
+    nextStep();
     
-    console.log('🎯 Navigating to:', nextSegment);
-    
+    // Wait for step to update before navigating
+    setTimeout(() => {
+      console.log('📚 Now navigating after step advance');
+      if (nextSegment.isNewUser) {
+        navigation.navigate('SurahList');
+      } else {
+        navigation.navigate('QuranReader', { 
+          surahId: nextSegment.surahId,
+          scrollToAyah: nextSegment.startAyah
+        });
+      }
+    }, 300);
+  } else {
+    console.log('📚 No tutorial advance needed, navigating directly');
+    // No tutorial active, navigate immediately
     if (nextSegment.isNewUser) {
       navigation.navigate('SurahList');
     } else {
@@ -91,7 +142,8 @@ const confettiRef = useRef(null);
         scrollToAyah: nextSegment.startAyah
       });
     }
-  }, [nextSegment, navigation]);
+  }
+}, [nextSegment, navigation, isTutorialActive, getCurrentStepData, nextStep]);
 
   // ALL USEMEMO CALCULATIONS
   const displayStats = useMemo(() => {
@@ -501,6 +553,10 @@ return (
         onClose={handleCloseAchievements}
       />
     </View>
+    {/* Tutorial Modal */}
+      {isTutorialActive && !tutorialCompleted && (
+        <TutorialModal visible={isTutorialActive} currentScreen="Dashboard" />
+      )}
   </ScreenLayout>
 );
 }
